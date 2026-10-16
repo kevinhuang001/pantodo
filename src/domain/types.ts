@@ -1,4 +1,4 @@
-/** Domain model. Mirrors the SQLite schema in docs/SPEC.md one-to-one. */
+/** Persisted Todo workspace. Plans live on Todos; actual work is a separate time ledger. */
 
 export type Id = string
 
@@ -18,6 +18,7 @@ export interface Entity {
 }
 
 export interface Project extends Entity {
+  emoji?: string
   name: string
   /** `null` means "assign a colour from the name hash". */
   color: string | null
@@ -36,7 +37,9 @@ export interface Task extends Entity {
   notes: string
   status: TaskStatus
   projectId: Id | null
-  /** Deadline: drives reminders and sorting, never occupies the timetable grid. */
+  /** Planned interval belongs to the Todo; deadline is an independent marker. */
+  startAt: IsoDateTime | null
+  endAt: IsoDateTime | null
   dueAt: IsoDateTime | null
   estimateMinutes: number | null
   completedAt: IsoDateTime | null
@@ -44,17 +47,11 @@ export interface Task extends Entity {
   sortOrder: number
 }
 
-/** A scheduled block is what puts a task on the timetable. */
-export interface ScheduleBlock extends Entity {
-  taskId: Id
-  startAt: IsoDateTime
-  endAt: IsoDateTime
-}
-
 export type GroupField = 'tag' | 'project' | 'status' | 'none'
 export type GroupArrangement = 'vertical' | 'columns' | 'grid'
-export type AppTab = 'views' | 'timetable'
+export type AppTab = 'views' | 'timetable' | 'statistics'
 export type TimetableZoom = 'compact' | 'standard' | 'large'
+export type CalendarMode = 'day' | 'week' | 'month' | 'agenda'
 export type TagMatchMode = 'any' | 'all'
 export type ViewSort = 'manual' | 'due' | 'created' | 'title'
 export type HasTime = 'any' | 'scheduled' | 'unscheduled'
@@ -69,6 +66,10 @@ export interface ViewFilter {
   statuses: TaskStatus[]
   hasTime: HasTime
   text: string
+  excludeTagIds?: Id[]
+  dueFrom?: string
+  dueTo?: string
+  projectMode?: 'any' | 'none'
 }
 
 /** A named bucket inside a view — this is what makes the Eisenhower matrix four tags. */
@@ -86,8 +87,39 @@ export interface ViewGroup {
   sortOrder: number
 }
 
+export interface ViewPanel {
+  id: Id
+  name: string
+  emoji: string
+  color: string | null
+  filter: ViewFilter
+  sort: ViewSort
+  span: number
+}
+
+export interface TimeEntry extends Entity {
+  taskId: Id | null
+  startedAt: IsoDateTime
+  endedAt: IsoDateTime
+  source: 'timer' | 'manual'
+  note: string
+  supersededBy?: Id
+}
+
+/** Segments are committed on pause/stop; only the active segment remains open. */
+export interface TimerSession {
+  taskId: Id
+  startedAt: IsoDateTime | null
+  elapsedSeconds: number
+  entryIds: Id[]
+  ownerId: string
+  lastHeartbeatAt: IsoDateTime
+}
+
 export interface View extends Entity {
   name: string
+  emoji?: string
+  panels?: ViewPanel[]
   icon: string
   builtin: boolean
   preset: ViewPreset | null
@@ -107,11 +139,14 @@ export type LocalePreference = 'system' | 'zh-CN' | 'en' | 'ja'
 export interface Settings {
   theme: ThemePreference
   localePreference: LocalePreference
-  /** 0 = Sunday, 1 = Monday. The spec fixes Monday. */
+  /** 0 = Sunday, 1 = Monday. */
   weekStartsOn: 0 | 1
   reminderLeadMinutes: number
   notificationsSilent: boolean
   /** Row height of the timetable grid; "large" is the default so block text always fits. */
+  calendarMode?: CalendarMode
+  calendarHourHeight?: number
+  defaultDurationMinutes?: number
   timetableZoom: TimetableZoom
   seedVersion: number
 }
@@ -122,9 +157,10 @@ export interface Workspace {
   tags: Tag[]
   tasks: Task[]
   taskTags: Record<Id, Id[]>
-  scheduleBlocks: ScheduleBlock[]
   views: View[]
   settings: Settings
+  timeEntries: TimeEntry[]
+  timer: TimerSession | null
 }
 
 export const EMPTY_FILTER: ViewFilter = {

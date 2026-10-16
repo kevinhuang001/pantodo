@@ -1,6 +1,10 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
 
+import { validatePlan } from '@/domain/calendar'
+import { fromLocalInputValue } from '@/domain/date'
+import { ScheduleFields } from './ScheduleFields'
+import type { ScheduleValues } from './ScheduleFields'
 import { useAppStore } from '@/domain/store'
 import { getLocale, t } from '@/i18n'
 
@@ -16,7 +20,10 @@ export function InboxComposer() {
   const [title, setTitle] = useState('')
   const [notes, setNotes] = useState('')
   const [projectId, setProjectId] = useState('')
-  const [tagId, setTagId] = useState('')
+  const [tagIds, setTagIds] = useState<string[]>([])
+  const [showTime, setShowTime] = useState(false)
+  const [time, setTime] = useState<ScheduleValues>({ start: '', end: '', due: '', estimate: '' })
+  const [timeError, setTimeError] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(false)
   const openTasks = tasks.filter(
@@ -32,18 +39,29 @@ export function InboxComposer() {
     if (!title.trim() || saving) return
     setSaving(true)
     setError(false)
+    setTimeError(false)
     try {
+      const startAt = time.start ? fromLocalInputValue(time.start) : null
+      const endAt = time.end ? fromLocalInputValue(time.end) : null
+      validatePlan(startAt, endAt)
       await createTask({
+        startAt,
+        endAt,
+        dueAt: time.due ? fromLocalInputValue(time.due) : null,
+        estimateMinutes: time.estimate ? Number(time.estimate) : null,
         title: title.trim(),
         notes: notes.trim(),
         projectId: projectId || null,
-        tagIds: tagId ? [tagId] : [],
+        tagIds,
       })
       setTitle('')
       setNotes('')
+      setTime({ start: '', end: '', due: '', estimate: '' })
+      setShowTime(false)
       document.getElementById('pantodo-inbox-input')?.focus()
-    } catch {
-      setError(true)
+    } catch (failure) {
+      if (failure instanceof Error && failure.message === 'time.invalidRange') setTimeError(true)
+      else setError(true)
     } finally {
       setSaving(false)
     }
@@ -98,6 +116,23 @@ export function InboxComposer() {
             onChange={(event) => setNotes(event.target.value)}
             rows={2}
           />
+          <button
+            type="button"
+            className="capture-time-toggle"
+            aria-expanded={showTime}
+            onClick={() => setShowTime(!showTime)}
+          >
+            <Icon name="calendar" size={14} />
+            {t('plan.more')}
+            <Icon name="chevronDown" size={12} />
+            {time.start ? <span className="status-dot" /> : null}
+          </button>
+          {showTime ? <ScheduleFields prefix="create" value={time} onChange={setTime} /> : null}
+          {timeError ? (
+            <p role="alert" className="form-error">
+              {t('time.invalidRange')}
+            </p>
+          ) : null}
           <div className="capture-card-bottom">
             <div className="capture-options">
               <label className="capture-select">
@@ -115,21 +150,32 @@ export function InboxComposer() {
                   ))}
                 </select>
               </label>
-              <label className="capture-select">
-                <Icon name="tag" size={14} />
-                <select
-                  aria-label={t('task.field.tags')}
-                  value={tagId}
-                  onChange={(event) => setTagId(event.target.value)}
-                >
-                  <option value="">{t('task.field.tags')}</option>
+              <details className="capture-tags">
+                <summary className="capture-select">
+                  <Icon name="tag" size={14} />
+                  {t('task.field.tags')}
+                  {tagIds.length ? ' · ' + tagIds.length : ''}
+                </summary>
+                <div className="capture-tag-options">
                   {tags.map((tag) => (
-                    <option key={tag.id} value={tag.id}>
+                    <button
+                      type="button"
+                      key={tag.id}
+                      aria-pressed={tagIds.includes(tag.id)}
+                      onClick={() =>
+                        setTagIds((current) =>
+                          current.includes(tag.id)
+                            ? current.filter((id) => id !== tag.id)
+                            : [...current, tag.id],
+                        )
+                      }
+                    >
+                      {tagIds.includes(tag.id) ? '✓ ' : ''}
                       {tag.name}
-                    </option>
+                    </button>
                   ))}
-                </select>
-              </label>
+                </div>
+              </details>
             </div>
             <button type="submit" className="capture-submit" disabled={!title.trim() || saving}>
               {t('create.add')}

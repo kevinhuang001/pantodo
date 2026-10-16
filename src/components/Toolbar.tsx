@@ -1,81 +1,32 @@
 import { ARRANGEMENT_LABEL_KEYS, viewDisplayName } from '@/domain/display'
 import { useAppStore } from '@/domain/store'
 import type { AppTab, GroupArrangement, View } from '@/domain/types'
-import { getLocale, LOCALES, LOCALE_LABELS, t } from '@/i18n'
-import type { Locale, LocalePreference } from '@/i18n'
-
-import { Menu, Segmented } from './Menu'
-import type { MenuItemSpec } from './Menu'
-
-interface ToolbarProps {
-  previewPanels: boolean
+import { getLocale, t } from '@/i18n'
+import { Segmented } from './Menu'
+export function Toolbar({
+  tab,
+  view,
+  total,
+  doneCount,
+}: {
   tab: AppTab
   view: View | null
   total: number
   doneCount: number
-}
-
-const ARRANGEMENTS: GroupArrangement[] = ['vertical', 'columns', 'grid']
-
-/**
- * No layout switcher and no "new task" button: a view is always a list of tasks, its grouping is
- * arranged by dragging, and new tasks are captured in the inbox.
- */
-export function Toolbar({ previewPanels, tab, view, total, doneCount }: ToolbarProps) {
-  const settings = useAppStore((state) => state.settings)
+}) {
   const updateView = useAppStore((state) => state.updateView)
-  const updateSettings = useAppStore((state) => state.updateSettings)
-
-  const themeItems: MenuItemSpec[] = [
-    {
-      key: 'system',
-      label: t('theme.system'),
-      icon: 'monitor',
-      selected: settings.theme === 'system',
-      onSelect: () => void updateSettings({ theme: 'system' }),
-    },
-    {
-      key: 'light',
-      label: t('theme.light'),
-      icon: 'sun',
-      selected: settings.theme === 'light',
-      onSelect: () => void updateSettings({ theme: 'light' }),
-    },
-    {
-      key: 'dark',
-      label: t('theme.dark'),
-      icon: 'moon',
-      selected: settings.theme === 'dark',
-      onSelect: () => void updateSettings({ theme: 'dark' }),
-    },
-  ]
-
-  const languageItems: MenuItemSpec[] = [
-    {
-      key: 'system',
-      label: t('language.system'),
-      icon: 'monitor',
-      selected: settings.localePreference === 'system',
-      onSelect: () => void updateSettings({ localePreference: 'system' }),
-    },
-    ...LOCALES.map<MenuItemSpec>((locale: Locale) => ({
-      key: locale,
-      label: LOCALE_LABELS[locale],
-      selected: settings.localePreference === (locale as LocalePreference),
-      onSelect: () => void updateSettings({ localePreference: locale }),
-    })),
-  ]
-
-  const isTimetable = !previewPanels && tab === 'timetable'
-  const grouped = !previewPanels && view !== null && view.groups.length > 0
-  const title = previewPanels
-    ? t('panels.title')
-    : isTimetable
-      ? t('nav.tab.timetable')
-      : view === null
-        ? t('views.section')
-        : viewDisplayName(view, t)
-
+  const title =
+    tab === 'statistics'
+      ? t('nav.statistics')
+      : tab === 'timetable'
+        ? t('nav.tab.timetable')
+        : view
+          ? viewDisplayName(view, t)
+          : t('views.section')
+  const grouped =
+    tab === 'views' &&
+    view &&
+    (view.panels !== undefined || view.groups.length > 0 || view.groupBy !== 'none')
   return (
     <header className="toolbar">
       <div className="toolbar-title">
@@ -83,17 +34,21 @@ export function Toolbar({ previewPanels, tab, view, total, doneCount }: ToolbarP
           {t('ui.workspace')}
           <span>/</span>
         </span>
-        <h1>{title}</h1>
-        {previewPanels || isTimetable || view === null || view.preset === 'inbox' ? null : (
+        <h1>
+          {tab === 'views' && view?.emoji ? (
+            <span className="title-emoji" aria-hidden="true">
+              {view.emoji}{' '}
+            </span>
+          ) : null}
+          {title}
+        </h1>
+        {tab === 'views' && view?.preset !== 'inbox' ? (
           <span className="count">
-            {t('count.tasks', { count: total })}
-            {total === 0 ? '' : ` · ${t('count.progress', { done: doneCount, total })}`}
+            {total} · {doneCount}
           </span>
-        )}
+        ) : null}
       </div>
-
       <span className="toolbar-spacer" />
-
       <div className="toolbar-actions">
         <span className="toolbar-date">
           {new Intl.DateTimeFormat(getLocale(), {
@@ -102,39 +57,33 @@ export function Toolbar({ previewPanels, tab, view, total, doneCount }: ToolbarP
             weekday: 'short',
           }).format(new Date())}
         </span>
-        {grouped && view !== null ? (
-          <Segmented
-            label={t('toolbar.arrangement')}
-            value={view.arrangement}
-            options={ARRANGEMENTS.map((arrangement) => ({
-              key: arrangement,
-              label: t(ARRANGEMENT_LABEL_KEYS[arrangement]),
-            }))}
-            onChange={(key) => void updateView(view.id, { arrangement: key as GroupArrangement })}
-          />
+        {grouped && view ? (
+          <>
+            <Segmented
+              label={t('toolbar.arrangement')}
+              value={view.arrangement}
+              options={(['vertical', 'columns', 'grid'] as const).map((key) => ({
+                key,
+                label: t(ARRANGEMENT_LABEL_KEYS[key]),
+              }))}
+              onChange={(key) => void updateView(view.id, { arrangement: key as GroupArrangement })}
+            />
+            {view.arrangement !== 'vertical' ? (
+              <select
+                className="compact-select"
+                aria-label={t('view.field.columns')}
+                value={view.gridColumns}
+                onChange={(e) => void updateView(view.id, { gridColumns: Number(e.target.value) })}
+              >
+                {[1, 2, 3, 4].map((n) => (
+                  <option value={n} key={n}>
+                    {n} ×
+                  </option>
+                ))}
+              </select>
+            ) : null}
+          </>
         ) : null}
-
-        {grouped && view !== null && view.arrangement === 'grid' ? (
-          <label className="grid-columns">
-            <span className="visually-hidden">{t('view.field.columns')}</span>
-            <select
-              className="select"
-              value={view.gridColumns}
-              onChange={(event) =>
-                void updateView(view.id, { gridColumns: Number(event.target.value) })
-              }
-            >
-              {[1, 2, 3, 4].map((columns) => (
-                <option key={columns} value={columns}>
-                  {columns} ×
-                </option>
-              ))}
-            </select>
-          </label>
-        ) : null}
-
-        <Menu label={t('toolbar.theme')} icon="sun" items={themeItems} />
-        <Menu label={t('toolbar.language')} icon="globe" items={languageItems} />
       </div>
     </header>
   )

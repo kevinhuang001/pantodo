@@ -14,7 +14,9 @@ import { EmptyState } from './components/EmptyState'
 import { EntityDialog } from './components/EntityDialog'
 import { GroupBoard } from './components/GroupBoard'
 import { Icon } from './components/Icon'
-import { PanelPreview } from './components/PanelPreview'
+import { PanelBoard } from './components/PanelBoard'
+import { Statistics } from './components/Statistics'
+import { TimerBar, TimerLifecycle } from './components/TimerBar'
 import { PaperFriend } from './components/PaperFriend'
 import { InboxComposer } from './components/InboxComposer'
 import { SettingsDialog } from './components/SettingsDialog'
@@ -76,7 +78,6 @@ export function App() {
   const restoreTask = useAppStore((state) => state.restoreTask)
   const emptyTrash = useAppStore((state) => state.emptyTrash)
 
-  const [previewPanels, setPreviewPanels] = useState(false)
   const [dialog, setDialog] = useState<DialogState>(null)
   const now = useNow()
   const theme = useResolvedTheme(settings.theme)
@@ -144,7 +145,10 @@ export function App() {
       now,
       palette,
       selectedTaskId,
-      onSelect: (task) => selectTask(task.id === selectedTaskId ? null : task.id),
+      onSelect: (task) => {
+        selectTask(task.id)
+        setDialog({ kind: 'task', task })
+      },
       onCycleStatus: (task) => {
         void setTaskStatus(task.id, nextStatus(task.status))
       },
@@ -185,7 +189,6 @@ export function App() {
       // "n" captures into the inbox — the only place tasks are created.
       if (event.key === 'n' && !event.metaKey && !event.ctrlKey) {
         event.preventDefault()
-        setPreviewPanels(false)
         if (inboxView !== null) setActiveView(inboxView.id)
         window.setTimeout(() => document.getElementById('pantodo-inbox-input')?.focus(), 0)
       }
@@ -220,18 +223,15 @@ export function App() {
 
   return (
     <>
+      <TimerLifecycle />
       <div className="scene" />
       <div id="app">
         <Sidebar
           now={now}
           theme={theme}
-          previewActive={previewPanels}
-          onOpenPreview={() => setPreviewPanels(true)}
-          onLeavePreview={() => setPreviewPanels(false)}
           onNewProject={() => setDialog({ kind: 'entity', entityKind: 'project', entity: null })}
           onNewTag={() => setDialog({ kind: 'entity', entityKind: 'tag', entity: null })}
           onNewView={() => {
-            setPreviewPanels(false)
             setDialog({ kind: 'view', view: null })
           }}
           onEditProject={(project) =>
@@ -244,7 +244,6 @@ export function App() {
 
         <main className="main">
           <Toolbar
-            previewPanels={previewPanels}
             tab={activeTab}
             view={activeView}
             total={filtered.length}
@@ -253,9 +252,9 @@ export function App() {
 
           <div
             className={
-              !previewPanels && isInbox && activeTab === 'views'
+              isInbox && activeTab === 'views'
                 ? 'reader reader-create'
-                : !previewPanels && activeTab === 'timetable'
+                : activeTab === 'timetable'
                   ? 'reader reader-flush'
                   : 'reader'
             }
@@ -264,10 +263,14 @@ export function App() {
 
             {!ready ? (
               <p className="banner">…</p>
-            ) : previewPanels ? (
-              <PanelPreview lookup={lookup} />
+            ) : activeTab === 'statistics' ? (
+              <Statistics />
             ) : activeTab === 'timetable' ? (
-              <Timetable now={now} theme={theme} />
+              <Timetable
+                now={now}
+                theme={theme}
+                onEdit={(task) => setDialog({ kind: 'task', task })}
+              />
             ) : isInbox ? (
               <InboxComposer />
             ) : activeView === null ? null : (
@@ -309,7 +312,14 @@ export function App() {
                   </span>
                 </div>
 
-                {filtered.length === 0 && activeView.groups.length === 0 ? (
+                {activeView.panels !== undefined ? (
+                  <PanelBoard
+                    view={activeView}
+                    tasks={filtered}
+                    context={context}
+                    lookup={lookup}
+                  />
+                ) : filtered.length === 0 && activeView.groups.length === 0 ? (
                   <EmptyState
                     icon={isTrash ? 'trash' : isInbox ? 'inbox' : 'calendarCheck'}
                     titleKey={emptyTitle}
@@ -349,6 +359,13 @@ export function App() {
               </>
             )}
           </div>
+          <TimerBar
+            onOpen={() => {
+              const timer = useAppStore.getState().timer
+              const task = tasks.find((task) => task.id === timer?.taskId)
+              if (task) setDialog({ kind: 'task', task })
+            }}
+          />
         </main>
       </div>
 

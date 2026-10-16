@@ -1,52 +1,69 @@
 # Pantodo
 
-A glass-morphic desktop task manager: tasks that may or may not have a time, a Google-Calendar-style
-timetable, tags, projects, custom views (including an Eisenhower matrix built from four tags),
-repeating tasks, a timer, 20-minute-ahead reminders and time statistics.
+A quiet place for your Todos, planned time and actual work. Pantodo combines a playful paper desk with a mint glass sidebar, a calendar, a work timer and saved views built from independently filtered panels.
 
-Built as a **Tauri 2 desktop app** (Linux / Windows / macOS) with a **Rust core** owning all business
-logic and SQLite, and a **React + TypeScript** front end styled in the same frosted-glass visual
-language as [Glassmark](https://github.com/kevinhuang001/bookmark-web).
+The current application runs in a browser and stores its workspace on the device. The native Tauri host, installers and OS power-event integration remain separate work.
 
-## Interface preview
+## Plan your day
 
-The current visual review introduces a playful paper desk for **Create**, a mint glass sidebar, clearer task lists and a composed workbench layout study. See [the preview scope](docs/UI-PREVIEW.md) for what is interactive and what remains a design preview.
+Create a Todo with a title, notes, status, project, multiple tags and an optional estimate. Its optional `startAt` and `endAt` form one planned interval. A separate `dueAt` represents the deadline.
 
-## Status
+- **No dates:** keep the Todo in lists and filtered views.
+- **Planned interval:** see a time block in the calendar.
+- **Deadline:** see a thin marker line with its time and title, including Todos without a planned interval.
+- **Both:** see the plan and deadline independently.
 
-| Milestone | Scope                                                                                                                                                                              | State       |
-| --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- |
-| **M1**    | Foundation: repo, tooling, design tokens (light + dark), app shell, i18n, `Bridge` layer, task/tag/project CRUD, list view, status, trash, archive, preset views, quadrant example | in progress |
-| M2        | Timetable + scheduling + recurrence (introduces the Rust core)                                                                                                                     | planned     |
-| M3        | Timer + statistics                                                                                                                                                                 | planned     |
-| M4        | Reminders + tray + autostart + notifications                                                                                                                                       | planned     |
-| M5        | Full view system (custom views, group drag, board / quadrant / grid arrangements) + polish                                                                                         | planned     |
-| M6        | WebDAV sync + CI integration tests against a real WebDAV server + release packaging                                                                                                | planned     |
+The calendar provides **day, week, month and agenda** views, date navigation, current-time indication, overlap lanes and continuous zoom in time-grid views. Click a Todo or deadline to edit it. Todos do not drag.
 
-The full agreed specification lives in [docs/SPEC.md](docs/SPEC.md).
+## Track your work
 
-## Quick start
+Start work from a Todo, pause for a break, resume or stop and save. One timer runs at a time. Completing, cancelling, archiving or deleting the active Todo stops its timer. Switching pages keeps it running.
 
-Requires Node >= 22.12.
+Actual time is stored separately from planned time. Add, edit and delete time entries from Statistics. **A newly saved manual entry replaces every whole existing entry that overlaps it.** The old entries are retained as superseded records in the workspace export and excluded from statistics; they are not split into fragments.
+
+Normal page/window exit synchronously saves and stops the owner’s timer. Durable five-second heartbeats recover interrupted sessions: a gap longer than 30 seconds closes the session at its last heartbeat. This browser fallback cannot distinguish every short system sleep from normal execution or every background-throttling event; native OS sleep handling requires the desktop host.
+
+## Understand your time
+
+Statistics includes daily totals, project and tag breakdowns, completed Todos, work-entry count, daily averages, comparison with the preceding period, and estimated versus actual time per Todo. Filter by date, project and multiple tags, inspect the underlying entries or export the selected interval as CSV.
+
+Each tag receives the entry’s full duration. Combined tag filters count each entry once. Consequently, tag category totals can exceed overall work time. Entries spanning midnight are divided between local calendar dates.
+
+## Build your own views
+
+Views combine an overall filter with a list layout or composed panels. Each panel has its own title, emoji, include/exclude tags, any/all tag matching, status, project, schedule, deadline range, text filter and sort order.
+
+Drag panel handles or use the move buttons to reorder panels. Change a panel’s column span, choose the grid width or switch to vertical/column arrangements. A Todo may appear in multiple panels. The Eisenhower template creates four ordinary, editable panels from two selected tags.
+
+Projects and views support emoji icons. Appearance, language, week start and default planned duration live in Settings. Light/dark/system themes and Chinese, English and Japanese are supported.
+
+## Run locally
+
+Requires Node.js >= 22.12.
 
 ```bash
-npm install
-npm run dev          # http://localhost:1420
+npm ci
+npm run dev
 ```
 
-In M1 the app runs in a plain browser against a fixture-backed `Bridge`; the Tauri shell and the Rust
-core arrive in M2.
+Open the URL printed by Vite. A new workspace starts without sample Todos. For a disposable demonstration use `/?demo=1` on a fresh workspace. `/?reset=1` deliberately replaces the browser workspace with sample Todos; use it only for testing.
 
-## Checks
+## Development
 
 ```bash
-npm run typecheck     # tsc --noEmit
-npm run lint          # eslint
-npm run format:check  # prettier
-npm test              # vitest (unit, node environment)
-npm run e2e           # playwright against the dev server
-npm run build         # typecheck + production bundle
-npm run screenshots   # headless screenshots into artifacts/
+npm run typecheck
+npm run lint
+npm run format:check
+npm test
+npm run e2e
+npm run build
+npm run screenshots
 ```
 
-`npm run verify`-style gating happens in CI: see [.github/workflows/ci.yml](.github/workflows/ci.yml).
+Install the Playwright browser with `npx playwright install chromium` before UI checks. `PLAYWRIGHT_CHROMIUM_EXECUTABLE` optionally selects an installed Chromium. Screenshots start their own Vite server, exercise an isolated sample workspace and write 16 captures to `artifacts/screenshots`.
+
+- [Product rules and data model](docs/SPEC.md)
+- [Interface and verification guide](docs/UI-PREVIEW.md)
+- [Third-party notices](THIRD-PARTY.md)
+
+GitHub Actions checks type safety, formatting, lint, unit tests and production builds on Linux, macOS and Windows; the Linux UI job runs Playwright and uploads screenshots.

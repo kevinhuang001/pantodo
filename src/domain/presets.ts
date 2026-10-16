@@ -3,11 +3,12 @@ import { t as translate } from '@/i18n'
 
 import { nowIso } from './date'
 import { newId } from './ids'
+import { workbenchPanels } from './views'
 import { TAG_PALETTE } from './palette'
 import type { Settings, Tag, Task, View, ViewGroup, Workspace } from './types'
 import { EMPTY_FILTER } from './types'
 
-export const SEED_VERSION = 1
+export const SEED_VERSION = 2
 
 function envelope(): { id: string; createdAt: string; updatedAt: string; deletedAt: null } {
   return { id: newId(), createdAt: nowIso(), updatedAt: nowIso(), deletedAt: null }
@@ -18,6 +19,9 @@ export function defaultSettings(): Settings {
     theme: 'system',
     localePreference: 'system',
     weekStartsOn: 1,
+    calendarMode: 'week',
+    calendarHourHeight: 76,
+    defaultDurationMinutes: 30,
     reminderLeadMinutes: 20,
     notificationsSilent: true,
     timetableZoom: 'large',
@@ -118,12 +122,24 @@ export function createSeedWorkspace(
     makeView({ name: t('nav.trash'), icon: 'trash', builtin: true, preset: 'trash', sortOrder: 5 }),
   ]
 
+  views.push(
+    makeView({
+      name: t('panels.title'),
+      emoji: '🪴',
+      icon: 'layers',
+      panels: workbenchPanels(),
+      arrangement: 'grid',
+      sortOrder: 3,
+    }),
+  )
+
   const workspace: Workspace = {
     projects: [],
     tags: [importantTag, urgentTag],
     tasks: [],
     taskTags: {},
-    scheduleBlocks: [],
+    timeEntries: [],
+    timer: null,
     views,
     settings: defaultSettings(),
   }
@@ -178,6 +194,8 @@ function withDemoData(workspace: Workspace, t: TFunction, now: Date): Workspace 
       notes: '',
       status: 'todo',
       projectId: null,
+      startAt: block?.startAt ?? null,
+      endAt: block?.endAt ?? null,
       dueAt: null,
       estimateMinutes: null,
       completedAt: null,
@@ -187,9 +205,6 @@ function withDemoData(workspace: Workspace, t: TFunction, now: Date): Workspace 
     }
     workspace.tasks.push(task)
     workspace.taskTags[task.id] = tagIds
-    if (block !== undefined) {
-      workspace.scheduleBlocks.push({ ...envelope(), taskId: task.id, ...block })
-    }
   }
 
   makeTask('写周报', {

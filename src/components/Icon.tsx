@@ -7,6 +7,10 @@
 export type IconName = keyof typeof ICONS
 
 const ICONS = {
+  pause: ['M8 4v16', 'M16 4v16'],
+  stop: ['M5 5h14v14H5z'],
+  chart: ['M4 20h16', 'M7 16V9', 'M12 16V4', 'M17 16v-5'],
+  download: ['M12 3v12', 'M7 10l5 5 5-5', 'M4 16v4h16v-4'],
   inbox: [
     'M22 12h-6l-2 3h-4l-2-3H2',
     'M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z',

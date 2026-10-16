@@ -1,5 +1,7 @@
+import { featureZh } from './features-zh-CN'
 /** Simplified Chinese is the source language; en/ja are translations. */
 const zhCN = {
+  ...featureZh,
   'ui.personal': '个人空间',
   'ui.navigation': '导航',
   'ui.preview': '预览',

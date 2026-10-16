@@ -1,179 +1,84 @@
-# Pantodo — agreed specification
+# Pantodo product specification
 
-> October 2026 interface review: [UI-PREVIEW.md](UI-PREVIEW.md) records the new Create page and composed-panel direction. Its scoped UI changes supersede the earlier Inbox/navigation descriptions below; the remaining functional specification is unchanged.
+This specification records the design confirmed on 16 October 2026 and the resulting browser application.
 
-Status: confirmed with the owner before implementation. Milestones are delivered in order, each with
-screenshots, passing tests and a push to `main`.
+## Todo model
 
-## 1. Platform and stack
+`Task` is the source-code name for a Todo, not a second user-facing entity.
 
-- Product name **Pantodo**, identifier `com.pantodo.desktop`, repository
-  `git@github.com:kevinhuang001/pantodo.git`.
-- Three desktop platforms: Linux, Windows, macOS.
-- **Front end:** React + TypeScript + Vite (npm). Styling is **hand-written CSS** in a frosted-glass
-  visual language — no Tailwind, no component library.
-- **Back end:** a Rust `core` crate owns all business logic and SQLite (`rusqlite`, bundled). It is
-  exposed to the UI through **Tauri IPC commands**; there is no localhost HTTP server.
-- The front end depends only on a **`Bridge` interface**: Tauri IPC in the desktop app, a fixture
-  implementation in the browser. That keeps `npm run dev` usable, and lets Playwright screenshot the
-  real UI headlessly.
-- **Tests:** Vitest for pure logic, `cargo test` for Rust, Playwright headless e2e against the Vite dev
-  server, plus ESLint / Prettier and `cargo clippy -D warnings`.
-- **CI:** GitHub Actions — three-OS packaging matrix, Linux e2e job uploading screenshots, and sync
-  integration tests against a **real WebDAV server** started inside the job.
+| Field                                    | Meaning                                        |
+| ---------------------------------------- | ---------------------------------------------- |
+| `id`                                     | Stable Todo identity                           |
+| `title`, `notes`                         | Content                                        |
+| `status`                                 | `todo`, `doing`, `done`, `cancelled`           |
+| `projectId`                              | Optional single project                        |
+| `taskTags[todoId]`                       | Zero or more tags                              |
+| `startAt`, `endAt`                       | Optional planned interval directly on the Todo |
+| `dueAt`                                  | Optional independent deadline                  |
+| `estimateMinutes`                        | Optional estimated work duration               |
+| `completedAt`, `archivedAt`, `deletedAt` | Lifecycle timestamps                           |
+| `createdAt`, `updatedAt`, `sortOrder`    | System metadata                                |
 
-## 2. Data model (SQLite)
+Both planned endpoints are required together, and the end must follow the start. Plans may span midnight or multiple dates. A Todo has one planned interval. Deadline and plan do not constrain one another: a user may deliberately schedule work after a deadline. Plan changes do not rewrite actual work records.
 
-Every table carries `id` (uuid), `created_at`, `updated_at`, `deleted_at` — soft deletes double as
-sync tombstones.
+Existing workspaces from the earlier prototype import their first active schedule interval into the Todo’s own fields. New writes contain no schedule entity.
 
-| Table                    | Key columns                                                                                                                     |
-| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------- |
-| `projects`               | name, color, sort_order, archived_at                                                                                            |
-| `tags`                   | name, color, sort_order                                                                                                         |
-| `tasks`                  | title, notes, status(todo/doing/done/cancelled), project_id?, due_at?, estimate_minutes?, completed_at, archived_at, sort_order |
-| `task_tags`              | task_id, tag_id                                                                                                                 |
-| `schedule_blocks`        | task_id, start_at, end_at                                                                                                       |
-| `recurrences`            | task_id, rrule, dtstart, tzid                                                                                                   |
-| `occurrence_overrides`   | recurrence_id, occurrence_start, kind(skip/move/detach), new_start, new_end                                                     |
-| `occurrence_completions` | task_id, occurrence_start, completed_at                                                                                         |
-| `time_entries`           | task_id, started_at, ended_at?, source(timer/manual), note                                                                      |
-| `views`                  | name, icon, filter_json, group_by, group_layout, grid_columns, sort_json                                                        |
-| `view_groups`            | view_id, kind, value_id?, label, sort_order                                                                                     |
-| `settings`               | key, value_json                                                                                                                 |
+## Navigation and creation
 
-Times are stored in UTC; recurrence rules additionally store an IANA `tzid` so repeats do not drift
-across daylight-saving changes. **`time_entries` stores no attribution snapshot**: project and tag
-attribution is always derived from the task's current values (a deliberate decision — reclassifying a
-task rewrites history). WebDAV passwords live in the OS keyring, never in SQLite or the repository.
+Primary navigation contains Create, Today, All Todos, Calendar and Statistics. Custom views form their own sidebar section. Trash remains accessible separately. There is no dedicated four-quadrant tab.
 
-## 3. Functional specification
+Create has a central form and decorative paper notes built from up to six real, open Todo titles. The background excludes archived, deleted, completed and cancelled Todos and never accepts input. Expand Time & estimate to set the planned interval, deadline and estimate. Projects and multiple tags are selected independently.
 
-### 3.1 Tasks, projects, tags
+The list exposes the title, description, tags, planned time, deadline, estimate and a work-timer action. Clicking content opens the editor. The existing checkbox cycles Todo → Doing → Done → Todo. Todos do not support dragging anywhere.
 
-Task fields: title, notes, status, project (0 or 1), tags (many-to-many), due time, estimate, schedule
-blocks (0..n). "A task without a time stays in the list; give it a time and it appears on the
-timetable" is carried by `schedule_blocks`; `due_at` only drives reminders and sorting and never
-occupies the grid. **Tasks are captured in the inbox and nowhere else**: the composer at the top of the inbox is the
-single entry point, and there are no per-view or toolbar "new task" buttons (the toolbar has none at
-all). Deletes go to a restorable trash; archiving moves completed tasks out of the default views. Projects and tags each have an optional colour; unspecified colours are derived from a
-hash of the name. Timetable blocks use the project colour, falling back to the first tag's colour.
+## Calendar
 
-### 3.2 View system
+- Day and week show 24-hour time grids with overlapping plans packed into local overlap clusters.
+- Month shows planned events and thin deadline indicators in each date cell; additional entries open the day view.
+- Agenda lists plans and deadlines for the 30 days starting at the anchor date.
+- Plans use the project colour, falling back to the first tag and then the palette.
+- Deadlines are thin amber lines with time/title labels in day/week grids, and compact line entries in month/agenda. A deadline-only Todo still appears.
+- Completed work remains visible with a subdued style. Deleted, archived and cancelled Todos are excluded.
+- Navigation includes previous/next, Today and a date picker. Clicking a date header opens the day view.
+- Day/week zoom offers presets and a continuous 36–144 px/hour slider. Mode, zoom and week start persist.
+- Time blocks and deadline labels open the Todo editor on click. They never drag or resize directly.
 
-A view is: name + icon + filter (tags any/all, project, status, date range, text) + group field
-(tag/project/status/none) + an **ordered group list** + arrangement (vertical, horizontal columns,
-N×M grid) + sort. Group headers can be dragged to reorder; the arrangement can be switched at any
-time and is stored in the view. **The Eisenhower matrix is an ordinary view**: group by tag, four
-fixed groups, 2×2 grid. First launch seeds Inbox, Today and All, plus an Eisenhower example view with
-empty `important` and `urgent` tags. **Today = due today OR scheduled today.**
+## Actual work ledger
 
-**Navigation.** The left sidebar lists **时间表 (Timetable)** as a plain row above a single **视图
-(Views)** list: there is no views/timetable switch, and the seeded views sit in the same list as the
-user's own — the Eisenhower example is not special and is editable like any other. A view is always
-**a list of tasks**; there is no list/board switch. What the user shapes is the grouping (by tag,
-project, status, or four pinned tag groups) and its arrangement (vertical stack, side-by-side columns,
-N×M grid, and their order), by dragging group headers or switching the arrangement control. Custom
-views are created and edited through a dialog covering name, icon, filter, grouping, arrangement and
-grid width.
+A `TimeEntry` contains an identity, optional Todo identity, start/end instants, source (`timer` or `manual`), note and lifecycle timestamps. A timer session holds its current Todo, open segment, accumulated work, committed segment identities, owner window and latest heartbeat.
 
-### 3.3 Timetable (its own tab, Google-Calendar style)
+Only one timer runs. Starting another Todo saves the previous segment before starting the next. Pause saves the working segment; resume starts a new segment, excluding the break. Stop clears the session. Completing, cancelling, deleting or archiving its Todo also stops it. A saved manual correction affecting the current session ends that session so its displayed accumulated time cannot retain replaced work.
 
-Shipped: a week grid of seven day columns over a scrollable 00:00–24:00 canvas (56px per hour), blocks
-positioned by time and packed side by side when they overlap, an all-day row for tasks that only carry
-a due time, a red now-line, week navigation with a "today" button, and three zoom levels (compact 44px,
-standard 76px, roomy 112px per hour — roomy is the default so block text always fits).
+Manual records require a positive interval ending no later than now. They may be unassigned. Saving a new or edited manual record takes priority over **every whole overlapping record**. Overlap uses exclusive ends, so adjacent records survive. Superseded records carry `deletedAt` and `supersededBy` and do not count in the UI or CSV. A correction overlapping a live segment first saves and stops that timer, then supersedes the overlapping segment. All changes persist in one workspace write.
 
-Still M2: Day and Month views, and drag on empty grid to create, drag to move, drag an edge to
-resize, 15-minute snapping, weeks start Monday, browser-local time zone only.
-Overlapping events sit side by side, a red line marks the current time, and a top all-day row holds
-tasks that only have a due time. Blocks are coloured by project (falling back to tag colour) and show
-live time feedback while dragging. Recurring occurrences are rendered virtually.
+The browser owner persists a heartbeat every five seconds. Page exit saves synchronously and stops; reopening never automatically starts a timer. A gap longer than 30 seconds closes an interrupted session at its last heartbeat. Browser background throttling and brief system sleeps cannot be perfectly distinguished here; native suspend/resume events and native-window exit remain work for a Tauri host. Simulated interruption tests verify the current heartbeat policy, not physical OS sleep on every platform.
 
-### 3.4 Recurrence
+## Statistics
 
-An RRULE subset: daily / every N days / weekly on chosen weekdays / every N weeks / monthly on a day
-of month / monthly on the Nth weekday / yearly, ending on a date or after N occurrences. One task plus
-one rule; individual occurrences are never stored as rows. Per-occurrence operations are: skip this
-one, edit only this one (detaching a standalone instance), edit this and following, edit all.
-Completion is recorded per occurrence.
+Statistics selects an inclusive date range in local calendar time and clips work to that range. Overnight entries are split at local midnight; durations use actual elapsed seconds. The main total counts each selected entry once.
 
-### 3.5 Timer
+Filters include project and a union of selected tags. Each tag receives full duration, so tag category sums may exceed total time. Multi-tag filters deduplicate records. Project/tag attribution follows the Todo’s current classification. Deleting a Todo does not erase the ledger; permanently purged Todos fall back to an unassigned historical label.
 
-Exactly one running timer at a time; start / pause / resume / stop; state survives a restart. A
-persistent bar shows the running timer and the tray shows the current task and elapsed time. Manual
-add / edit / delete of time entries is supported, and unscheduled tasks can be timed. Starting a timer
-moves a task from `todo` to `doing`; completing a task stops its timer. Statistics compare estimate
-against actual.
+The page provides daily bars, project/tag breakdowns, completion count, record count, total/daily-average work, previous-period comparison, per-Todo estimated/actual work and an editable ledger. Live work contributes until it stops. CSV exports the filtered, clipped interval and escapes spreadsheet formula prefixes.
 
-### 3.6 Reminders
+## Views and emoji
 
-Default lead time 20 minutes, configured **globally in Settings only** (no per-block override). A Rust
-scheduler plus a resident tray icon plus launch-at-login (a systemd user service on Linux, native
-mechanisms on Windows and macOS). System notifications name the task and time; clicking focuses the
-window and opens that task; 5/10-minute snooze is offered; notifications are silent by default.
-Reminders missed while the app was closed or the machine asleep are collected into a "missed" list on
-launch rather than replayed as popups.
+A view stores its name, emoji, overall filter, arrangement, grid width, sorting and either grouping rules or independent panels. Each panel stores its identity, title, emoji, filter, sort and column span.
 
-### 3.7 Statistics
+Panel filters include tags (any/all), excluded tags, status, project or unassigned project, planned/unplanned time, deadline endpoints and title/notes text. Overall view/search/sidebar filters apply first; each panel then filters that candidate set independently. A Todo can appear in several panels.
 
-ECharts with tree-shaking and a dark theme. Filterable by date range, project and tag. Metrics: total
-tracked time, per-day bars, share by project and by tag, per-task totals, completed-task count,
-period-over-period trend, calendar heatmap, estimate versus actual. CSV export.
+Only panel handles drag. Move buttons offer keyboard-accessible reordering. Width controls select how many grid columns a panel spans; smaller windows collapse panels to one column without changing saved spans. An Eisenhower template creates four normal editable panels from two distinct tags. There is no automatic mutation of Todo properties through a view.
 
-### 3.8 Sync (M6)
+Project and view emoji are editable through common choices or the system emoji keyboard. Each icon accepts one grapheme, including compound emoji. Tag colour remains a separate classification cue.
 
-Op-log with per-record `updatedAt` last-write-wins and tombstones, covering every entity. Triggered by
-a debounced auto-sync after changes plus a manual "sync now" button in Settings. Credentials go to the
-OS keyring. CI runs two simulated devices against a real WebDAV server; the owner's existing rclone
-remotes are never touched.
+## Persistence and platform
 
-### 3.9 Settings
+The current browser bridge stores one workspace in localStorage and reloads changes from other windows. Time-record replacement is atomic within its workspace write. Browser storage errors do not partially commit a time transition. A fresh workspace is empty apart from starter views/tags; sample Todos require the explicit demonstration/reset URL.
 
-A macOS-style two-pane window mirroring Glassmark: 通用 (appearance / language / week start) ·
-提醒 (default lead time, silence, missed summary) · 计时 · 同步 (WebDAV + sync now) · 数据 (export /
-import JSON, empty trash) · 关于.
+The current repository contains the React/TypeScript browser app. The native Tauri shell, Rust/SQLite bridge, native reminders, recurring Todos, tray/autostart and WebDAV synchronization remain outside this iteration. Settings exposes implemented controls: general, timer, data export and about.
 
-### 3.10 Theming and language
+## Verification
 
-Light **and dark** frosted-glass token sets (the reference project is light-only, so the dark palette
-is new work). Colours, radii, shadows, spacing and type are all tokenised, reusing Glassmark's key
-values: accent `#2d6d95`, 30px glass blur, 20px window radius, 1px white strokes, cool low-alpha
-shadows. Three languages — zh-CN, en, ja — defaulting to the system locale and falling back to zh-CN.
+Unit tests cover filter/group behaviour, direct Todo plans, calendar clipping/lane packing, timer lifecycle, pause exclusion, interrupted sessions, whole-record overlap replacement, multi-tag deduplication, local-midnight splitting and atomic browser writes.
 
-## 4. Defaults chosen during the interview
-
-Window 1440×920 with a 960×640 minimum (matching the reference project). Shortcuts: ⌘/Ctrl+K search,
-⌘/Ctrl+1..6 switch view, T start/stop timer, N new task, Esc close. List sorting defaults to manual
-`sort_order`, then due time. Data file `<appdata>/pantodo/pantodo.sqlite3`; exports are JSON. The app
-icon is a glass-style SVG mark (check box plus timeline).
-
-## 5. Milestones
-
-- **M1 — foundation** (no Rust required): repository + tooling, token layer (light + dark), app shell
-  and theme switching, three-language i18n runtime, `Bridge` + browser fixture with persistence,
-  task/tag/project CRUD, list view, status, trash, archive, three preset views and the Eisenhower
-  example, unit tests, smoke e2e, headless screenshots, CI skeleton.
-- **M2** — timetable, scheduling and recurrence (introduces the Rust core crate, SQLite schema and IPC).
-- **M3** — timer and statistics.
-- **M4** — reminders, tray, autostart, notifications.
-- **M5** — full view system (richer filters, group dragging, board arrangements) and polish.
-- **M6** — WebDAV sync, real-WebDAV CI integration tests, three-OS packaging.
-
-Every milestone is accepted on screenshots + passing tests + a push.
-
-## 6. Known verification limits on the development machine
-
-The development box (`mydebian`) is headless, with no desktop environment, no display and no tray, and
-`sudo` requires a password. Therefore:
-
-- Tray, launch-at-login and system notifications **cannot be verified locally at all**; M4 ships code
-  plus instructions, and the owner verifies on a desktop machine.
-- Real-window and native-glass behaviour can only be confirmed by the owner; locally the same React UI
-  is screenshotted through headless Chromium.
-- Windows and macOS installers are produced by GitHub Actions; their artefacts can be inspected but not
-  run locally.
-- Rust/Tauri compilation requires system packages installed with `sudo apt-get install build-essential
-pkg-config libwebkit2gtk-4.1-dev libjavascriptcoregtk-4.1-dev libgtk-3-dev libsoup-3.0-dev
-librsvg2-dev libssl-dev libayatana-appindicator3-dev libxdo-dev patchelf gh`, plus a rustup
-  toolchain. M1 deliberately needs none of it.
+Playwright covers creation/editing, calendar modes/zoom/deadlines, timer pause/resume and exit persistence, simulated interrupted execution, manual corrections, statistics, emoji, saved panel filters/order/width, language/theme and existing CRUD flows. The screenshot script captures 16 actual app states in light/dark and 960×640/1440×1080 windows.

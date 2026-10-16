@@ -4,6 +4,7 @@ import { formatDateTime, formatMinutes } from '@/domain/date'
 import { colorFor, dueState } from '@/domain/filters'
 import type { Id, Project, Tag, Task } from '@/domain/types'
 
+import { useAppStore } from '@/domain/store'
 import { Icon } from './Icon'
 
 /** Everything a row needs, built once per render by the shell. */
@@ -88,6 +89,12 @@ export function TaskRow({ task, lookup }: { task: Task; lookup: TaskLookup }) {
       </div>
 
       <div className="task-timing">
+        {task.startAt ? (
+          <span className="task-plan">
+            <Icon name="calendar" size={12} />
+            {formatDateTime(task.startAt, locale)}
+          </span>
+        ) : null}
         {task.dueAt === null ? (
           <span className="task-unscheduled">—</span>
         ) : (
@@ -103,6 +110,9 @@ export function TaskRow({ task, lookup }: { task: Task; lookup: TaskLookup }) {
           </span>
         )}
       </div>
+      {task.deletedAt === null && task.status !== 'done' && task.status !== 'cancelled' ? (
+        <TaskTimerButton task={task} />
+      ) : null}
       <div className="task-actions">
         {task.deletedAt === null ? null : (
           <button
@@ -137,6 +147,32 @@ export function TaskRow({ task, lookup }: { task: Task; lookup: TaskLookup }) {
         ) : null}
       </div>
     </div>
+  )
+}
+
+function TaskTimerButton({ task }: { task: Task }) {
+  const timer = useAppStore((state) => state.timer)
+  const command = useAppStore((state) => state.timeCommand)
+  const active = timer?.taskId === task.id
+  const running = active && !!timer?.startedAt
+  return (
+    <button
+      type="button"
+      className={active ? 'task-start active' : 'task-start'}
+      aria-label={running ? t('work.pause') : active ? t('work.resume') : t('work.start')}
+      title={running ? t('work.pause') : active ? t('work.resume') : t('work.start')}
+      onClick={() =>
+        command(
+          running
+            ? { kind: 'pause' }
+            : active
+              ? { kind: 'resume' }
+              : { kind: 'start', taskId: task.id },
+        )
+      }
+    >
+      <Icon name={running ? 'pause' : 'play'} size={12} />
+    </button>
   )
 }
 

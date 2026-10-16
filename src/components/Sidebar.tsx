@@ -20,9 +20,6 @@ interface SidebarProps {
   onEditTag: (tag: Tag) => void
   onEditView: (view: View) => void
   onOpenSettings: () => void
-  previewActive: boolean
-  onOpenPreview: () => void
-  onLeavePreview: () => void
 }
 
 const VIEW_ICONS = new Set<IconName>([
@@ -64,16 +61,12 @@ export function Sidebar({
   onEditTag,
   onEditView,
   onOpenSettings,
-  previewActive,
-  onOpenPreview,
-  onLeavePreview,
 }: SidebarProps) {
   const views = useAppStore((state) => state.views)
   const projects = useAppStore((state) => state.projects)
   const tags = useAppStore((state) => state.tags)
   const tasks = useAppStore((state) => state.tasks)
   const taskTags = useAppStore((state) => state.taskTags)
-  const scheduleBlocks = useAppStore((state) => state.scheduleBlocks)
   const search = useAppStore((state) => state.search)
   const activeTab = useAppStore((state) => state.activeTab)
   const activeViewId = useAppStore((state) => state.activeViewId)
@@ -87,10 +80,7 @@ export function Sidebar({
   const resetWorkspace = useAppStore((state) => state.resetWorkspace)
 
   const palette = paletteFor(theme)
-  const context = useMemo(
-    () => ({ taskTags, scheduleBlocks, now }),
-    [taskTags, scheduleBlocks, now],
-  )
+  const context = useMemo(() => ({ taskTags, now }), [taskTags, now])
 
   const viewCounts = useMemo(() => {
     const counts = new Map<string, number>()
@@ -125,7 +115,7 @@ export function Sidebar({
   const visibleTags = tags.filter((tag) => tag.deletedAt === null)
 
   const renderViewRow = (view: View) => {
-    const active = !previewActive && view.id === activeViewId && activeTab === 'views'
+    const active = view.id === activeViewId && activeTab === 'views'
     return (
       <div key={view.id} className="nav-row-wrap">
         <button
@@ -133,11 +123,16 @@ export function Sidebar({
           className={active ? 'nav-row active' : 'nav-row'}
           aria-current={active ? 'page' : undefined}
           onClick={() => {
-            onLeavePreview()
             setActiveView(view.id)
           }}
         >
-          <Icon name={viewIcon(view.icon)} />
+          {view.emoji ? (
+            <span className="nav-emoji" aria-hidden="true">
+              {view.emoji}
+            </span>
+          ) : (
+            <Icon name={viewIcon(view.icon)} />
+          )}
           <span className="nav-label">{viewDisplayName(view, t)}</span>
           {view.preset === 'inbox' ? null : (
             <span className="count">{viewCounts.get(view.id) ?? 0}</span>
@@ -202,10 +197,9 @@ export function Sidebar({
             onChange={(event) => {
               if (
                 event.target.value &&
-                (previewActive ||
+                (activeTab !== 'views' ||
                   views.find((view) => view.id === activeViewId)?.preset === 'inbox')
               ) {
-                onLeavePreview()
                 const all = views.find((view) => view.preset === 'all')
                 if (all) setActiveView(all.id)
               }
@@ -221,15 +215,23 @@ export function Sidebar({
               .map(renderViewRow)}
             <button
               type="button"
-              className={!previewActive && activeTab === 'timetable' ? 'nav-row active' : 'nav-row'}
-              aria-current={!previewActive && activeTab === 'timetable' ? 'page' : undefined}
+              className={activeTab === 'timetable' ? 'nav-row active' : 'nav-row'}
+              aria-current={activeTab === 'timetable' ? 'page' : undefined}
               onClick={() => {
-                onLeavePreview()
                 setActiveTab('timetable')
               }}
             >
               <Icon name="calendar" />
               <span className="nav-label">{t('nav.tab.timetable')}</span>
+            </button>
+            <button
+              type="button"
+              className={activeTab === 'statistics' ? 'nav-row active' : 'nav-row'}
+              aria-current={activeTab === 'statistics' ? 'page' : undefined}
+              onClick={() => setActiveTab('statistics')}
+            >
+              <Icon name="chart" />
+              <span className="nav-label">{t('nav.statistics')}</span>
             </button>
           </nav>
 
@@ -246,16 +248,6 @@ export function Sidebar({
                 <Icon name="plus" size={14} />
               </button>
             </header>
-            <button
-              type="button"
-              className={previewActive ? 'nav-row active' : 'nav-row'}
-              aria-current={previewActive ? 'page' : undefined}
-              onClick={onOpenPreview}
-            >
-              <Icon name="layers" />
-              <span className="nav-label">{t('panels.title')}</span>
-              <span className="preview-badge">{t('ui.preview')}</span>
-            </button>
             {sortedViews.filter((view) => view.preset === null && !view.builtin).map(renderViewRow)}
           </section>
 
@@ -281,14 +273,19 @@ export function Sidebar({
                     type="button"
                     className={projectFilterId === project.id ? 'nav-row active' : 'nav-row'}
                     onClick={() => {
-                      onLeavePreview()
                       const all = views.find((view) => view.preset === 'all')
                       if (all) setActiveView(all.id)
                       setTagFilter(null)
                       setProjectFilter(projectFilterId === project.id ? null : project.id)
                     }}
                   >
-                    <span className="dot" style={{ background: colorFor(project, palette) }} />
+                    {project.emoji ? (
+                      <span className="nav-emoji" aria-hidden="true">
+                        {project.emoji}
+                      </span>
+                    ) : (
+                      <span className="dot" style={{ background: colorFor(project, palette) }} />
+                    )}
                     <span className="nav-label">{project.name}</span>
                     <span className="count">{projectCounts.get(project.id) ?? 0}</span>
                   </button>
@@ -328,7 +325,6 @@ export function Sidebar({
                     type="button"
                     className={tagFilterId === tag.id ? 'nav-row active' : 'nav-row'}
                     onClick={() => {
-                      onLeavePreview()
                       const all = views.find((view) => view.preset === 'all')
                       if (all) setActiveView(all.id)
                       setProjectFilter(null)

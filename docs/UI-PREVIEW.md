@@ -1,16 +1,27 @@
-# Interface review — October 2026
+# Interface and verification guide
 
-This iteration implements the first visual direction for review before the remaining product decisions.
+The paper-desk visual direction now includes functional scheduling, a work timer, time-entry editing, statistics and saved composed views.
 
-- A mint frosted sidebar sits beside a clear cream content surface. Rounded paper illustrations and quiet doodles provide the playful character.
-- **Create** replaces Inbox and is the landing page. The central form uses the existing task creation flow. Background notes show up to six real, open task titles; they are decorative, excluded from the accessibility tree and never accept input.
-- Todo rows give the title, description and tags room on the left, with due dates and estimates aligned on the right. Existing editing, status, deletion and restore actions remain available.
-- Timetable is a primary navigation item. Editable custom views have their own sidebar section. The dedicated seeded quadrant entry is no longer shown in navigation.
-- **My workbench** is explicitly labeled as a layout preview: three example panels show project tasks, unassigned tasks and completed tasks. Grid and vertical arrangements can be compared. These example filters are fixed; a saved panel model, independent filter editor, arbitrary panel placement and quadrant templates are deferred until design feedback.
-- Light/dark and Chinese/English/Japanese copy follow the existing settings.
+## Screens
 
-## Preview and verification
+1. **Create** — decorative notes from real open Todos, central title/notes form, multiple tags and project, expandable planned interval/deadline/estimate.
+2. **Todo lists** — content and classification on the left, dates and work controls on the right. Open an editor by clicking content; start work with the play button.
+3. **Calendar** — day/week/month/agenda, date navigation, continuous time-grid zoom, plan blocks and independent deadline lines. Click to edit; Todos do not drag.
+4. **Work timer** — a persistent bar across pages with pause/resume/stop. Planned time is separate from actual work.
+5. **Statistics** — date/project/tag filters, daily bars, category breakdown, per-Todo estimates/actuals, manual entry and correction, CSV and a ledger.
+6. **Composed views** — saved independent panel filters, emoji, panel move handles/buttons, column spans and an editable Eisenhower template.
+7. **Settings** — the only theme/language controls, plus week start, default plan duration and JSON export.
 
-Run `npm run dev` for the interface and `npm run screenshots` for the six review screenshots in `artifacts/screenshots`. Screenshot capture starts and stops its own Vite server. `PLAYWRIGHT_CHROMIUM_EXECUTABLE` optionally selects an installed browser; otherwise Playwright uses its default installation.
+## Reproduce captures
 
-`npm run e2e` covers capture and reload, task edits/status/trash, navigation, the decorative background, panel arrangements, language/theme, custom views, settings and timetable. Use the existing type, lint, format, unit and production-build commands as well.
+```bash
+npm ci
+npx playwright install chromium
+npm run screenshots
+```
+
+The command starts/stops Vite itself and uses a separate browser context with sample Todos and a fixed demonstration date. Work records are entered through the real forms. It outputs 16 PNGs in `artifacts/screenshots`, including scheduling, timer, day/week/month calendar, statistics, manual-entry dialog, panel editor, theme/settings and minimum-size layouts.
+
+`PLAYWRIGHT_CHROMIUM_EXECUTABLE` can select an installed Chromium. `npm run e2e` covers the workflows; `npm test`, typecheck, lint, format and build cover the code.
+
+The screenshots show the browser application. Native window translucency and physical system-sleep handling have not been verified; the browser interruption policy is documented in [SPEC.md](SPEC.md).

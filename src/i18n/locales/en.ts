@@ -1,6 +1,8 @@
+import { featureEn } from './features-en'
 import type zhCN from './zh-CN'
 
 const en: Record<keyof typeof zhCN, string> = {
+  ...featureEn,
   'ui.personal': 'Personal space',
   'ui.navigation': 'Navigation',
   'ui.preview': 'Preview',

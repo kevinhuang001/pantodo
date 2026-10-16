@@ -1,23 +1,12 @@
 import type { MessageKey } from '@/i18n'
 
 import { colorIndexForName, isSameLocalDay, isOverdue, parseIso } from './date'
-import type {
-  GroupRule,
-  Id,
-  Project,
-  ScheduleBlock,
-  Tag,
-  Task,
-  TaskStatus,
-  View,
-  ViewFilter,
-} from './types'
+import type { GroupRule, Id, Project, Tag, Task, TaskStatus, View, ViewFilter } from './types'
 
 export const COLOR_BUCKETS = 8
 
 export interface FilterContext {
   taskTags: Record<Id, Id[]>
-  scheduleBlocks: ScheduleBlock[]
   now: Date
 }
 
@@ -35,20 +24,16 @@ export function tagsOf(task: Task, context: FilterContext): Id[] {
   return context.taskTags[task.id] ?? []
 }
 
-export function blocksOf(task: Task, context: FilterContext): ScheduleBlock[] {
-  return context.scheduleBlocks.filter(
-    (block) => block.taskId === task.id && block.deletedAt === null,
-  )
+export function isScheduledOn(task: Task, day: Date): boolean {
+  if (!task.startAt || !task.endAt) return false
+  const from = new Date(day)
+  from.setHours(0, 0, 0, 0)
+  const to = new Date(from)
+  to.setDate(to.getDate() + 1)
+  return new Date(task.startAt) < to && new Date(task.endAt) > from
 }
-
-export function isScheduledOn(task: Task, day: Date, context: FilterContext): boolean {
-  return blocksOf(task, context).some(
-    (block) => isSameLocalDay(block.startAt, day) || isSameLocalDay(block.endAt, day),
-  )
-}
-
-export function hasSchedule(task: Task, context: FilterContext): boolean {
-  return blocksOf(task, context).length > 0
+export function hasSchedule(task: Task): boolean {
+  return task.startAt !== null && task.endAt !== null
 }
 
 function matchesText(task: Task, text: string): boolean {
@@ -70,12 +55,18 @@ export function matchesFilter(task: Task, filter: ViewFilter, context: FilterCon
   if (task.deletedAt !== null) return false
   if (!matchesText(task, filter.text)) return false
   if (!matchesTags(task, filter, context)) return false
+  if ((filter.excludeTagIds ?? []).some((id) => tagsOf(task, context).includes(id))) return false
+  if (filter.projectMode === 'none' && task.projectId !== null) return false
+  if (filter.dueFrom && (task.dueAt === null || new Date(task.dueAt) < new Date(filter.dueFrom)))
+    return false
+  if (filter.dueTo && (task.dueAt === null || new Date(task.dueAt) >= new Date(filter.dueTo)))
+    return false
   if (filter.projectIds.length > 0) {
     if (task.projectId === null || !filter.projectIds.includes(task.projectId)) return false
   }
   if (filter.statuses.length > 0 && !filter.statuses.includes(task.status)) return false
-  if (filter.hasTime === 'scheduled' && !hasSchedule(task, context)) return false
-  if (filter.hasTime === 'unscheduled' && hasSchedule(task, context)) return false
+  if (filter.hasTime === 'scheduled' && !hasSchedule(task)) return false
+  if (filter.hasTime === 'unscheduled' && hasSchedule(task)) return false
   return true
 }
 
@@ -89,7 +80,7 @@ export function matchesPreset(task: Task, view: View, context: FilterContext): b
     case 'today': {
       if (task.deletedAt !== null || task.archivedAt !== null) return false
       const dueToday = task.dueAt !== null && isSameLocalDay(task.dueAt, context.now)
-      return dueToday || isScheduledOn(task, context.now, context)
+      return dueToday || isScheduledOn(task, context.now)
     }
     case 'all':
       return task.deletedAt === null && task.archivedAt === null
