@@ -1,0 +1,21 @@
+# Normalise line endings in the repository so every platform checks out the same bytes.
+# Without this, Windows checks out CRLF and `prettier --check` (endOfLine: "lf") fails there.
+* text=auto eol=lf
+
+# Binary assets must never be line-ending translated.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.ico binary
+*.icns binary
+*.zip binary
+*.woff binary
+*.woff2 binary
+
+# Windows-only scripts, if ever added, keep native endings.
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+package-lock.json -diff linguist-generated
