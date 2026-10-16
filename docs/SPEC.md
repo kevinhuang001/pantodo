@@ -68,14 +68,22 @@ empty `important` and `urgent` tags. **Today = due today OR scheduled today.**
 **Navigation (revised after UI review):** the app has two top-level tabs — **视图 (Views)** and
 **时间表 (Timetable)**. Under 视图 the sidebar separates **默认视图** (the built-in five plus trash)
 from **我的视图** (user-created views, with a `+` that opens the view editor). A view is therefore
-laid out as list, board or quadrant; the timetable is _not_ a per-view layout any more, it is its own
-tab. Custom views are created/edited through a dialog covering name, icon, filter, grouping,
-arrangement and grid width.
+laid out as **a list or a board** — only two ways to read a view; how the groups inside a board are
+shaped (vertical stack, side-by-side columns, N×M grid, and their order) is the user's to arrange by
+dragging. The timetable is _not_ a per-view layout any more: it is its own tab rendering a
+Google-Calendar-style week grid. The Eisenhower matrix is not a special layout either — it is an
+ordinary seeded view whose grouping is four pinned tag groups laid out as a 2×2 grid. Custom views are
+created/edited through a dialog covering name, icon, filter, grouping, arrangement and grid width.
 
-### 3.3 Timetable (its own tab)
+### 3.3 Timetable (its own tab, Google-Calendar style)
 
-Week (default), Day and Month views. Drag on empty grid to create, drag to move, drag an edge to
-resize, 15-minute snapping, 00:00–24:00 scrollable, weeks start Monday, browser-local time zone only.
+Shipped: a week grid of seven day columns over a scrollable 00:00–24:00 canvas (56px per hour), blocks
+positioned by time and packed side by side when they overlap, an all-day row for tasks that only carry
+a due time, a red now-line, and week navigation with a "today" button; the sidebar shows that week's
+agenda while the tab is active.
+
+Still M2: Day and Month views, and drag on empty grid to create, drag to move, drag an edge to
+resize, 15-minute snapping, weeks start Monday, browser-local time zone only.
 Overlapping events sit side by side, a red line marks the current time, and a top all-day row holds
 tasks that only have a due time. Blocks are coloured by project (falling back to tag colour) and show
 live time feedback while dragging. Recurring occurrences are rendered virtually.
@@ -147,7 +155,7 @@ icon is a glass-style SVG mark (check box plus timeline).
 - **M2** — timetable, scheduling and recurrence (introduces the Rust core crate, SQLite schema and IPC).
 - **M3** — timer and statistics.
 - **M4** — reminders, tray, autostart, notifications.
-- **M5** — full view system (custom views, group dragging, board/quadrant/grid arrangements) and polish.
+- **M5** — full view system (richer filters, group dragging, board arrangements) and polish.
 - **M6** — WebDAV sync, real-WebDAV CI integration tests, three-OS packaging.
 
 Every milestone is accepted on screenshots + passing tests + a push.
