@@ -1,0 +1,33 @@
+# dependencies
+node_modules/
+
+# build output
+dist/
+dist-ssr/
+*.local
+
+# test output
+coverage/
+playwright-report/
+test-results/
+artifacts/
+
+# rust / tauri (milestone M2+)
+src-tauri/target/
+target/
+
+# editor / os
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.swp
+
+# env
+.env
+.env.*
+!.env.example
+
+# logs
+*.log
+npm-debug.log*

@@ -1,0 +1,320 @@
+import { useEffect, useMemo, useState } from 'react'
+
+import { useDebounced, useFilterContext, useNow } from '@/hooks'
+import { groupTasks, selectTasks, sortTasks } from '@/domain/filters'
+import { paletteFor } from '@/domain/palette'
+import { useAppStore } from '@/domain/store'
+import { applyTheme, resolveTheme, systemPrefersDark } from '@/domain/theme'
+import type { Project, ResolvedTheme, Tag, Task, ThemePreference } from '@/domain/types'
+import { nextStatus } from '@/domain/types'
+import { t } from '@/i18n'
+
+import { ConfirmDialog } from './components/ConfirmDialog'
+import { EmptyState } from './components/EmptyState'
+import { EntityDialog } from './components/EntityDialog'
+import { GroupBoard } from './components/GroupBoard'
+import { Icon } from './components/Icon'
+import { SettingsDialog } from './components/SettingsDialog'
+import { Sidebar } from './components/Sidebar'
+import { TaskDialog } from './components/TaskDialog'
+import type { TaskLookup } from './components/TaskList'
+import { Toast } from './components/Toast'
+import { Toolbar } from './components/Toolbar'
+
+type DialogState =
+  | { kind: 'task'; task: Task | null }
+  | { kind: 'entity'; entityKind: 'project' | 'tag'; entity: Project | Tag | null }
+  | { kind: 'confirm-delete'; task: Task }
+  | { kind: 'confirm-empty-trash' }
+  | { kind: 'settings' }
+  | null
+
+function useResolvedTheme(preference: ThemePreference): ResolvedTheme {
+  const [systemDark, setSystemDark] = useState(systemPrefersDark)
+
+  useEffect(() => {
+    const media = window.matchMedia('(prefers-color-scheme: dark)')
+    const onChange = (): void => setSystemDark(media.matches)
+    setSystemDark(media.matches)
+    media.addEventListener('change', onChange)
+    return () => media.removeEventListener('change', onChange)
+  }, [])
+
+  const theme = resolveTheme(preference, systemDark)
+  useEffect(() => {
+    applyTheme(theme)
+  }, [theme])
+  return theme
+}
+
+export function App() {
+  const ready = useAppStore((state) => state.ready)
+  const error = useAppStore((state) => state.error)
+  const init = useAppStore((state) => state.init)
+  const views = useAppStore((state) => state.views)
+  const tasks = useAppStore((state) => state.tasks)
+  const projects = useAppStore((state) => state.projects)
+  const tags = useAppStore((state) => state.tags)
+  const taskTags = useAppStore((state) => state.taskTags)
+  const settings = useAppStore((state) => state.settings)
+  const activeViewId = useAppStore((state) => state.activeViewId)
+  const search = useAppStore((state) => state.search)
+  const tagFilterId = useAppStore((state) => state.tagFilterId)
+  const projectFilterId = useAppStore((state) => state.projectFilterId)
+  const selectedTaskId = useAppStore((state) => state.selectedTaskId)
+  const setActiveView = useAppStore((state) => state.setActiveView)
+  const selectTask = useAppStore((state) => state.selectTask)
+  const setTaskStatus = useAppStore((state) => state.setTaskStatus)
+  const softDeleteTask = useAppStore((state) => state.softDeleteTask)
+  const restoreTask = useAppStore((state) => state.restoreTask)
+  const emptyTrash = useAppStore((state) => state.emptyTrash)
+
+  const [dialog, setDialog] = useState<DialogState>(null)
+  const now = useNow()
+  const theme = useResolvedTheme(settings.theme)
+  const debouncedSearch = useDebounced(search)
+  const context = useFilterContext(now)
+  const palette = paletteFor(theme)
+
+  useEffect(() => {
+    void init()
+  }, [init])
+
+  const orderedViews = useMemo(
+    () => views.filter((view) => view.deletedAt === null).sort((a, b) => a.sortOrder - b.sortOrder),
+    [views],
+  )
+
+  const activeView = useMemo(() => {
+    const found = views.find((view) => view.id === activeViewId)
+    if (found !== undefined) return found
+    return orderedViews[0] ?? null
+  }, [views, activeViewId, orderedViews])
+
+  const filtered = useMemo(() => {
+    if (activeView === null) return []
+    let list = selectTasks(tasks, activeView, context)
+    const needle = debouncedSearch.trim().toLowerCase()
+    if (needle !== '') {
+      list = list.filter(
+        (task) =>
+          task.title.toLowerCase().includes(needle) || task.notes.toLowerCase().includes(needle),
+      )
+    }
+    if (tagFilterId !== null) {
+      list = list.filter((task) => (taskTags[task.id] ?? []).includes(tagFilterId))
+    }
+    if (projectFilterId !== null) {
+      list = list.filter((task) => task.projectId === projectFilterId)
+    }
+    return sortTasks(list, activeView, context)
+  }, [activeView, tasks, context, debouncedSearch, tagFilterId, projectFilterId, taskTags])
+
+  const groups = useMemo(() => {
+    if (activeView === null) return []
+    const visibleProjects = projects.filter((project) => project.deletedAt === null)
+    const visibleTags = tags.filter((tag) => tag.deletedAt === null)
+    return groupTasks(filtered, activeView, context, visibleTags, visibleProjects, palette)
+  }, [activeView, filtered, context, tags, projects, palette])
+
+  const doneCount = filtered.filter((task) => task.status === 'done').length
+
+  const lookup = useMemo<TaskLookup>(() => {
+    const projectsById = new Map(projects.map((project) => [project.id, project]))
+    const tagsById = new Map(tags.map((tag) => [tag.id, tag]))
+    return {
+      projectsById,
+      tagsOfTask: (taskId) =>
+        (taskTags[taskId] ?? [])
+          .map((tagId) => tagsById.get(tagId))
+          .filter((tag): tag is Tag => tag !== undefined),
+      now,
+      palette,
+      selectedTaskId,
+      onSelect: (task) => selectTask(task.id === selectedTaskId ? null : task.id),
+      onCycleStatus: (task) => {
+        void setTaskStatus(task.id, nextStatus(task.status))
+      },
+      onEdit: (task) => setDialog({ kind: 'task', task }),
+      onDelete: (task) => setDialog({ kind: 'confirm-delete', task }),
+      onRestore: (task) => {
+        void restoreTask(task.id)
+      },
+    }
+  }, [
+    projects,
+    tags,
+    taskTags,
+    now,
+    palette,
+    selectedTaskId,
+    selectTask,
+    setTaskStatus,
+    restoreTask,
+  ])
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent): void => {
+      const target = event.target as HTMLElement | null
+      const typing =
+        target !== null &&
+        (target.tagName === 'INPUT' ||
+          target.tagName === 'TEXTAREA' ||
+          target.tagName === 'SELECT' ||
+          target.isContentEditable)
+
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
+        event.preventDefault()
+        document.getElementById('pantodo-search')?.focus()
+        return
+      }
+      if (typing) return
+      if ((event.metaKey || event.ctrlKey) && /^[1-9]$/.test(event.key)) {
+        const view = orderedViews[Number(event.key) - 1]
+        if (view !== undefined) {
+          event.preventDefault()
+          setActiveView(view.id)
+        }
+        return
+      }
+      if (event.key === 'n' && !event.metaKey && !event.ctrlKey) {
+        event.preventDefault()
+        setDialog({ kind: 'task', task: null })
+      }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [orderedViews, setActiveView])
+
+  const trashedCount = tasks.filter((task) => task.deletedAt !== null).length
+
+  return (
+    <>
+      <div className="scene" />
+      <div id="app">
+        <Sidebar
+          now={now}
+          theme={theme}
+          onNewProject={() => setDialog({ kind: 'entity', entityKind: 'project', entity: null })}
+          onNewTag={() => setDialog({ kind: 'entity', entityKind: 'tag', entity: null })}
+          onEditProject={(project) =>
+            setDialog({ kind: 'entity', entityKind: 'project', entity: project })
+          }
+          onEditTag={(tag) => setDialog({ kind: 'entity', entityKind: 'tag', entity: tag })}
+          onOpenSettings={() => setDialog({ kind: 'settings' })}
+        />
+
+        <main className="main">
+          {activeView === null ? null : (
+            <Toolbar
+              view={activeView}
+              total={filtered.length}
+              doneCount={doneCount}
+              onNewTask={() => setDialog({ kind: 'task', task: null })}
+              onOpenSettings={() => setDialog({ kind: 'settings' })}
+            />
+          )}
+
+          <div className="reader">
+            {error !== null ? <p className="banner">{error}</p> : null}
+
+            {!ready ? (
+              <p className="banner">…</p>
+            ) : activeView === null ? null : activeView.layout === 'timetable' ? (
+              <p className="banner">{t('settings.timerNote')}</p>
+            ) : filtered.length === 0 && activeView.groups.length === 0 ? (
+              <EmptyState
+                icon={activeView.preset === 'trash' ? 'trash' : 'calendarCheck'}
+                titleKey={
+                  activeView.preset === 'trash'
+                    ? 'empty.trashTitle'
+                    : debouncedSearch.trim() === ''
+                      ? 'empty.title'
+                      : 'empty.searchTitle'
+                }
+                bodyKey={
+                  activeView.preset === 'trash'
+                    ? 'empty.trashBody'
+                    : debouncedSearch.trim() === ''
+                      ? 'empty.body'
+                      : 'empty.searchBody'
+                }
+                action={
+                  activeView.preset === 'trash' || debouncedSearch.trim() !== ''
+                    ? undefined
+                    : {
+                        labelKey: 'empty.cta',
+                        onSelect: () => setDialog({ kind: 'task', task: null }),
+                      }
+                }
+              />
+            ) : (
+              <GroupBoard
+                groups={groups}
+                lookup={lookup}
+                view={activeView}
+                onReorderGroups={(from, to) => {
+                  void useAppStore.getState().reorderGroups(activeView.id, from, to)
+                }}
+              />
+            )}
+
+            {activeView?.preset === 'trash' && trashedCount > 0 ? (
+              <div className="row" style={{ marginTop: 'var(--space-5)' }}>
+                <button
+                  type="button"
+                  className="danger-button"
+                  onClick={() => setDialog({ kind: 'confirm-empty-trash' })}
+                >
+                  <Icon name="trash" />
+                  {t('dialog.emptyTrashTitle')}
+                </button>
+              </div>
+            ) : null}
+          </div>
+        </main>
+      </div>
+
+      {dialog?.kind === 'task' ? (
+        <TaskDialog task={dialog.task} onClose={() => setDialog(null)} />
+      ) : null}
+
+      {dialog?.kind === 'entity' ? (
+        <EntityDialog
+          kind={dialog.entityKind}
+          entity={dialog.entity}
+          onClose={() => setDialog(null)}
+        />
+      ) : null}
+
+      {dialog?.kind === 'settings' ? <SettingsDialog onClose={() => setDialog(null)} /> : null}
+
+      {dialog?.kind === 'confirm-delete' ? (
+        <ConfirmDialog
+          title={t('dialog.deleteTitle')}
+          body={t('dialog.deleteBody', { name: dialog.task.title })}
+          onCancel={() => setDialog(null)}
+          onConfirm={() => {
+            void softDeleteTask(dialog.task.id)
+            setDialog(null)
+          }}
+        />
+      ) : null}
+
+      {dialog?.kind === 'confirm-empty-trash' ? (
+        <ConfirmDialog
+          title={t('dialog.emptyTrashTitle')}
+          body={t('dialog.emptyTrashBody', { count: trashedCount })}
+          confirmKey="dialog.emptyTrashTitle"
+          onCancel={() => setDialog(null)}
+          onConfirm={() => {
+            void emptyTrash()
+            setDialog(null)
+          }}
+        />
+      ) : null}
+
+      <Toast />
+    </>
+  )
+}
