@@ -29,6 +29,17 @@ function groupLabel(group: TaskGroup): string {
 export function GroupBoard({ groups, lookup, view, onReorderGroups }: GroupBoardProps) {
   const [dragIndex, setDragIndex] = useState<number | null>(null)
 
+  // A view with no pinned groups and no grouping field is just a list.
+  if (groups.length === 1 && groups[0]?.key === 'all') {
+    return (
+      <TaskList
+        tasks={groups[0].tasks}
+        lookup={lookup}
+        emptyKey={view.preset === 'trash' ? 'empty.trashTitle' : 'empty.viewTitle'}
+      />
+    )
+  }
+
   const columns =
     view.arrangement === 'vertical'
       ? 1

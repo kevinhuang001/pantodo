@@ -14,10 +14,10 @@ describe('defaultSettings', () => {
 })
 
 describe('createSeedWorkspace', () => {
-  it('seeds four built-in views, the quadrant example and a trash view', () => {
+  it('seeds three built-in views, the Eisenhower example and a trash view', () => {
     const workspace = createSeedWorkspace()
     const presets = workspace.views.map((view) => view.preset)
-    expect(presets).toEqual(['inbox', 'today', 'upcoming', 'all', null, 'trash'])
+    expect(presets).toEqual(['inbox', 'today', 'all', null, 'trash'])
   })
 
   it('seeds the Eisenhower example as an ordinary 2x2 view over pinned tag groups', () => {
@@ -26,7 +26,6 @@ describe('createSeedWorkspace', () => {
 
     expect(quadrant).toBeDefined()
     expect(quadrant?.builtin).toBe(true)
-    expect(quadrant?.layout).toBe('board')
     expect(quadrant?.groupBy).toBe('tag')
     expect(quadrant?.arrangement).toBe('grid')
     expect(quadrant?.gridColumns).toBe(2)

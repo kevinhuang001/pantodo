@@ -9,31 +9,50 @@ test.beforeEach(async ({ page }) => {
   await expect(page.locator('.task-row').first()).toBeVisible()
 })
 
-test('renders the glass shell with seeded views', async ({ page }) => {
+test('renders the flush glass frame with the seeded views', async ({ page }) => {
   await expect(page.locator('.sidebar')).toBeVisible()
   await expect(page.locator('.sidebar .identity-text strong')).toHaveText('Pantodo')
+
+  // The sidebar and the content are flush: no gap, no inset, and no radius on the seam.
+  const frame = await page.locator('#app').evaluate((element) => {
+    const style = getComputedStyle(element)
+    return { gap: style.gap, padding: style.paddingLeft }
+  })
+  expect(frame.gap).toBe('0px')
+  expect(frame.padding).toBe('0px')
+
+  const sidebarCorners = await page.locator('.sidebar').evaluate((element) => {
+    const style = getComputedStyle(element)
+    return {
+      left: style.borderTopLeftRadius,
+      right: style.borderTopRightRadius,
+      bottomRight: style.borderBottomRightRadius,
+    }
+  })
+  expect(sidebarCorners.left).not.toBe('0px')
+  expect(sidebarCorners.right).toBe('0px')
+  expect(sidebarCorners.bottomRight).toBe('0px')
+
+  // No view/timetable switch, no Upcoming, no "new task" button anywhere.
+  await expect(page.locator('.tabs')).toHaveCount(0)
+  await expect(page.locator('.nav-row', { hasText: '时间表' })).toHaveCount(1)
+  for (const name of ['收件箱', '今天', '全部任务', '四象限', '回收站']) {
+    await expect(page.locator('.nav-row', { hasText: name })).toHaveCount(1)
+  }
+  await expect(page.locator('.nav-row', { hasText: '即将到来' })).toHaveCount(0)
+  await expect(page.locator('.toolbar .primary')).toHaveCount(0)
   await expect(page.locator('.toolbar h1')).toHaveText('今天')
-
-  const rows = page.locator('nav .nav-row')
-  await expect(rows).toHaveCount(6)
-  await expect(rows.filter({ hasText: '四象限' })).toHaveCount(1)
-  await expect(rows.filter({ hasText: '回收站' })).toHaveCount(1)
-
-  await expect(page.locator('.group-board, .task-list').first()).toBeVisible()
-  await expect(page.locator('.toolbar .count')).toContainText('3 个任务')
-  expect(await page.locator('.task-row').count()).toBeGreaterThanOrEqual(3)
 })
 
-test('creates a task through the dialog', async ({ page }) => {
-  await page.locator('.toolbar .primary').click()
-  await expect(page.locator('dialog.dialog')).toBeVisible()
-  await page.locator('#task-title').fill('e2e 新建的任务')
-  await page.locator('#task-estimate').fill('25')
-  await page.locator('button[form="pantodo-task-form"]').click()
+test('captures a task from the inbox composer', async ({ page }) => {
+  await page.locator('.nav-row', { hasText: '收件箱' }).click()
+  await expect(page.locator('.inbox-composer')).toBeVisible()
 
-  await expect(page.locator('dialog.dialog')).toHaveCount(0)
-  await page.locator('.nav-row', { hasText: '全部任务' }).click()
-  await expect(page.locator('.task-row', { hasText: 'e2e 新建的任务' })).toBeVisible()
+  await page.locator('#pantodo-inbox-input').fill('e2e 收件箱捕获')
+  await page.locator('#pantodo-inbox-input').press('Enter')
+
+  await expect(page.locator('.task-row', { hasText: 'e2e 收件箱捕获' })).toBeVisible()
+  await expect(page.locator('#pantodo-inbox-input')).toHaveValue('')
 })
 
 test('cycles a task through todo, doing and done', async ({ page }) => {
@@ -48,7 +67,22 @@ test('cycles a task through todo, doing and done', async ({ page }) => {
   await expect(row).toHaveClass(/done/)
 })
 
-test('the quadrant view renders four pinned cells in a 2x2 grid', async ({ page }) => {
+test('edits a task through the dialog', async ({ page }) => {
+  await page.locator('.nav-row', { hasText: '全部任务' }).click()
+  const row = page.locator('.task-row').first()
+  const title = await row.locator('.task-title').innerText()
+
+  await row.hover()
+  await row.locator('button[aria-label="编辑"]').click()
+  await expect(page.locator('dialog.dialog')).toBeVisible()
+  await page.locator('#task-title').fill(`${title}：改过了`)
+  await page.locator('#task-estimate').fill('90')
+  await page.locator('button[form="pantodo-task-form"]').click()
+
+  await expect(page.locator('.task-row', { hasText: '改过了' })).toBeVisible()
+})
+
+test('the Eisenhower view renders four pinned cells in a 2x2 grid', async ({ page }) => {
   await page.locator('.nav-row', { hasText: '四象限' }).click()
 
   const board = page.locator('.group-board[data-arrangement="grid"]')
@@ -58,7 +92,6 @@ test('the quadrant view renders four pinned cells in a 2x2 grid', async ({ page 
   await expect(groups.nth(0).locator('.group-head h2')).toHaveText('重要且紧急')
   await expect(groups.nth(3).locator('.group-head h2')).toHaveText('都不紧急也不重要')
 
-  // 2×2: the first two cells share a row.
   const first = await groups.nth(0).boundingBox()
   const second = await groups.nth(1).boundingBox()
   const third = await groups.nth(2).boundingBox()
@@ -69,11 +102,11 @@ test('the quadrant view renders four pinned cells in a 2x2 grid', async ({ page 
   expect(third?.y ?? 0).toBeGreaterThan((first?.y ?? 0) + 10)
 })
 
-test('switches arrangement to vertical and back to columns', async ({ page }) => {
+test('arranges the groups vertically and in columns', async ({ page }) => {
   await page.locator('.nav-row', { hasText: '四象限' }).click()
   const board = page.locator('.group-board')
-
   const arrangement = page.getByRole('group', { name: '排列方式' })
+
   await arrangement.getByRole('button', { name: '纵向' }).click()
   await expect(board).toHaveAttribute('data-arrangement', 'vertical')
 
@@ -137,47 +170,47 @@ test('opens the settings window and moves between panes', async ({ page }) => {
   await expect(settings).toHaveCount(0)
 })
 
-test('persists changes across a reload', async ({ page }) => {
-  await page.locator('.toolbar .primary').click()
-  await page.locator('#task-title').fill('刷新后仍在的任务')
-  await page.locator('button[form="pantodo-task-form"]').click()
+test('the timetable is a left-hand row with a zoomable week grid', async ({ page }) => {
+  await page.locator('.nav-row', { hasText: '时间表' }).click()
 
-  await page.goto('/')
-  await page.locator('.nav-row', { hasText: '全部任务' }).click()
-  await expect(page.locator('.task-row', { hasText: '刷新后仍在的任务' })).toBeVisible()
-})
-
-test('the timetable is its own tab, not a per-view layout', async ({ page }) => {
-  const tabs = page.locator('.tabs .tab')
-  await expect(tabs).toHaveCount(2)
-  await expect(tabs.nth(0)).toHaveText(/视图/)
-
-  await tabs.nth(1).click()
   await expect(page.locator('.toolbar h1')).toHaveText('时间表')
-  // The timetable is a real Google-Calendar-style grid, and it is not a per-view layout.
-  await expect(page.getByRole('group', { name: '布局' })).toHaveCount(0)
   await expect(page.locator('.timetable .tt-column')).toHaveCount(7)
+  await expect(page.locator('.timetable .tt-hour')).toHaveCount(24)
   await expect(page.locator('.timetable .tt-block').first()).toBeVisible()
   await expect(page.locator('.timetable .tt-now')).toHaveCount(1)
-  // Fourteen hour labels (00:00 … 23:00) means a 24-hour canvas.
-  await expect(page.locator('.timetable .tt-hour')).toHaveCount(24)
+  await expect(page.locator('.toolbar .primary')).toHaveCount(0)
 
-  await tabs.nth(0).click()
-  await expect(page.getByRole('group', { name: '布局' })).toHaveCount(1)
+  const body = page.locator('.timetable .tt-body')
+  const large = await body.evaluate((element) => element.style.height)
+
+  await page.getByRole('group', { name: '缩放' }).getByRole('button', { name: '紧凑' }).click()
+  await expect.poll(async () => body.evaluate((element) => element.style.height)).not.toBe(large)
+
+  await page.getByRole('group', { name: '缩放' }).getByRole('button', { name: '宽松' }).click()
+  await expect.poll(async () => body.evaluate((element) => element.style.height)).toBe(large)
 })
 
-test('creates a custom view that is listed under My views', async ({ page }) => {
-  const myViews = page.locator('.sidebar-section', { hasText: '我的视图' })
-  await expect(myViews).toContainText('还没有自定义视图')
+test('creates a custom view that joins the views list', async ({ page }) => {
+  const viewsSection = page.locator('.sidebar-section', { hasText: '视图' })
+  await viewsSection.getByRole('button', { name: '新建视图' }).click()
 
-  await myViews.getByRole('button', { name: '新建视图' }).click()
   await page.locator('#view-name').fill('e2e 自定义视图')
-  await page.locator('#view-layout').selectOption('board')
   await page.locator('#view-group').selectOption('tag')
   await page.locator('#view-arrangement').selectOption('columns')
   await page.locator('button[form="pantodo-view-form"]').click()
 
   await expect(page.locator('.toolbar h1')).toHaveText('e2e 自定义视图')
-  await expect(myViews.locator('.nav-row', { hasText: 'e2e 自定义视图' })).toHaveCount(1)
+  await expect(page.locator('.nav-row', { hasText: 'e2e 自定义视图' })).toHaveCount(1)
   await expect(page.locator('.group-board[data-arrangement="columns"]')).toBeVisible()
+})
+
+test('persists captured tasks across a reload', async ({ page }) => {
+  await page.locator('.nav-row', { hasText: '收件箱' }).click()
+  await page.locator('#pantodo-inbox-input').fill('刷新后仍在的任务')
+  await page.locator('#pantodo-inbox-input').press('Enter')
+  await expect(page.locator('.task-row', { hasText: '刷新后仍在的任务' })).toBeVisible()
+
+  await page.goto('/')
+  await page.locator('.nav-row', { hasText: '收件箱' }).click()
+  await expect(page.locator('.task-row', { hasText: '刷新后仍在的任务' })).toBeVisible()
 })

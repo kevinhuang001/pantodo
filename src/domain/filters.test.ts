@@ -60,7 +60,6 @@ function makeView(
     groupBy: 'none',
     arrangement: 'vertical',
     gridColumns: 2,
-    layout: 'list',
     sort: 'manual',
     groups: [],
     sortOrder: 0,
@@ -172,12 +171,6 @@ describe('selectTasks with built-in presets', () => {
     expect(selected).not.toContain('dueTomorrow')
     expect(selected).not.toContain('dueYesterday')
     expect(selected).not.toContain('deleted')
-  })
-
-  it('Upcoming keeps future commitments and drops past ones', () => {
-    const selected = selectTasks(tasks, makeView('upcoming'), ctx).map((task) => task.id)
-    expect(selected).toContain('dueTomorrow')
-    expect(selected).not.toContain('dueYesterday')
   })
 
   it('Inbox holds tasks without a project', () => {

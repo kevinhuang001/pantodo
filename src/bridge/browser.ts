@@ -1,4 +1,4 @@
-import { createSeedWorkspace } from '@/domain/presets'
+import { createSeedWorkspace, defaultSettings } from '@/domain/presets'
 import type {
   Id,
   Project,
@@ -12,7 +12,7 @@ import type {
 
 import type { Bridge } from './types'
 
-export const STORAGE_KEY = 'pantodo.workspace.v1'
+export const STORAGE_KEY = 'pantodo.workspace.v2'
 
 function clone<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T
@@ -53,7 +53,8 @@ export function createBrowserBridge(): Bridge {
     if (cache !== null) return cache
     const stored = wantsReset() ? null : readStorage()
     if (stored !== null) {
-      cache = stored
+      // Tolerate a workspace written by an older build: new settings pick up their defaults.
+      cache = { ...stored, settings: { ...defaultSettings(), ...stored.settings } }
       return cache
     }
     cache = createSeedWorkspace({ withDemoData: true })

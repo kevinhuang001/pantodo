@@ -53,15 +53,14 @@ export interface ScheduleBlock extends Entity {
 
 export type GroupField = 'tag' | 'project' | 'status' | 'none'
 export type GroupArrangement = 'vertical' | 'columns' | 'grid'
-/** Only two ways to read a view; grouping/arrangement is how the user shapes it. */
-export type ViewLayout = 'list' | 'board'
 export type AppTab = 'views' | 'timetable'
+export type TimetableZoom = 'compact' | 'standard' | 'large'
 export type TagMatchMode = 'any' | 'all'
 export type ViewSort = 'manual' | 'due' | 'created' | 'title'
 export type HasTime = 'any' | 'scheduled' | 'unscheduled'
 
 /** Built-in views need dynamic predicates ("today" moves), so they carry a preset marker. */
-export type ViewPreset = 'inbox' | 'today' | 'upcoming' | 'all' | 'trash'
+export type ViewPreset = 'inbox' | 'today' | 'all' | 'trash'
 
 export interface ViewFilter {
   tagIds: Id[]
@@ -96,7 +95,6 @@ export interface View extends Entity {
   groupBy: GroupField
   arrangement: GroupArrangement
   gridColumns: number
-  layout: ViewLayout
   sort: ViewSort
   groups: ViewGroup[]
   sortOrder: number
@@ -113,6 +111,8 @@ export interface Settings {
   weekStartsOn: 0 | 1
   reminderLeadMinutes: number
   notificationsSilent: boolean
+  /** Row height of the timetable grid; "large" is the default so block text always fits. */
+  timetableZoom: TimetableZoom
   seedVersion: number
 }
 

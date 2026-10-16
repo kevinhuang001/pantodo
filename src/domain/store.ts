@@ -19,7 +19,6 @@ import type {
   TaskStatus,
   View,
   ViewFilter,
-  ViewLayout,
   Workspace,
 } from './types'
 
@@ -43,7 +42,6 @@ export interface NewViewInput {
   groupBy: GroupField
   arrangement: GroupArrangement
   gridColumns: number
-  layout: ViewLayout
 }
 
 interface Toast {
@@ -123,6 +121,7 @@ const emptyWorkspace: Workspace = {
     weekStartsOn: 1,
     reminderLeadMinutes: 20,
     notificationsSilent: true,
+    timetableZoom: 'large',
     seedVersion: 0,
   },
 }
@@ -450,7 +449,6 @@ export const useAppStore = create<AppState>()((set, get) => ({
       groupBy: input.groupBy,
       arrangement: input.arrangement,
       gridColumns: input.gridColumns,
-      layout: input.layout,
       sort: 'manual',
       groups: [],
       sortOrder: views.reduce((max, candidate) => Math.max(max, candidate.sortOrder), 0) + 1,

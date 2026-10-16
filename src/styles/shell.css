@@ -26,9 +26,10 @@
   max-width: var(--sidebar-max-width);
   overflow: hidden;
   background: var(--sidebar-gradient), var(--glass-tint);
-  border: 1px solid var(--stroke);
-  border-radius: var(--radius-2xl);
-  box-shadow: var(--shadow-glass);
+  /* Flush against the content side: only the window-facing corners are rounded. */
+  border: none;
+  border-right: 1px solid var(--hairline);
+  border-radius: var(--window-radius) 0 0 var(--window-radius);
   backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
 }
 
@@ -189,7 +190,6 @@
   overflow: hidden;
   background: var(--main-gradient);
   border: none;
-  border-left: 1px solid var(--hairline);
   border-radius: 0 var(--window-radius) var(--window-radius) 0;
 }
 

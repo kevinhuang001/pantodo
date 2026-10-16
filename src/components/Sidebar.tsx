@@ -5,7 +5,7 @@ import { colorFor, selectTasks } from '@/domain/filters'
 import { paletteFor } from '@/domain/palette'
 import { useAppStore } from '@/domain/store'
 import type { Project, Tag, Task, View } from '@/domain/types'
-import { getLocale, t } from '@/i18n'
+import { t } from '@/i18n'
 
 import { Icon } from './Icon'
 import type { IconName } from './Icon'
@@ -47,6 +47,10 @@ function isOpenTask(task: Task): boolean {
   )
 }
 
+/**
+ * One flat list of views — the seeded ones and the user's own sit together, because the Eisenhower
+ * example is not special. The timetable is simply another row here rather than a mode switch.
+ */
 export function Sidebar({
   now,
   theme,
@@ -108,34 +112,9 @@ export function Sidebar({
     return counts
   }, [tasks, taskTags])
 
-  const agenda = useMemo(() => {
-    const locale = getLocale()
-    const dayFormat = new Intl.DateTimeFormat(locale, { weekday: 'short', day: 'numeric' })
-    const timeFormat = new Intl.DateTimeFormat(locale, { hour: '2-digit', minute: '2-digit' })
-    return scheduleBlocks
-      .filter(
-        (block) => block.deletedAt === null && new Date(block.endAt).getTime() >= now.getTime(),
-      )
-      .map((block) => ({ block, task: tasks.find((task) => task.id === block.taskId) }))
-      .filter(
-        (entry): entry is { block: (typeof scheduleBlocks)[number]; task: Task } =>
-          entry.task !== undefined && entry.task.deletedAt === null,
-      )
-      .sort((a, b) => new Date(a.block.startAt).getTime() - new Date(b.block.startAt).getTime())
-      .slice(0, 8)
-      .map((entry) => ({
-        id: entry.block.id,
-        day: dayFormat.format(new Date(entry.block.startAt)),
-        time: timeFormat.format(new Date(entry.block.startAt)),
-        title: entry.task.title,
-      }))
-  }, [scheduleBlocks, tasks, now])
-
   const sortedViews = views
     .filter((view) => view.deletedAt === null)
     .sort((a, b) => a.sortOrder - b.sortOrder)
-  const defaultViews = sortedViews.filter((view) => view.builtin)
-  const customViews = sortedViews.filter((view) => !view.builtin)
   const visibleProjects = projects.filter((project) => project.deletedAt === null)
   const visibleTags = tags.filter((tag) => tag.deletedAt === null)
 
@@ -204,162 +183,122 @@ export function Sidebar({
           />
         </div>
 
-        <div className="tabs" role="tablist" aria-label={t('a11y.primaryNav')}>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={activeTab === 'views'}
-            className={activeTab === 'views' ? 'tab active' : 'tab'}
-            onClick={() => setActiveTab('views')}
-          >
-            <Icon name="list" size={14} />
-            {t('nav.tab.views')}
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={activeTab === 'timetable'}
-            className={activeTab === 'timetable' ? 'tab active' : 'tab'}
-            onClick={() => setActiveTab('timetable')}
-          >
-            <Icon name="calendar" size={14} />
-            {t('nav.tab.timetable')}
-          </button>
-        </div>
-
         <div className="sidebar-scroll">
-          {activeTab === 'views' ? (
-            <>
-              <nav className="sidebar-section" aria-label={t('nav.section.defaultViews')}>
-                {defaultViews.map(renderViewRow)}
-              </nav>
+          <nav className="sidebar-section" aria-label={t('nav.tab.timetable')}>
+            <button
+              type="button"
+              className={activeTab === 'timetable' ? 'nav-row active' : 'nav-row'}
+              aria-current={activeTab === 'timetable' ? 'page' : undefined}
+              onClick={() => setActiveTab('timetable')}
+            >
+              <Icon name="calendar" />
+              <span className="nav-label">{t('nav.tab.timetable')}</span>
+            </button>
+          </nav>
 
-              <section className="sidebar-section">
-                <header className="sidebar-section-head">
-                  <span className="eyebrow">{t('nav.section.myViews')}</span>
+          <section className="sidebar-section">
+            <header className="sidebar-section-head">
+              <span className="eyebrow">{t('views.section')}</span>
+              <button
+                type="button"
+                className="icon-button"
+                title={t('nav.newView')}
+                aria-label={t('nav.newView')}
+                onClick={onNewView}
+              >
+                <Icon name="plus" size={14} />
+              </button>
+            </header>
+            {sortedViews.map(renderViewRow)}
+          </section>
+
+          <section className="sidebar-section">
+            <header className="sidebar-section-head">
+              <span className="eyebrow">{t('nav.section.projects')}</span>
+              <button
+                type="button"
+                className="icon-button"
+                title={t('nav.newProject')}
+                aria-label={t('nav.newProject')}
+                onClick={onNewProject}
+              >
+                <Icon name="plus" size={14} />
+              </button>
+            </header>
+            {visibleProjects.length === 0 ? (
+              <p className="sidebar-empty">{t('nav.noProjects')}</p>
+            ) : (
+              visibleProjects.map((project) => (
+                <div key={project.id} className="nav-row-wrap">
                   <button
                     type="button"
-                    className="icon-button"
-                    title={t('nav.newView')}
-                    aria-label={t('nav.newView')}
-                    onClick={onNewView}
+                    className={projectFilterId === project.id ? 'nav-row active' : 'nav-row'}
+                    onClick={() => {
+                      setTagFilter(null)
+                      setProjectFilter(projectFilterId === project.id ? null : project.id)
+                    }}
                   >
-                    <Icon name="plus" size={14} />
+                    <span className="dot" style={{ background: colorFor(project, palette) }} />
+                    <span className="nav-label">{project.name}</span>
+                    <span className="count">{projectCounts.get(project.id) ?? 0}</span>
                   </button>
-                </header>
-                {customViews.length === 0 ? (
-                  <p className="sidebar-empty">{t('nav.noViews')}</p>
-                ) : (
-                  customViews.map(renderViewRow)
-                )}
-              </section>
-
-              <section className="sidebar-section">
-                <header className="sidebar-section-head">
-                  <span className="eyebrow">{t('nav.section.projects')}</span>
                   <button
                     type="button"
-                    className="icon-button"
-                    title={t('nav.newProject')}
-                    aria-label={t('nav.newProject')}
-                    onClick={onNewProject}
+                    className="icon-button row-action"
+                    aria-label={t('task.action.edit')}
+                    title={t('task.action.edit')}
+                    onClick={() => onEditProject(project)}
                   >
-                    <Icon name="plus" size={14} />
+                    <Icon name="pencil" size={13} />
                   </button>
-                </header>
-                {visibleProjects.length === 0 ? (
-                  <p className="sidebar-empty">{t('nav.noProjects')}</p>
-                ) : (
-                  visibleProjects.map((project) => (
-                    <div key={project.id} className="nav-row-wrap">
-                      <button
-                        type="button"
-                        className={projectFilterId === project.id ? 'nav-row active' : 'nav-row'}
-                        onClick={() => {
-                          setTagFilter(null)
-                          setProjectFilter(projectFilterId === project.id ? null : project.id)
-                        }}
-                      >
-                        <span className="dot" style={{ background: colorFor(project, palette) }} />
-                        <span className="nav-label">{project.name}</span>
-                        <span className="count">{projectCounts.get(project.id) ?? 0}</span>
-                      </button>
-                      <button
-                        type="button"
-                        className="icon-button row-action"
-                        aria-label={t('task.action.edit')}
-                        title={t('task.action.edit')}
-                        onClick={() => onEditProject(project)}
-                      >
-                        <Icon name="pencil" size={13} />
-                      </button>
-                    </div>
-                  ))
-                )}
-              </section>
+                </div>
+              ))
+            )}
+          </section>
 
-              <section className="sidebar-section">
-                <header className="sidebar-section-head">
-                  <span className="eyebrow">{t('nav.section.tags')}</span>
+          <section className="sidebar-section">
+            <header className="sidebar-section-head">
+              <span className="eyebrow">{t('nav.section.tags')}</span>
+              <button
+                type="button"
+                className="icon-button"
+                title={t('nav.newTag')}
+                aria-label={t('nav.newTag')}
+                onClick={onNewTag}
+              >
+                <Icon name="plus" size={14} />
+              </button>
+            </header>
+            {visibleTags.length === 0 ? (
+              <p className="sidebar-empty">{t('nav.noTags')}</p>
+            ) : (
+              visibleTags.map((tag) => (
+                <div key={tag.id} className="nav-row-wrap">
                   <button
                     type="button"
-                    className="icon-button"
-                    title={t('nav.newTag')}
-                    aria-label={t('nav.newTag')}
-                    onClick={onNewTag}
+                    className={tagFilterId === tag.id ? 'nav-row active' : 'nav-row'}
+                    onClick={() => {
+                      setProjectFilter(null)
+                      setTagFilter(tagFilterId === tag.id ? null : tag.id)
+                    }}
                   >
-                    <Icon name="plus" size={14} />
+                    <span className="dot" style={{ background: colorFor(tag, palette) }} />
+                    <span className="nav-label">{tag.name}</span>
+                    <span className="count">{tagCounts.get(tag.id) ?? 0}</span>
                   </button>
-                </header>
-                {visibleTags.length === 0 ? (
-                  <p className="sidebar-empty">{t('nav.noTags')}</p>
-                ) : (
-                  visibleTags.map((tag) => (
-                    <div key={tag.id} className="nav-row-wrap">
-                      <button
-                        type="button"
-                        className={tagFilterId === tag.id ? 'nav-row active' : 'nav-row'}
-                        onClick={() => {
-                          setProjectFilter(null)
-                          setTagFilter(tagFilterId === tag.id ? null : tag.id)
-                        }}
-                      >
-                        <span className="dot" style={{ background: colorFor(tag, palette) }} />
-                        <span className="nav-label">{tag.name}</span>
-                        <span className="count">{tagCounts.get(tag.id) ?? 0}</span>
-                      </button>
-                      <button
-                        type="button"
-                        className="icon-button row-action"
-                        aria-label={t('task.action.edit')}
-                        title={t('task.action.edit')}
-                        onClick={() => onEditTag(tag)}
-                      >
-                        <Icon name="pencil" size={13} />
-                      </button>
-                    </div>
-                  ))
-                )}
-              </section>
-            </>
-          ) : (
-            <section className="sidebar-section">
-              <header className="sidebar-section-head">
-                <span className="eyebrow">{t('timetable.agenda')}</span>
-              </header>
-              {agenda.length === 0 ? (
-                <p className="sidebar-empty">{t('timetable.agendaEmpty')}</p>
-              ) : (
-                agenda.map((entry) => (
-                  <div className="agenda-row" key={entry.id}>
-                    <span className="agenda-day">{entry.day}</span>
-                    <span className="agenda-time">{entry.time}</span>
-                    <span className="agenda-title">{entry.title}</span>
-                  </div>
-                ))
-              )}
-            </section>
-          )}
+                  <button
+                    type="button"
+                    className="icon-button row-action"
+                    aria-label={t('task.action.edit')}
+                    title={t('task.action.edit')}
+                    onClick={() => onEditTag(tag)}
+                  >
+                    <Icon name="pencil" size={13} />
+                  </button>
+                </div>
+              ))
+            )}
+          </section>
         </div>
       </div>
 

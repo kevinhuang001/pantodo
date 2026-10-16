@@ -1,10 +1,9 @@
-import { ARRANGEMENT_LABEL_KEYS, LAYOUT_LABEL_KEYS, viewDisplayName } from '@/domain/display'
+import { ARRANGEMENT_LABEL_KEYS, viewDisplayName } from '@/domain/display'
 import { useAppStore } from '@/domain/store'
-import type { AppTab, GroupArrangement, View, ViewLayout } from '@/domain/types'
+import type { AppTab, GroupArrangement, View } from '@/domain/types'
 import { LOCALES, LOCALE_LABELS, t } from '@/i18n'
 import type { Locale, LocalePreference } from '@/i18n'
 
-import { Icon } from './Icon'
 import { Menu, Segmented } from './Menu'
 import type { MenuItemSpec } from './Menu'
 
@@ -13,13 +12,15 @@ interface ToolbarProps {
   view: View | null
   total: number
   doneCount: number
-  onNewTask: () => void
 }
 
-const LAYOUTS: ViewLayout[] = ['list', 'board']
 const ARRANGEMENTS: GroupArrangement[] = ['vertical', 'columns', 'grid']
 
-export function Toolbar({ tab, view, total, doneCount, onNewTask }: ToolbarProps) {
+/**
+ * No layout switcher and no "new task" button: a view is always a list of tasks, its grouping is
+ * arranged by dragging, and new tasks are captured in the inbox.
+ */
+export function Toolbar({ tab, view, total, doneCount }: ToolbarProps) {
   const settings = useAppStore((state) => state.settings)
   const updateView = useAppStore((state) => state.updateView)
   const updateSettings = useAppStore((state) => state.updateSettings)
@@ -65,18 +66,17 @@ export function Toolbar({ tab, view, total, doneCount, onNewTask }: ToolbarProps
   ]
 
   const isTimetable = tab === 'timetable'
-  const grouped = view !== null && view.layout === 'board'
+  const grouped = view !== null && view.groups.length > 0
+  const title = isTimetable
+    ? t('nav.tab.timetable')
+    : view === null
+      ? t('views.section')
+      : viewDisplayName(view, t)
 
   return (
     <header className="toolbar">
       <div className="toolbar-title">
-        <h1>
-          {isTimetable
-            ? t('nav.tab.timetable')
-            : view === null
-              ? t('nav.tab.views')
-              : viewDisplayName(view, t)}
-        </h1>
+        <h1>{title}</h1>
         {isTimetable || view === null ? null : (
           <span className="count">
             {t('count.tasks', { count: total })}
@@ -88,19 +88,6 @@ export function Toolbar({ tab, view, total, doneCount, onNewTask }: ToolbarProps
       <span className="toolbar-spacer" />
 
       <div className="toolbar-actions">
-        {!isTimetable && view !== null ? (
-          <Segmented
-            label={t('toolbar.layout')}
-            value={view.layout}
-            options={LAYOUTS.map((layout) => ({
-              key: layout,
-              label: t(LAYOUT_LABEL_KEYS[layout]),
-              icon: layout === 'list' ? 'list' : 'grid',
-            }))}
-            onChange={(key) => void updateView(view.id, { layout: key as ViewLayout })}
-          />
-        ) : null}
-
         {grouped && view !== null ? (
           <Segmented
             label={t('toolbar.arrangement')}
@@ -134,11 +121,6 @@ export function Toolbar({ tab, view, total, doneCount, onNewTask }: ToolbarProps
 
         <Menu label={t('toolbar.theme')} icon="sun" items={themeItems} />
         <Menu label={t('toolbar.language')} icon="globe" items={languageItems} />
-
-        <button type="button" className="primary" onClick={onNewTask}>
-          <Icon name="plus" />
-          {t('toolbar.newTask')}
-        </button>
       </div>
     </header>
   )

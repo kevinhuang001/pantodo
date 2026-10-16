@@ -12,12 +12,14 @@ import {
 import { colorFor } from '@/domain/filters'
 import { paletteFor } from '@/domain/palette'
 import { useAppStore } from '@/domain/store'
-import type { ScheduleBlock, Task } from '@/domain/types'
+import type { ScheduleBlock, Task, TimetableZoom } from '@/domain/types'
 import { getLocale, t } from '@/i18n'
 
 import { Icon } from './Icon'
+import { Segmented } from './Menu'
 
-const HOUR_HEIGHT = 56
+/** Row heights per zoom level; "large" is the default so a 30-minute block still shows its text. */
+const ZOOM_HEIGHTS: Record<TimetableZoom, number> = { compact: 44, standard: 76, large: 112 }
 const HOURS = Array.from({ length: 24 }, (_, hour) => hour)
 /** Lanes are packed in this granularity, matching the agreed 15-minute snap. */
 const MIN_BLOCK_MINUTES = 15
@@ -61,6 +63,9 @@ export function Timetable({ now, theme }: TimetableProps) {
   const tags = useAppStore((state) => state.tags)
   const taskTags = useAppStore((state) => state.taskTags)
   const weekStartsOn = useAppStore((state) => state.settings.weekStartsOn)
+  const zoom = useAppStore((state) => state.settings.timetableZoom) ?? 'large'
+  const updateSettings = useAppStore((state) => state.updateSettings)
+  const hourHeight = ZOOM_HEIGHTS[zoom]
 
   const [anchor, setAnchor] = useState<Date>(() => new Date(now))
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -117,8 +122,8 @@ export function Timetable({ now, theme }: TimetableProps) {
         return {
           block,
           task,
-          top: (startMin / 60) * HOUR_HEIGHT,
-          height: Math.max(((endMin - startMin) / 60) * HOUR_HEIGHT, 18),
+          top: (startMin / 60) * hourHeight,
+          height: Math.max(((endMin - startMin) / 60) * hourHeight, 18),
           lane,
           lanes: 1,
           color: colorForTask(task),
@@ -139,15 +144,15 @@ export function Timetable({ now, theme }: TimetableProps) {
         ),
       }
     })
-  }, [days, scheduleBlocks, tasks, projects, tags, taskTags, palette])
+  }, [days, scheduleBlocks, tasks, projects, tags, taskTags, palette, hourHeight])
 
   useEffect(() => {
     const node = scrollRef.current
-    if (node !== null) node.scrollTop = 7 * HOUR_HEIGHT
-  }, [])
+    if (node !== null) node.scrollTop = 7 * hourHeight
+  }, [hourHeight])
 
   const todayIndex = days.findIndex((day) => isSameDay(day, now))
-  const nowTop = (differenceInMinutes(now, startOfDay(now)) / 60) * HOUR_HEIGHT
+  const nowTop = (differenceInMinutes(now, startOfDay(now)) / 60) * hourHeight
   const hasBlocks = columns.some((column) => column.items.length > 0)
 
   const rangeLabel = `${new Intl.DateTimeFormat(locale, { month: 'short', day: 'numeric' }).format(weekStart)} – ${new Intl.DateTimeFormat(locale, { month: 'short', day: 'numeric' }).format(addDays(weekStart, 6))}`
@@ -179,6 +184,16 @@ export function Timetable({ now, theme }: TimetableProps) {
         <span className="tt-range">{rangeLabel}</span>
         <span className="toolbar-spacer" />
         {hasBlocks ? null : <span className="count">{t('timetable.empty')}</span>}
+        <Segmented
+          label={t('timetable.zoom')}
+          value={zoom}
+          options={[
+            { key: 'compact', label: t('timetable.zoom.compact') },
+            { key: 'standard', label: t('timetable.zoom.standard') },
+            { key: 'large', label: t('timetable.zoom.large') },
+          ]}
+          onChange={(key) => void updateSettings({ timetableZoom: key as TimetableZoom })}
+        />
       </div>
 
       <div className="tt-head-row">
@@ -216,10 +231,10 @@ export function Timetable({ now, theme }: TimetableProps) {
       </div>
 
       <div className="tt-scroll" ref={scrollRef}>
-        <div className="tt-body" style={{ height: 24 * HOUR_HEIGHT }}>
+        <div className="tt-body" style={{ height: 24 * hourHeight }}>
           <div className="tt-hours">
             {HOURS.map((hour) => (
-              <div className="tt-hour" key={hour} style={{ height: HOUR_HEIGHT }}>
+              <div className="tt-hour" key={hour} style={{ height: hourHeight }}>
                 <span>{String(hour).padStart(2, '0')}:00</span>
               </div>
             ))}
@@ -228,7 +243,7 @@ export function Timetable({ now, theme }: TimetableProps) {
             {columns.map((column, dayIndex) => (
               <div className="tt-column" key={column.key}>
                 {HOURS.map((hour) => (
-                  <div className="tt-slot" key={hour} style={{ height: HOUR_HEIGHT }} />
+                  <div className="tt-slot" key={hour} style={{ height: hourHeight }} />
                 ))}
                 {dayIndex === todayIndex ? (
                   <div className="tt-now" style={{ top: nowTop }} aria-hidden="true" />

@@ -1,15 +1,10 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
 
-import {
-  ARRANGEMENT_LABEL_KEYS,
-  GROUP_BY_LABEL_KEYS,
-  LAYOUT_LABEL_KEYS,
-  STATUS_LABEL_KEYS,
-} from '@/domain/display'
+import { ARRANGEMENT_LABEL_KEYS, GROUP_BY_LABEL_KEYS, STATUS_LABEL_KEYS } from '@/domain/display'
 import { paletteFor } from '@/domain/palette'
 import { useAppStore } from '@/domain/store'
-import type { GroupArrangement, GroupField, TaskStatus, View, ViewLayout } from '@/domain/types'
+import type { GroupArrangement, GroupField, TaskStatus, View } from '@/domain/types'
 import { EMPTY_FILTER, TASK_STATUSES } from '@/domain/types'
 import { t } from '@/i18n'
 
@@ -23,11 +18,10 @@ interface ViewDialogProps {
 }
 
 const GROUP_FIELDS: GroupField[] = ['none', 'tag', 'project', 'status']
-const LAYOUTS: ViewLayout[] = ['list', 'board']
 const ARRANGEMENTS: GroupArrangement[] = ['vertical', 'columns', 'grid']
 const ICONS: IconName[] = ['list', 'grid', 'layers', 'sliders', 'tag', 'calendar', 'sun', 'inbox']
 
-/** Creates and edits custom views: filter + grouping + arrangement + layout. */
+/** Creates and edits custom views: filter + grouping + arrangement. */
 export function ViewDialog({ view, onClose }: ViewDialogProps) {
   const tags = useAppStore((state) => state.tags).filter((tag) => tag.deletedAt === null)
   const projects = useAppStore((state) => state.projects).filter(
@@ -40,7 +34,6 @@ export function ViewDialog({ view, onClose }: ViewDialogProps) {
 
   const [name, setName] = useState(view?.name ?? '')
   const [icon, setIcon] = useState<string>(view?.icon ?? 'layers')
-  const [layout, setLayout] = useState<ViewLayout>(view?.layout ?? 'list')
   const [groupBy, setGroupBy] = useState<GroupField>(view?.groupBy ?? 'none')
   const [arrangement, setArrangement] = useState<GroupArrangement>(view?.arrangement ?? 'vertical')
   const [gridColumns, setGridColumns] = useState(view?.gridColumns ?? 2)
@@ -71,7 +64,6 @@ export function ViewDialog({ view, onClose }: ViewDialogProps) {
     const payload = {
       name: trimmed,
       icon,
-      layout,
       groupBy,
       arrangement,
       gridColumns,
@@ -83,11 +75,8 @@ export function ViewDialog({ view, onClose }: ViewDialogProps) {
         statuses,
       },
     }
-    if (view === null) {
-      await createView(payload)
-    } else {
-      await updateView(view.id, payload)
-    }
+    if (view === null) await createView(payload)
+    else await updateView(view.id, payload)
     onClose()
   }
 
@@ -150,21 +139,6 @@ export function ViewDialog({ view, onClose }: ViewDialogProps) {
 
         <div className="form-row">
           <div className="field">
-            <label htmlFor="view-layout">{t('view.field.layout')}</label>
-            <select
-              id="view-layout"
-              className="select"
-              value={layout}
-              onChange={(event) => setLayout(event.target.value as ViewLayout)}
-            >
-              {LAYOUTS.map((value) => (
-                <option key={value} value={value}>
-                  {t(LAYOUT_LABEL_KEYS[value])}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="field">
             <label htmlFor="view-group">{t('view.field.groupBy')}</label>
             <select
               id="view-group"
@@ -179,9 +153,6 @@ export function ViewDialog({ view, onClose }: ViewDialogProps) {
               ))}
             </select>
           </div>
-        </div>
-
-        <div className="form-row">
           <div className="field">
             <label htmlFor="view-arrangement">{t('toolbar.arrangement')}</label>
             <select
@@ -197,19 +168,20 @@ export function ViewDialog({ view, onClose }: ViewDialogProps) {
               ))}
             </select>
           </div>
-          <div className="field">
-            <label htmlFor="view-columns">{t('view.field.columns')}</label>
-            <input
-              id="view-columns"
-              type="number"
-              min={1}
-              max={4}
-              className="input"
-              value={gridColumns}
-              disabled={arrangement !== 'grid'}
-              onChange={(event) => setGridColumns(Number(event.target.value))}
-            />
-          </div>
+        </div>
+
+        <div className="field">
+          <label htmlFor="view-columns">{t('view.field.columns')}</label>
+          <input
+            id="view-columns"
+            type="number"
+            min={1}
+            max={4}
+            className="input"
+            value={gridColumns}
+            disabled={arrangement !== 'grid'}
+            onChange={(event) => setGridColumns(Number(event.target.value))}
+          />
         </div>
 
         <div className="field">

@@ -47,10 +47,6 @@ export function isScheduledOn(task: Task, day: Date, context: FilterContext): bo
   )
 }
 
-export function isScheduledInFuture(task: Task, now: Date, context: FilterContext): boolean {
-  return blocksOf(task, context).some((block) => parseIso(block.endAt).getTime() >= now.getTime())
-}
-
 export function hasSchedule(task: Task, context: FilterContext): boolean {
   return blocksOf(task, context).length > 0
 }
@@ -94,12 +90,6 @@ export function matchesPreset(task: Task, view: View, context: FilterContext): b
       if (task.deletedAt !== null || task.archivedAt !== null) return false
       const dueToday = task.dueAt !== null && isSameLocalDay(task.dueAt, context.now)
       return dueToday || isScheduledOn(task, context.now, context)
-    }
-    case 'upcoming': {
-      if (task.deletedAt !== null || task.archivedAt !== null) return false
-      const dueLater =
-        task.dueAt !== null && parseIso(task.dueAt).getTime() >= context.now.getTime()
-      return dueLater || isScheduledInFuture(task, context.now, context)
     }
     case 'all':
       return task.deletedAt === null && task.archivedAt === null

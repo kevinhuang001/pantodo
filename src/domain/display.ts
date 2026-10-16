@@ -10,8 +10,6 @@ export function viewNameKey(view: View): MessageKey | null {
       return 'nav.inbox'
     case 'today':
       return 'nav.today'
-    case 'upcoming':
-      return 'nav.upcoming'
     case 'all':
       return 'nav.all'
     case 'trash':
@@ -41,11 +39,6 @@ export function groupTagNames(group: ViewGroup, tags: readonly Tag[]): string {
     .map((name) => `−${name}`)
   return [...included, ...excluded].join(' + ')
 }
-
-export const LAYOUT_LABEL_KEYS = {
-  list: 'view.layout.list',
-  board: 'view.layout.board',
-} as const satisfies Record<View['layout'], MessageKey>
 
 export const GROUP_BY_LABEL_KEYS = {
   none: 'view.groupBy.none',

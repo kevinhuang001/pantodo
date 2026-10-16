@@ -20,6 +20,7 @@ export function defaultSettings(): Settings {
     weekStartsOn: 1,
     reminderLeadMinutes: 20,
     notificationsSilent: true,
+    timetableZoom: 'large',
     seedVersion: SEED_VERSION,
   }
 }
@@ -40,7 +41,6 @@ function makeView(partial: Partial<View> & { name: string; icon: string }): View
     groupBy: 'none',
     arrangement: 'vertical',
     gridColumns: 2,
-    layout: 'list',
     sort: 'manual',
     groups: [],
     sortOrder: 0,
@@ -85,7 +85,6 @@ export function createSeedWorkspace(
     groupBy: 'tag',
     arrangement: 'grid',
     gridColumns: 2,
-    layout: 'board',
     sortOrder: 4,
     groups: [
       makeGroup(
@@ -114,14 +113,7 @@ export function createSeedWorkspace(
   const views: View[] = [
     makeView({ name: t('nav.inbox'), icon: 'inbox', builtin: true, preset: 'inbox', sortOrder: 0 }),
     makeView({ name: t('nav.today'), icon: 'sun', builtin: true, preset: 'today', sortOrder: 1 }),
-    makeView({
-      name: t('nav.upcoming'),
-      icon: 'calendar',
-      builtin: true,
-      preset: 'upcoming',
-      sortOrder: 2,
-    }),
-    makeView({ name: t('nav.all'), icon: 'list', builtin: true, preset: 'all', sortOrder: 3 }),
+    makeView({ name: t('nav.all'), icon: 'list', builtin: true, preset: 'all', sortOrder: 2 }),
     quadrant,
     makeView({ name: t('nav.trash'), icon: 'trash', builtin: true, preset: 'trash', sortOrder: 5 }),
   ]

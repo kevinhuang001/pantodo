@@ -219,7 +219,7 @@ export function TaskDialog({ task, onClose }: TaskDialogProps) {
               checked={scheduled}
               onChange={(event) => setScheduled(event.target.checked)}
             />
-            {t('view.layout.timetable')}
+            {t('task.field.schedule')}
           </label>
           {scheduled ? (
             <div className="form-row">

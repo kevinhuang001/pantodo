@@ -52,8 +52,9 @@ task rewrites history). WebDAV passwords live in the OS keyring, never in SQLite
 Task fields: title, notes, status, project (0 or 1), tags (many-to-many), due time, estimate, schedule
 blocks (0..n). "A task without a time stays in the list; give it a time and it appears on the
 timetable" is carried by `schedule_blocks`; `due_at` only drives reminders and sorting and never
-occupies the grid. Deletes go to a restorable trash; archiving moves completed tasks out of the
-default views. Projects and tags each have an optional colour; unspecified colours are derived from a
+occupies the grid. **Tasks are captured in the inbox and nowhere else**: the composer at the top of the inbox is the
+single entry point, and there are no per-view or toolbar "new task" buttons (the toolbar has none at
+all). Deletes go to a restorable trash; archiving moves completed tasks out of the default views. Projects and tags each have an optional colour; unspecified colours are derived from a
 hash of the name. Timetable blocks use the project colour, falling back to the first tag's colour.
 
 ### 3.2 View system
@@ -62,25 +63,24 @@ A view is: name + icon + filter (tags any/all, project, status, date range, text
 (tag/project/status/none) + an **ordered group list** + arrangement (vertical, horizontal columns,
 N×M grid) + sort. Group headers can be dragged to reorder; the arrangement can be switched at any
 time and is stored in the view. **The Eisenhower matrix is an ordinary view**: group by tag, four
-fixed groups, 2×2 grid. First launch seeds Inbox, Today, Upcoming, All, plus a quadrant example with
+fixed groups, 2×2 grid. First launch seeds Inbox, Today and All, plus an Eisenhower example view with
 empty `important` and `urgent` tags. **Today = due today OR scheduled today.**
 
-**Navigation (revised after UI review):** the app has two top-level tabs — **视图 (Views)** and
-**时间表 (Timetable)**. Under 视图 the sidebar separates **默认视图** (the built-in five plus trash)
-from **我的视图** (user-created views, with a `+` that opens the view editor). A view is therefore
-laid out as **a list or a board** — only two ways to read a view; how the groups inside a board are
-shaped (vertical stack, side-by-side columns, N×M grid, and their order) is the user's to arrange by
-dragging. The timetable is _not_ a per-view layout any more: it is its own tab rendering a
-Google-Calendar-style week grid. The Eisenhower matrix is not a special layout either — it is an
-ordinary seeded view whose grouping is four pinned tag groups laid out as a 2×2 grid. Custom views are
-created/edited through a dialog covering name, icon, filter, grouping, arrangement and grid width.
+**Navigation.** The left sidebar lists **时间表 (Timetable)** as a plain row above a single **视图
+(Views)** list: there is no views/timetable switch, and the seeded views sit in the same list as the
+user's own — the Eisenhower example is not special and is editable like any other. A view is always
+**a list of tasks**; there is no list/board switch. What the user shapes is the grouping (by tag,
+project, status, or four pinned tag groups) and its arrangement (vertical stack, side-by-side columns,
+N×M grid, and their order), by dragging group headers or switching the arrangement control. Custom
+views are created and edited through a dialog covering name, icon, filter, grouping, arrangement and
+grid width.
 
 ### 3.3 Timetable (its own tab, Google-Calendar style)
 
 Shipped: a week grid of seven day columns over a scrollable 00:00–24:00 canvas (56px per hour), blocks
 positioned by time and packed side by side when they overlap, an all-day row for tasks that only carry
-a due time, a red now-line, and week navigation with a "today" button; the sidebar shows that week's
-agenda while the tab is active.
+a due time, a red now-line, week navigation with a "today" button, and three zoom levels (compact 44px,
+standard 76px, roomy 112px per hour — roomy is the default so block text always fits).
 
 Still M2: Day and Month views, and drag on empty grid to create, drag to move, drag an edge to
 resize, 15-minute snapping, weeks start Monday, browser-local time zone only.
@@ -150,7 +150,7 @@ icon is a glass-style SVG mark (check box plus timeline).
 
 - **M1 — foundation** (no Rust required): repository + tooling, token layer (light + dark), app shell
   and theme switching, three-language i18n runtime, `Bridge` + browser fixture with persistence,
-  task/tag/project CRUD, list view, status, trash, archive, four preset views and the quadrant
+  task/tag/project CRUD, list view, status, trash, archive, three preset views and the Eisenhower
   example, unit tests, smoke e2e, headless screenshots, CI skeleton.
 - **M2** — timetable, scheduling and recurrence (introduces the Rust core crate, SQLite schema and IPC).
 - **M3** — timer and statistics.

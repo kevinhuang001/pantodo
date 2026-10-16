@@ -14,10 +14,11 @@ import { EmptyState } from './components/EmptyState'
 import { EntityDialog } from './components/EntityDialog'
 import { GroupBoard } from './components/GroupBoard'
 import { Icon } from './components/Icon'
+import { InboxComposer } from './components/InboxComposer'
 import { SettingsDialog } from './components/SettingsDialog'
 import { Sidebar } from './components/Sidebar'
 import { TaskDialog } from './components/TaskDialog'
-import { TaskList, type TaskLookup } from './components/TaskList'
+import type { TaskLookup } from './components/TaskList'
 import { Timetable } from './components/Timetable'
 import { Toast } from './components/Toast'
 import { Toolbar } from './components/Toolbar'
@@ -87,6 +88,11 @@ export function App() {
   const orderedViews = useMemo(
     () => views.filter((view) => view.deletedAt === null).sort((a, b) => a.sortOrder - b.sortOrder),
     [views],
+  )
+
+  const inboxView = useMemo(
+    () => orderedViews.find((view) => view.preset === 'inbox') ?? null,
+    [orderedViews],
   )
 
   const activeView = useMemo(() => {
@@ -173,27 +179,40 @@ export function App() {
         return
       }
       if (typing) return
-      if ((event.metaKey || event.ctrlKey) && /^[1-9]$/.test(event.key)) {
-        const view = orderedViews[Number(event.key) - 1]
-        if (view !== undefined) {
-          event.preventDefault()
-          setActiveView(view.id)
-        }
-        return
-      }
+      // "n" captures into the inbox — the only place tasks are created.
       if (event.key === 'n' && !event.metaKey && !event.ctrlKey) {
         event.preventDefault()
-        setDialog({ kind: 'task', task: null })
+        if (inboxView !== null) setActiveView(inboxView.id)
+        window.setTimeout(() => document.getElementById('pantodo-inbox-input')?.focus(), 0)
       }
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [orderedViews, setActiveView])
+  }, [inboxView, setActiveView])
 
   const trashedCount = tasks.filter((task) => task.deletedAt !== null).length
   const searching = debouncedSearch.trim() !== ''
-  const isCustomEmptyView =
-    activeView !== null && !activeView.builtin && activeView.groups.length === 0
+  const isInbox = activeView?.preset === 'inbox'
+  const isTrash = activeView?.preset === 'trash'
+
+  const emptyTitle = isTrash
+    ? 'empty.trashTitle'
+    : searching
+      ? 'empty.searchTitle'
+      : isInbox
+        ? 'empty.inboxTitle'
+        : activeView !== null && !activeView.builtin
+          ? 'empty.customViewTitle'
+          : 'empty.title'
+  const emptyBody = isTrash
+    ? 'empty.trashBody'
+    : searching
+      ? 'empty.searchBody'
+      : isInbox
+        ? 'empty.inboxBody'
+        : activeView !== null && !activeView.builtin
+          ? 'empty.customViewBody'
+          : 'empty.body'
 
   return (
     <>
@@ -219,7 +238,6 @@ export function App() {
             view={activeView}
             total={filtered.length}
             doneCount={doneCount}
-            onNewTask={() => setDialog({ kind: 'task', task: null })}
           />
 
           <div className={activeTab === 'timetable' ? 'reader reader-flush' : 'reader'}>
@@ -229,66 +247,49 @@ export function App() {
               <p className="banner">…</p>
             ) : activeTab === 'timetable' ? (
               <Timetable now={now} theme={theme} />
-            ) : activeView === null ? null : filtered.length === 0 &&
-              activeView.groups.length === 0 ? (
-              <EmptyState
-                icon={activeView.preset === 'trash' ? 'trash' : 'calendarCheck'}
-                titleKey={
-                  activeView.preset === 'trash'
-                    ? 'empty.trashTitle'
-                    : searching
-                      ? 'empty.searchTitle'
-                      : isCustomEmptyView
-                        ? 'empty.customViewTitle'
-                        : 'empty.title'
-                }
-                bodyKey={
-                  activeView.preset === 'trash'
-                    ? 'empty.trashBody'
-                    : searching
-                      ? 'empty.searchBody'
-                      : isCustomEmptyView
-                        ? 'empty.customViewBody'
-                        : 'empty.body'
-                }
-                action={
-                  activeView.preset === 'trash' || searching
-                    ? undefined
-                    : {
-                        labelKey: 'empty.cta',
-                        onSelect: () => setDialog({ kind: 'task', task: null }),
-                      }
-                }
-              />
-            ) : activeView.layout === 'list' ? (
-              <TaskList
-                tasks={filtered}
-                lookup={lookup}
-                emptyKey={activeView.preset === 'trash' ? 'empty.trashTitle' : 'empty.viewTitle'}
-              />
-            ) : (
-              <GroupBoard
-                groups={groups}
-                lookup={lookup}
-                view={activeView}
-                onReorderGroups={(from, to) => {
-                  void useAppStore.getState().reorderGroups(activeView.id, from, to)
-                }}
-              />
-            )}
+            ) : activeView === null ? null : (
+              <>
+                {isInbox ? <InboxComposer /> : null}
 
-            {activeTab === 'views' && activeView?.preset === 'trash' && trashedCount > 0 ? (
-              <div className="row" style={{ marginTop: 'var(--space-5)' }}>
-                <button
-                  type="button"
-                  className="danger-button"
-                  onClick={() => setDialog({ kind: 'confirm-empty-trash' })}
-                >
-                  <Icon name="trash" />
-                  {t('dialog.emptyTrashTitle')}
-                </button>
-              </div>
-            ) : null}
+                {filtered.length === 0 && activeView.groups.length === 0 ? (
+                  <EmptyState
+                    icon={isTrash ? 'trash' : isInbox ? 'inbox' : 'calendarCheck'}
+                    titleKey={emptyTitle}
+                    bodyKey={emptyBody}
+                    action={
+                      isTrash || searching || isInbox || inboxView === null
+                        ? undefined
+                        : {
+                            labelKey: 'empty.gotoInbox',
+                            onSelect: () => setActiveView(inboxView.id),
+                          }
+                    }
+                  />
+                ) : (
+                  <GroupBoard
+                    groups={groups}
+                    lookup={lookup}
+                    view={activeView}
+                    onReorderGroups={(from, to) => {
+                      void useAppStore.getState().reorderGroups(activeView.id, from, to)
+                    }}
+                  />
+                )}
+
+                {isTrash && trashedCount > 0 ? (
+                  <div className="row" style={{ marginTop: 'var(--space-5)' }}>
+                    <button
+                      type="button"
+                      className="danger-button"
+                      onClick={() => setDialog({ kind: 'confirm-empty-trash' })}
+                    >
+                      <Icon name="trash" />
+                      {t('dialog.emptyTrashTitle')}
+                    </button>
+                  </div>
+                ) : null}
+              </>
+            )}
           </div>
         </main>
       </div>
