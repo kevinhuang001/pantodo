@@ -173,11 +173,18 @@ const zhCN = {
   'view.groupBy.status': '按状态',
   'view.tags.any': '任一',
   'view.tags.all': '全部',
-  'timetable.placeholder': '时间表在 M2 提供：这里是按周/日/月排布日程的网格。',
   'toast.viewCreated': '已创建视图',
   'toast.viewUpdated': '视图已保存',
   'empty.customViewTitle': '这个视图还没有任务',
   'empty.customViewBody': '编辑它的过滤条件，或者新建几个任务。',
+  'timetable.today': '今天',
+  'timetable.allDay': '全天',
+  'timetable.prev': '上一周',
+  'timetable.next': '下一周',
+  'timetable.empty': '本周还没有排期。给任务设置时间，它就会出现在这里。',
+  'timetable.overdueNote': '仅显示本周已排期的块。',
+  'timetable.agenda': '本周日程',
+  'timetable.agendaEmpty': '接下来的排期会出现在这里。',
 } as const
 
 export default zhCN

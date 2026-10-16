@@ -468,7 +468,7 @@ export const useAppStore = create<AppState>()((set, get) => ({
 
   async softDeleteView(id) {
     const current = get().views.find((view) => view.id === id)
-    if (current === undefined || current.builtin) return
+    if (current === undefined || current.preset !== null) return
     const next = withUpdated(current, { deletedAt: nowIso() })
     const views = upsert(get().views, next)
     const remaining = views.filter((view) => view.deletedAt === null && view.preset !== 'trash')

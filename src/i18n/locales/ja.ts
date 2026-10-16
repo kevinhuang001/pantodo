@@ -173,11 +173,18 @@ const ja: Record<keyof typeof zhCN, string> = {
   'view.groupBy.status': '状態別',
   'view.tags.any': 'いずれか',
   'view.tags.all': 'すべて',
-  'timetable.placeholder': 'タイムテーブルは M2 で提供します：週/日/月のグリッドです。',
   'toast.viewCreated': 'ビューを作成しました',
   'toast.viewUpdated': 'ビューを保存しました',
   'empty.customViewTitle': 'このビューにはまだ何もありません',
   'empty.customViewBody': 'フィルターを編集するか、タスクを作成してください。',
+  'timetable.today': '今日',
+  'timetable.allDay': '終日',
+  'timetable.prev': '前の週',
+  'timetable.next': '次の週',
+  'timetable.empty': '今週の予定はまだありません。タスクに時刻を設定するとここに表示されます。',
+  'timetable.overdueNote': '現在の週に予定されたブロックのみ表示します。',
+  'timetable.agenda': '今週の予定',
+  'timetable.agendaEmpty': 'これからの予定がここに表示されます。',
 }
 
 export default ja

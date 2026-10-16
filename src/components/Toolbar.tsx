@@ -16,7 +16,7 @@ interface ToolbarProps {
   onNewTask: () => void
 }
 
-const LAYOUTS: ViewLayout[] = ['list', 'board', 'quadrant']
+const LAYOUTS: ViewLayout[] = ['list', 'board']
 const ARRANGEMENTS: GroupArrangement[] = ['vertical', 'columns', 'grid']
 
 export function Toolbar({ tab, view, total, doneCount, onNewTask }: ToolbarProps) {
@@ -65,7 +65,7 @@ export function Toolbar({ tab, view, total, doneCount, onNewTask }: ToolbarProps
   ]
 
   const isTimetable = tab === 'timetable'
-  const grouped = view !== null && (view.layout === 'board' || view.layout === 'quadrant')
+  const grouped = view !== null && view.layout === 'board'
 
   return (
     <header className="toolbar">

@@ -154,8 +154,13 @@ test('the timetable is its own tab, not a per-view layout', async ({ page }) => 
 
   await tabs.nth(1).click()
   await expect(page.locator('.toolbar h1')).toHaveText('时间表')
+  // The timetable is a real Google-Calendar-style grid, and it is not a per-view layout.
   await expect(page.getByRole('group', { name: '布局' })).toHaveCount(0)
-  await expect(page.locator('.empty-state')).toContainText('M2')
+  await expect(page.locator('.timetable .tt-column')).toHaveCount(7)
+  await expect(page.locator('.timetable .tt-block').first()).toBeVisible()
+  await expect(page.locator('.timetable .tt-now')).toHaveCount(1)
+  // Fourteen hour labels (00:00 … 23:00) means a 24-hour canvas.
+  await expect(page.locator('.timetable .tt-hour')).toHaveCount(24)
 
   await tabs.nth(0).click()
   await expect(page.getByRole('group', { name: '布局' })).toHaveCount(1)
@@ -167,6 +172,7 @@ test('creates a custom view that is listed under My views', async ({ page }) => 
 
   await myViews.getByRole('button', { name: '新建视图' }).click()
   await page.locator('#view-name').fill('e2e 自定义视图')
+  await page.locator('#view-layout').selectOption('board')
   await page.locator('#view-group').selectOption('tag')
   await page.locator('#view-arrangement').selectOption('columns')
   await page.locator('button[form="pantodo-view-form"]').click()

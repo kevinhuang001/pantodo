@@ -5,7 +5,7 @@ import { colorFor, selectTasks } from '@/domain/filters'
 import { paletteFor } from '@/domain/palette'
 import { useAppStore } from '@/domain/store'
 import type { Project, Tag, Task, View } from '@/domain/types'
-import { t } from '@/i18n'
+import { getLocale, t } from '@/i18n'
 
 import { Icon } from './Icon'
 import type { IconName } from './Icon'
@@ -108,6 +108,29 @@ export function Sidebar({
     return counts
   }, [tasks, taskTags])
 
+  const agenda = useMemo(() => {
+    const locale = getLocale()
+    const dayFormat = new Intl.DateTimeFormat(locale, { weekday: 'short', day: 'numeric' })
+    const timeFormat = new Intl.DateTimeFormat(locale, { hour: '2-digit', minute: '2-digit' })
+    return scheduleBlocks
+      .filter(
+        (block) => block.deletedAt === null && new Date(block.endAt).getTime() >= now.getTime(),
+      )
+      .map((block) => ({ block, task: tasks.find((task) => task.id === block.taskId) }))
+      .filter(
+        (entry): entry is { block: (typeof scheduleBlocks)[number]; task: Task } =>
+          entry.task !== undefined && entry.task.deletedAt === null,
+      )
+      .sort((a, b) => new Date(a.block.startAt).getTime() - new Date(b.block.startAt).getTime())
+      .slice(0, 8)
+      .map((entry) => ({
+        id: entry.block.id,
+        day: dayFormat.format(new Date(entry.block.startAt)),
+        time: timeFormat.format(new Date(entry.block.startAt)),
+        title: entry.task.title,
+      }))
+  }, [scheduleBlocks, tasks, now])
+
   const sortedViews = views
     .filter((view) => view.deletedAt === null)
     .sort((a, b) => a.sortOrder - b.sortOrder)
@@ -130,7 +153,7 @@ export function Sidebar({
           <span className="nav-label">{viewDisplayName(view, t)}</span>
           <span className="count">{viewCounts.get(view.id) ?? 0}</span>
         </button>
-        {view.builtin ? null : (
+        {view.preset === null ? (
           <button
             type="button"
             className="icon-button row-action"
@@ -140,7 +163,7 @@ export function Sidebar({
           >
             <Icon name="pencil" size={13} />
           </button>
-        )}
+        ) : null}
       </div>
     )
   }
@@ -320,7 +343,22 @@ export function Sidebar({
               </section>
             </>
           ) : (
-            <p className="sidebar-hint">{t('timetable.placeholder')}</p>
+            <section className="sidebar-section">
+              <header className="sidebar-section-head">
+                <span className="eyebrow">{t('timetable.agenda')}</span>
+              </header>
+              {agenda.length === 0 ? (
+                <p className="sidebar-empty">{t('timetable.agendaEmpty')}</p>
+              ) : (
+                agenda.map((entry) => (
+                  <div className="agenda-row" key={entry.id}>
+                    <span className="agenda-day">{entry.day}</span>
+                    <span className="agenda-time">{entry.time}</span>
+                    <span className="agenda-title">{entry.title}</span>
+                  </div>
+                ))
+              )}
+            </section>
           )}
         </div>
       </div>

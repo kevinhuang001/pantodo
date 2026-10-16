@@ -29,18 +29,6 @@ function groupLabel(group: TaskGroup): string {
 export function GroupBoard({ groups, lookup, view, onReorderGroups }: GroupBoardProps) {
   const [dragIndex, setDragIndex] = useState<number | null>(null)
 
-  const isFlat = groups.length === 1 && groups[0]?.key === 'all'
-  if (isFlat) {
-    const only = groups[0]
-    return (
-      <TaskList
-        tasks={only === undefined ? [] : only.tasks}
-        lookup={lookup}
-        emptyKey={view.preset === 'trash' ? 'empty.trashTitle' : 'empty.viewTitle'}
-      />
-    )
-  }
-
   const columns =
     view.arrangement === 'vertical'
       ? 1

@@ -115,6 +115,7 @@ async function main() {
       .getByRole('button', { name: '新建视图' })
       .click()
     await page.locator('#view-name').fill('本周要紧事')
+    await page.locator('#view-layout').selectOption('board')
     await page.locator('#view-group').selectOption('tag')
     await page.locator('#view-arrangement').selectOption('columns')
     await page
@@ -176,8 +177,8 @@ async function main() {
 
     // --- timetable tab -----------------------------------------------------
     await page.locator('.tabs .tab').nth(1).click()
-    await page.waitForTimeout(150)
-    await shot('timetable-tab')
+    await page.waitForTimeout(200)
+    await shot('timetable-week')
 
     // --- settings, all six panes (dark) ------------------------------------
     await pickTheme('深色')
@@ -196,6 +197,11 @@ async function main() {
     await shot('quadrant-dark')
     await openView('今天')
     await shot('today-dark')
+
+    await page.locator('.tabs .tab').nth(1).click()
+    await page.waitForTimeout(200)
+    await shot('timetable-week-dark')
+    await page.locator('.tabs .tab').first().click()
 
     // --- English, dark -----------------------------------------------------
     await pickLanguage('English')

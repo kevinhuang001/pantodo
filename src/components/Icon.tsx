@@ -64,6 +64,8 @@ const ICONS = {
   restore: ['M3 12a9 9 0 1 0 3-6.7', 'M3 4v4h4'],
   archive: ['M3 3h18v4H3z', 'M5 7v13a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V7', 'M10 12h4'],
   chevronDown: ['M6 9l6 6 6-6'],
+  chevronLeft: ['M15 18l-6-6 6-6'],
+  chevronRight: ['M9 18l6-6-6-6'],
   dots: ['M12 6h.01', 'M12 12h.01', 'M12 18h.01'],
   play: ['M7 4l12 8-12 8z'],
   tag: ['M20.6 13.4l-7.2 7.2a2 2 0 0 1-2.8 0L2 12V2h10l8.6 8.6a2 2 0 0 1 0 2.8z', 'M7 7h.01'],

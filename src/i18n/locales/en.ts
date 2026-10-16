@@ -173,12 +173,18 @@ const en: Record<keyof typeof zhCN, string> = {
   'view.groupBy.status': 'By status',
   'view.tags.any': 'Any',
   'view.tags.all': 'All',
-  'timetable.placeholder':
-    'The timetable arrives in M2: a week/day/month grid of scheduled blocks.',
   'toast.viewCreated': 'View created',
   'toast.viewUpdated': 'View saved',
   'empty.customViewTitle': 'Nothing in this view yet',
   'empty.customViewBody': 'Edit its filters, or create a few tasks.',
+  'timetable.today': 'Today',
+  'timetable.allDay': 'All day',
+  'timetable.prev': 'Previous week',
+  'timetable.next': 'Next week',
+  'timetable.empty': 'Nothing scheduled this week. Give a task a time and it appears here.',
+  'timetable.overdueNote': 'Showing blocks scheduled in the current week.',
+  'timetable.agenda': 'This week',
+  'timetable.agendaEmpty': 'Upcoming blocks appear here.',
 }
 
 export default en

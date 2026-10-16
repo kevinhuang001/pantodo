@@ -17,7 +17,8 @@ import { Icon } from './components/Icon'
 import { SettingsDialog } from './components/SettingsDialog'
 import { Sidebar } from './components/Sidebar'
 import { TaskDialog } from './components/TaskDialog'
-import type { TaskLookup } from './components/TaskList'
+import { TaskList, type TaskLookup } from './components/TaskList'
+import { Timetable } from './components/Timetable'
 import { Toast } from './components/Toast'
 import { Toolbar } from './components/Toolbar'
 import { ViewDialog } from './components/ViewDialog'
@@ -221,17 +222,13 @@ export function App() {
             onNewTask={() => setDialog({ kind: 'task', task: null })}
           />
 
-          <div className="reader">
+          <div className={activeTab === 'timetable' ? 'reader reader-flush' : 'reader'}>
             {error !== null ? <p className="banner">{error}</p> : null}
 
             {!ready ? (
               <p className="banner">…</p>
             ) : activeTab === 'timetable' ? (
-              <EmptyState
-                icon="calendar"
-                titleKey="nav.tab.timetable"
-                bodyKey="timetable.placeholder"
-              />
+              <Timetable now={now} theme={theme} />
             ) : activeView === null ? null : filtered.length === 0 &&
               activeView.groups.length === 0 ? (
               <EmptyState
@@ -263,6 +260,12 @@ export function App() {
                       }
                 }
               />
+            ) : activeView.layout === 'list' ? (
+              <TaskList
+                tasks={filtered}
+                lookup={lookup}
+                emptyKey={activeView.preset === 'trash' ? 'empty.trashTitle' : 'empty.viewTitle'}
+              />
             ) : (
               <GroupBoard
                 groups={groups}
@@ -274,7 +277,7 @@ export function App() {
               />
             )}
 
-            {activeView?.preset === 'trash' && trashedCount > 0 ? (
+            {activeTab === 'views' && activeView?.preset === 'trash' && trashedCount > 0 ? (
               <div className="row" style={{ marginTop: 'var(--space-5)' }}>
                 <button
                   type="button"

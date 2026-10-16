@@ -886,3 +886,229 @@
   background: var(--accent);
   border-color: var(--accent-strong);
 }
+
+/* ------------------------------------------------------------- timetable */
+
+.reader-flush {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4) 0;
+  overflow: hidden;
+}
+
+.timetable {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-height: 0;
+}
+
+.tt-nav {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.tt-range {
+  font-size: var(--text-md);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--tracking-tight);
+}
+
+.tt-head-row,
+.tt-allday-row {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr);
+}
+
+.tt-head-days,
+.tt-allday-cells {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+
+.tt-gutter {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: var(--space-2);
+  font-size: var(--text-2xs);
+  color: var(--text-faint);
+}
+
+.tt-day-head {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: var(--space-1) 0;
+  border-left: 1px solid var(--hairline);
+}
+
+.tt-weekday {
+  font-size: var(--text-2xs);
+  color: var(--text-muted);
+}
+
+.tt-date {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  font-size: var(--text-sm);
+  border-radius: var(--radius-pill);
+}
+
+.tt-day-head.today .tt-date {
+  font-weight: var(--weight-semibold);
+  color: var(--text-on-accent);
+  background: var(--accent);
+}
+
+.tt-allday-row {
+  min-height: 26px;
+  border-top: 1px solid var(--hairline);
+  border-bottom: 1px solid var(--hairline);
+}
+
+.tt-allday-cell {
+  display: flex;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  gap: 2px;
+  padding: 3px;
+  border-left: 1px solid var(--hairline);
+}
+
+.tt-allday-chip {
+  max-width: 100%;
+  overflow: hidden;
+  padding: 1px 6px;
+  font-size: var(--text-2xs);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  background: var(--accent-soft);
+  border-radius: var(--radius-xs);
+}
+
+.tt-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.tt-body {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr);
+}
+
+.tt-hours {
+  display: flex;
+  flex-direction: column;
+}
+
+.tt-hour {
+  position: relative;
+}
+
+.tt-hour span {
+  position: absolute;
+  top: -7px;
+  right: var(--space-2);
+  font-size: var(--text-2xs);
+  color: var(--text-faint);
+}
+
+.tt-columns {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+
+.tt-column {
+  position: relative;
+  border-left: 1px solid var(--hairline);
+}
+
+.tt-slot {
+  border-bottom: 1px solid var(--hairline);
+}
+
+.tt-now {
+  position: absolute;
+  right: 0;
+  left: 0;
+  z-index: 2;
+  height: 2px;
+  background: var(--danger);
+}
+
+.tt-now::before {
+  position: absolute;
+  top: -3px;
+  left: -4px;
+  width: 8px;
+  height: 8px;
+  content: '';
+  background: var(--danger);
+  border-radius: var(--radius-pill);
+}
+
+.tt-block {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  overflow: hidden;
+  padding: 3px 6px;
+  background: var(--surface-strong);
+  border: 1px solid var(--hairline);
+  border-left-width: 3px;
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-sm);
+}
+
+.tt-block-time {
+  font-size: var(--text-2xs);
+  color: var(--text-muted);
+}
+
+.tt-block-title {
+  overflow: hidden;
+  font-size: var(--text-xs);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* -------------------------------------------------------- sidebar agenda */
+
+.agenda-row {
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr);
+  gap: var(--space-2);
+  align-items: baseline;
+  padding: 5px 10px;
+  font-size: var(--text-xs);
+  border-radius: var(--radius-sm);
+}
+
+.agenda-row:hover {
+  background: var(--surface-hover);
+}
+
+.agenda-day {
+  color: var(--text-muted);
+}
+
+.agenda-time {
+  font-variant-numeric: tabular-nums;
+  color: var(--accent);
+}
+
+.agenda-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

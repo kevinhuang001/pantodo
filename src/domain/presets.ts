@@ -85,7 +85,7 @@ export function createSeedWorkspace(
     groupBy: 'tag',
     arrangement: 'grid',
     gridColumns: 2,
-    layout: 'quadrant',
+    layout: 'board',
     sortOrder: 4,
     groups: [
       makeGroup(

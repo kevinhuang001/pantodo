@@ -53,7 +53,8 @@ export interface ScheduleBlock extends Entity {
 
 export type GroupField = 'tag' | 'project' | 'status' | 'none'
 export type GroupArrangement = 'vertical' | 'columns' | 'grid'
-export type ViewLayout = 'list' | 'board' | 'quadrant'
+/** Only two ways to read a view; grouping/arrangement is how the user shapes it. */
+export type ViewLayout = 'list' | 'board'
 export type AppTab = 'views' | 'timetable'
 export type TagMatchMode = 'any' | 'all'
 export type ViewSort = 'manual' | 'due' | 'created' | 'title'

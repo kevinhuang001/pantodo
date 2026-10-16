@@ -17,7 +17,7 @@ export function viewNameKey(view: View): MessageKey | null {
     case 'trash':
       return 'nav.trash'
     default:
-      return view.layout === 'quadrant' ? 'nav.quadrant' : null
+      return null
   }
 }
 
@@ -45,7 +45,6 @@ export function groupTagNames(group: ViewGroup, tags: readonly Tag[]): string {
 export const LAYOUT_LABEL_KEYS = {
   list: 'view.layout.list',
   board: 'view.layout.board',
-  quadrant: 'view.layout.quadrant',
 } as const satisfies Record<View['layout'], MessageKey>
 
 export const GROUP_BY_LABEL_KEYS = {

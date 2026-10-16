@@ -15,7 +15,11 @@
   /* ---- surfaces ------------------------------------------------------- */
   --page-bg: #e4e9ed;
   --page-gradient: linear-gradient(120deg, #e2ebe9, #dfe7eb 45%, #eff1f2);
-  --wallpaper: radial-gradient(120% 90% at 12% 8%, #eef6f4 0%, #e3ecf1 42%, #dde5ea 100%);
+  --wallpaper:
+    radial-gradient(58% 48% at 10% 6%, #d9ece7 0%, transparent 62%),
+    radial-gradient(52% 44% at 88% 10%, #e2e7f5 0%, transparent 64%),
+    radial-gradient(66% 58% at 78% 94%, #dbe9f1 0%, transparent 66%),
+    linear-gradient(150deg, #eef3f6, #dee7ed 55%, #e9eff3);
 
   --surface: rgba(248, 250, 252, 0.88);
   --surface-strong: rgba(255, 255, 255, 0.92);
@@ -23,12 +27,17 @@
   --surface-hover: rgba(255, 255, 255, 0.72);
   --surface-active: rgba(255, 255, 255, 0.9);
 
-  --sidebar-gradient: linear-gradient(135deg, #ffffff70, #eef5fa38 47%, #ffffff59);
+  --sidebar-gradient: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.46),
+    rgba(238, 245, 250, 0.14) 47%,
+    rgba(255, 255, 255, 0.3)
+  );
   --main-gradient: linear-gradient(150deg, #f9fafbfa, #f1f4f7e6);
 
   /* ---- glass ---------------------------------------------------------- */
-  --glass-tint: rgba(237, 243, 247, 0.42);
-  --glass-blur: 30px;
+  --glass-tint: rgba(237, 243, 247, 0.34);
+  --glass-blur: 36px;
   --glass-saturate: 155%;
   --stroke: #ffffffb0;
   --stroke-strong: #ffffffd6;
@@ -86,7 +95,11 @@
 :root[data-theme='dark'] {
   --page-bg: #0d1318;
   --page-gradient: linear-gradient(120deg, #101a1d, #0e161c 45%, #131a1f);
-  --wallpaper: radial-gradient(120% 90% at 12% 8%, #16242a 0%, #111b22 42%, #0c1216 100%);
+  --wallpaper:
+    radial-gradient(58% 48% at 10% 6%, #1a3038 0%, transparent 62%),
+    radial-gradient(52% 44% at 88% 10%, #1c2334 0%, transparent 64%),
+    radial-gradient(66% 58% at 78% 94%, #14242c 0%, transparent 66%),
+    linear-gradient(150deg, #0f171c, #0b1218 55%, #101a20);
 
   --surface: rgba(23, 32, 40, 0.86);
   --surface-strong: rgba(28, 38, 47, 0.94);
@@ -94,10 +107,15 @@
   --surface-hover: rgba(255, 255, 255, 0.06);
   --surface-active: rgba(255, 255, 255, 0.1);
 
-  --sidebar-gradient: linear-gradient(135deg, #ffffff0f, #cfe4f208 47%, #ffffff0a);
+  --sidebar-gradient: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.07),
+    rgba(207, 228, 242, 0.03) 47%,
+    rgba(255, 255, 255, 0.05)
+  );
   --main-gradient: linear-gradient(150deg, rgba(26, 36, 44, 0.92), rgba(19, 27, 34, 0.9));
 
-  --glass-tint: rgba(26, 36, 45, 0.5);
+  --glass-tint: rgba(26, 36, 45, 0.42);
   --stroke: rgba(255, 255, 255, 0.12);
   --stroke-strong: rgba(255, 255, 255, 0.18);
   --hairline: rgba(255, 255, 255, 0.08);
@@ -171,8 +189,8 @@
   --space-8: 40px;
 
   /* ---- layout --------------------------------------------------------- */
-  --app-padding: 16px;
-  --app-gap: 20px;
+  --app-padding: 0px;
+  --app-gap: 0px;
   --sidebar-width: 276px;
   --sidebar-min-width: 240px;
   --sidebar-max-width: 360px;

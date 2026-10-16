@@ -22,10 +22,11 @@ describe('createSeedWorkspace', () => {
 
   it('seeds the Eisenhower example as an ordinary 2x2 view over pinned tag groups', () => {
     const workspace = createSeedWorkspace()
-    const quadrant = workspace.views.find((view) => view.layout === 'quadrant')
+    const quadrant = workspace.views.find((view) => view.groups.length === 4)
 
     expect(quadrant).toBeDefined()
     expect(quadrant?.builtin).toBe(true)
+    expect(quadrant?.layout).toBe('board')
     expect(quadrant?.groupBy).toBe('tag')
     expect(quadrant?.arrangement).toBe('grid')
     expect(quadrant?.gridColumns).toBe(2)
@@ -75,7 +76,7 @@ describe('createSeedWorkspace', () => {
     const workspace = createSeedWorkspace({ t: (key) => `[${key}]` })
     expect(workspace.views[0]?.name).toBe('[nav.inbox]')
     expect(workspace.tags[0]?.name).toBe('[seed.tagImportant]')
-    expect(workspace.views.find((view) => view.layout === 'quadrant')?.groups[0]?.label).toBe(
+    expect(workspace.views.find((view) => view.groups.length === 4)?.groups[0]?.label).toBe(
       '[quadrant.importantUrgent]',
     )
   })

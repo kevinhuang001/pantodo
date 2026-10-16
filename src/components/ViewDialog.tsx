@@ -23,7 +23,7 @@ interface ViewDialogProps {
 }
 
 const GROUP_FIELDS: GroupField[] = ['none', 'tag', 'project', 'status']
-const LAYOUTS: ViewLayout[] = ['list', 'board', 'quadrant']
+const LAYOUTS: ViewLayout[] = ['list', 'board']
 const ARRANGEMENTS: GroupArrangement[] = ['vertical', 'columns', 'grid']
 const ICONS: IconName[] = ['list', 'grid', 'layers', 'sliders', 'tag', 'calendar', 'sun', 'inbox']
 
