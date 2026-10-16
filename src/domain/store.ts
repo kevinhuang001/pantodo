@@ -167,7 +167,7 @@ export const useAppStore = create<AppState>()((set, get) => ({
       const workspace = await bridge.load()
       setLocale(resolveLocale(workspace.settings.localePreference))
       const activeViewId =
-        workspace.views.find((view) => view.builtin && view.preset === 'today')?.id ??
+        workspace.views.find((view) => view.builtin && view.preset === 'inbox')?.id ??
         workspace.views[0]?.id ??
         null
       set({ ...workspaceSlice(workspace), ready: true, activeViewId, error: null })

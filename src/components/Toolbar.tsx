@@ -1,13 +1,14 @@
 import { ARRANGEMENT_LABEL_KEYS, viewDisplayName } from '@/domain/display'
 import { useAppStore } from '@/domain/store'
 import type { AppTab, GroupArrangement, View } from '@/domain/types'
-import { LOCALES, LOCALE_LABELS, t } from '@/i18n'
+import { getLocale, LOCALES, LOCALE_LABELS, t } from '@/i18n'
 import type { Locale, LocalePreference } from '@/i18n'
 
 import { Menu, Segmented } from './Menu'
 import type { MenuItemSpec } from './Menu'
 
 interface ToolbarProps {
+  previewPanels: boolean
   tab: AppTab
   view: View | null
   total: number
@@ -20,7 +21,7 @@ const ARRANGEMENTS: GroupArrangement[] = ['vertical', 'columns', 'grid']
  * No layout switcher and no "new task" button: a view is always a list of tasks, its grouping is
  * arranged by dragging, and new tasks are captured in the inbox.
  */
-export function Toolbar({ tab, view, total, doneCount }: ToolbarProps) {
+export function Toolbar({ previewPanels, tab, view, total, doneCount }: ToolbarProps) {
   const settings = useAppStore((state) => state.settings)
   const updateView = useAppStore((state) => state.updateView)
   const updateSettings = useAppStore((state) => state.updateSettings)
@@ -65,19 +66,25 @@ export function Toolbar({ tab, view, total, doneCount }: ToolbarProps) {
     })),
   ]
 
-  const isTimetable = tab === 'timetable'
-  const grouped = view !== null && view.groups.length > 0
-  const title = isTimetable
-    ? t('nav.tab.timetable')
-    : view === null
-      ? t('views.section')
-      : viewDisplayName(view, t)
+  const isTimetable = !previewPanels && tab === 'timetable'
+  const grouped = !previewPanels && view !== null && view.groups.length > 0
+  const title = previewPanels
+    ? t('panels.title')
+    : isTimetable
+      ? t('nav.tab.timetable')
+      : view === null
+        ? t('views.section')
+        : viewDisplayName(view, t)
 
   return (
     <header className="toolbar">
       <div className="toolbar-title">
+        <span className="toolbar-breadcrumb">
+          {t('ui.workspace')}
+          <span>/</span>
+        </span>
         <h1>{title}</h1>
-        {isTimetable || view === null ? null : (
+        {previewPanels || isTimetable || view === null || view.preset === 'inbox' ? null : (
           <span className="count">
             {t('count.tasks', { count: total })}
             {total === 0 ? '' : ` · ${t('count.progress', { done: doneCount, total })}`}
@@ -88,6 +95,13 @@ export function Toolbar({ tab, view, total, doneCount }: ToolbarProps) {
       <span className="toolbar-spacer" />
 
       <div className="toolbar-actions">
+        <span className="toolbar-date">
+          {new Intl.DateTimeFormat(getLocale(), {
+            month: 'short',
+            day: 'numeric',
+            weekday: 'short',
+          }).format(new Date())}
+        </span>
         {grouped && view !== null ? (
           <Segmented
             label={t('toolbar.arrangement')}

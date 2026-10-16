@@ -8,6 +8,10 @@ Built as a **Tauri 2 desktop app** (Linux / Windows / macOS) with a **Rust core*
 logic and SQLite, and a **React + TypeScript** front end styled in the same frosted-glass visual
 language as [Glassmark](https://github.com/kevinhuang001/bookmark-web).
 
+## Interface preview
+
+The current visual review introduces a playful paper desk for **Create**, a mint glass sidebar, clearer task lists and a composed workbench layout study. See [the preview scope](docs/UI-PREVIEW.md) for what is interactive and what remains a design preview.
+
 ## Status
 
 | Milestone | Scope                                                                                                                                                                              | State       |

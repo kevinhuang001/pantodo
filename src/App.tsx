@@ -14,6 +14,8 @@ import { EmptyState } from './components/EmptyState'
 import { EntityDialog } from './components/EntityDialog'
 import { GroupBoard } from './components/GroupBoard'
 import { Icon } from './components/Icon'
+import { PanelPreview } from './components/PanelPreview'
+import { PaperFriend } from './components/PaperFriend'
 import { InboxComposer } from './components/InboxComposer'
 import { SettingsDialog } from './components/SettingsDialog'
 import { Sidebar } from './components/Sidebar'
@@ -74,6 +76,7 @@ export function App() {
   const restoreTask = useAppStore((state) => state.restoreTask)
   const emptyTrash = useAppStore((state) => state.emptyTrash)
 
+  const [previewPanels, setPreviewPanels] = useState(false)
   const [dialog, setDialog] = useState<DialogState>(null)
   const now = useNow()
   const theme = useResolvedTheme(settings.theme)
@@ -182,6 +185,7 @@ export function App() {
       // "n" captures into the inbox — the only place tasks are created.
       if (event.key === 'n' && !event.metaKey && !event.ctrlKey) {
         event.preventDefault()
+        setPreviewPanels(false)
         if (inboxView !== null) setActiveView(inboxView.id)
         window.setTimeout(() => document.getElementById('pantodo-inbox-input')?.focus(), 0)
       }
@@ -221,9 +225,15 @@ export function App() {
         <Sidebar
           now={now}
           theme={theme}
+          previewActive={previewPanels}
+          onOpenPreview={() => setPreviewPanels(true)}
+          onLeavePreview={() => setPreviewPanels(false)}
           onNewProject={() => setDialog({ kind: 'entity', entityKind: 'project', entity: null })}
           onNewTag={() => setDialog({ kind: 'entity', entityKind: 'tag', entity: null })}
-          onNewView={() => setDialog({ kind: 'view', view: null })}
+          onNewView={() => {
+            setPreviewPanels(false)
+            setDialog({ kind: 'view', view: null })
+          }}
           onEditProject={(project) =>
             setDialog({ kind: 'entity', entityKind: 'project', entity: project })
           }
@@ -234,22 +244,70 @@ export function App() {
 
         <main className="main">
           <Toolbar
+            previewPanels={previewPanels}
             tab={activeTab}
             view={activeView}
             total={filtered.length}
             doneCount={doneCount}
           />
 
-          <div className={activeTab === 'timetable' ? 'reader reader-flush' : 'reader'}>
+          <div
+            className={
+              !previewPanels && isInbox && activeTab === 'views'
+                ? 'reader reader-create'
+                : !previewPanels && activeTab === 'timetable'
+                  ? 'reader reader-flush'
+                  : 'reader'
+            }
+          >
             {error !== null ? <p className="banner">{error}</p> : null}
 
             {!ready ? (
               <p className="banner">…</p>
+            ) : previewPanels ? (
+              <PanelPreview lookup={lookup} />
             ) : activeTab === 'timetable' ? (
               <Timetable now={now} theme={theme} />
+            ) : isInbox ? (
+              <InboxComposer />
             ) : activeView === null ? null : (
               <>
-                {isInbox ? <InboxComposer /> : null}
+                <div className="page-intro list-intro">
+                  <div>
+                    <span className="little-label">{t('ui.atYourPace')}</span>
+                    <h2>
+                      {activeView.preset === 'today'
+                        ? t('ui.todayTitle')
+                        : activeView.preset === 'trash'
+                          ? t('nav.trash')
+                          : activeView.preset === 'all'
+                            ? t('ui.allTitle')
+                            : activeView.name}
+                      <span className="heading-spark">✳</span>
+                    </h2>
+                    <p>{t('ui.listSubtitle')}</p>
+                  </div>
+                  <PaperFriend small />
+                </div>
+                <div className="list-overview">
+                  <span>
+                    <span className="status-dot" />
+                    {
+                      filtered.filter(
+                        (task) => task.status !== 'done' && task.status !== 'cancelled',
+                      ).length
+                    }{' '}
+                    {t('ui.openTasks')}
+                  </span>
+                  <span>
+                    {doneCount} {t('ui.doneTasks')}
+                  </span>
+                  <span className="toolbar-spacer" />
+                  <span className="sort-caption">
+                    <Icon name="rows" size={14} />
+                    {t('ui.order')}
+                  </span>
+                </div>
 
                 {filtered.length === 0 && activeView.groups.length === 0 ? (
                   <EmptyState

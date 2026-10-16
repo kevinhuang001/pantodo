@@ -70,6 +70,7 @@ export function TaskRow({ task, lookup }: { task: Task; lookup: TaskLookup }) {
         }}
       >
         <span className="task-title">{task.title}</span>
+        {task.notes ? <span className="task-description">{task.notes}</span> : null}
         <span className="task-meta">
           {project === null ? null : (
             <span className="chip">
@@ -83,21 +84,25 @@ export function TaskRow({ task, lookup }: { task: Task; lookup: TaskLookup }) {
               {tag.name}
             </span>
           ))}
-          {task.dueAt === null ? null : (
-            <span className="chip">
-              <Icon name="clock" size={11} />
-              {formatDateTime(task.dueAt, locale)}
-            </span>
-          )}
-          {state === 'overdue' ? (
-            <span className="chip overdue">{t('task.meta.overdue')}</span>
-          ) : null}
-          {task.estimateMinutes === null ? null : (
-            <span className="chip">{formatMinutes(task.estimateMinutes)}</span>
-          )}
         </span>
       </div>
 
+      <div className="task-timing">
+        {task.dueAt === null ? (
+          <span className="task-unscheduled">—</span>
+        ) : (
+          <span className={state === 'overdue' ? 'task-due overdue' : 'task-due'}>
+            <Icon name="calendar" size={13} />
+            {formatDateTime(task.dueAt, locale)}
+          </span>
+        )}
+        {task.estimateMinutes === null ? null : (
+          <span className="task-estimate">
+            <Icon name="clock" size={11} />
+            {formatMinutes(task.estimateMinutes)}
+          </span>
+        )}
+      </div>
       <div className="task-actions">
         {task.deletedAt === null ? null : (
           <button

@@ -1,5 +1,7 @@
 # Pantodo — agreed specification
 
+> October 2026 interface review: [UI-PREVIEW.md](UI-PREVIEW.md) records the new Create page and composed-panel direction. Its scoped UI changes supersede the earlier Inbox/navigation descriptions below; the remaining functional specification is unchanged.
+
 Status: confirmed with the owner before implementation. Milestones are delivered in order, each with
 screenshots, passing tests and a push to `main`.
 

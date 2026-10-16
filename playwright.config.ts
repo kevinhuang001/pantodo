@@ -1,7 +1,7 @@
 import { defineConfig, devices } from '@playwright/test'
 
 const PORT = 1420
-const baseURL = `http://localhost:${PORT}`
+const baseURL = `http://127.0.0.1:${PORT}`
 
 export default defineConfig({
   testDir: './e2e',
@@ -15,6 +15,9 @@ export default defineConfig({
   outputDir: 'test-results',
   use: {
     baseURL,
+    launchOptions: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE
+      ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE }
+      : {},
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
     video: 'off',
@@ -26,7 +29,7 @@ export default defineConfig({
   },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
   webServer: {
-    command: 'npm run dev',
+    command: 'npm run dev -- --host 127.0.0.1',
     url: baseURL,
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
