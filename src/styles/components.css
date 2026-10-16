@@ -221,6 +221,7 @@
 
 .task-row {
   display: flex;
+  min-width: 0;
   align-items: center;
   gap: var(--space-3);
   padding: var(--space-2) var(--space-3);
@@ -292,6 +293,7 @@
 
 .task-meta {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: var(--space-2);
   font-size: var(--text-2xs);
@@ -331,6 +333,7 @@
   display: flex;
   flex-direction: column;
   min-width: 0;
+  overflow: hidden;
   padding: var(--space-3);
   background: var(--surface-sunken);
   border: 1px solid var(--hairline);
@@ -810,4 +813,76 @@
   gap: var(--space-2);
   padding: var(--space-4) var(--space-5);
   border-top: 1px solid var(--hairline);
+}
+
+/* ------------------------------------------------------------ sidebar tabs */
+
+.tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  padding: 3px;
+  background: var(--surface-sunken);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-lg);
+}
+
+.tab {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  padding: 7px var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+  border-radius: var(--radius-md);
+  transition:
+    background var(--motion-fast) var(--ease),
+    color var(--motion-fast) var(--ease);
+}
+
+.tab:hover {
+  color: var(--text);
+  background: var(--surface-hover);
+}
+
+.tab.active {
+  font-weight: var(--weight-semibold);
+  color: var(--accent);
+  background: var(--surface-active);
+  box-shadow: var(--shadow-sm);
+}
+
+.sidebar-hint {
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-xs);
+  line-height: 1.7;
+  color: var(--text-faint);
+}
+
+/* --------------------------------------------------------- icon chooser */
+
+.icon-choice {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  color: var(--text-muted);
+  background: var(--surface-sunken);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-sm);
+  transition:
+    background var(--motion-fast) var(--ease),
+    color var(--motion-fast) var(--ease);
+}
+
+.icon-choice:hover {
+  color: var(--text);
+  background: var(--surface-hover);
+}
+
+.icon-choice.selected {
+  color: var(--text-on-accent);
+  background: var(--accent);
+  border-color: var(--accent-strong);
 }

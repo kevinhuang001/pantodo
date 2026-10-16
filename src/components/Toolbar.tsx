@@ -1,6 +1,6 @@
 import { ARRANGEMENT_LABEL_KEYS, LAYOUT_LABEL_KEYS, viewDisplayName } from '@/domain/display'
 import { useAppStore } from '@/domain/store'
-import type { GroupArrangement, View, ViewLayout } from '@/domain/types'
+import type { AppTab, GroupArrangement, View, ViewLayout } from '@/domain/types'
 import { LOCALES, LOCALE_LABELS, t } from '@/i18n'
 import type { Locale, LocalePreference } from '@/i18n'
 
@@ -9,17 +9,17 @@ import { Menu, Segmented } from './Menu'
 import type { MenuItemSpec } from './Menu'
 
 interface ToolbarProps {
-  view: View
+  tab: AppTab
+  view: View | null
   total: number
   doneCount: number
   onNewTask: () => void
-  onOpenSettings: () => void
 }
 
-const LAYOUTS: ViewLayout[] = ['list', 'board', 'quadrant', 'timetable']
+const LAYOUTS: ViewLayout[] = ['list', 'board', 'quadrant']
 const ARRANGEMENTS: GroupArrangement[] = ['vertical', 'columns', 'grid']
 
-export function Toolbar({ view, total, doneCount, onNewTask, onOpenSettings }: ToolbarProps) {
+export function Toolbar({ tab, view, total, doneCount, onNewTask }: ToolbarProps) {
   const settings = useAppStore((state) => state.settings)
   const updateView = useAppStore((state) => state.updateView)
   const updateSettings = useAppStore((state) => state.updateSettings)
@@ -64,33 +64,44 @@ export function Toolbar({ view, total, doneCount, onNewTask, onOpenSettings }: T
     })),
   ]
 
-  const grouped = view.layout === 'board' || view.layout === 'quadrant'
+  const isTimetable = tab === 'timetable'
+  const grouped = view !== null && (view.layout === 'board' || view.layout === 'quadrant')
 
   return (
     <header className="toolbar">
       <div className="toolbar-title">
-        <h1>{viewDisplayName(view, t)}</h1>
-        <span className="count">
-          {t('count.tasks', { count: total })}
-          {total === 0 ? '' : ` · ${t('count.progress', { done: doneCount, total })}`}
-        </span>
+        <h1>
+          {isTimetable
+            ? t('nav.tab.timetable')
+            : view === null
+              ? t('nav.tab.views')
+              : viewDisplayName(view, t)}
+        </h1>
+        {isTimetable || view === null ? null : (
+          <span className="count">
+            {t('count.tasks', { count: total })}
+            {total === 0 ? '' : ` · ${t('count.progress', { done: doneCount, total })}`}
+          </span>
+        )}
       </div>
 
       <span className="toolbar-spacer" />
 
       <div className="toolbar-actions">
-        <Segmented
-          label={t('toolbar.layout')}
-          value={view.layout}
-          options={LAYOUTS.map((layout) => ({
-            key: layout,
-            label: t(LAYOUT_LABEL_KEYS[layout]),
-            icon: layout === 'list' ? 'list' : layout === 'timetable' ? 'calendar' : 'grid',
-          }))}
-          onChange={(key) => void updateView(view.id, { layout: key as ViewLayout })}
-        />
+        {!isTimetable && view !== null ? (
+          <Segmented
+            label={t('toolbar.layout')}
+            value={view.layout}
+            options={LAYOUTS.map((layout) => ({
+              key: layout,
+              label: t(LAYOUT_LABEL_KEYS[layout]),
+              icon: layout === 'list' ? 'list' : 'grid',
+            }))}
+            onChange={(key) => void updateView(view.id, { layout: key as ViewLayout })}
+          />
+        ) : null}
 
-        {grouped ? (
+        {grouped && view !== null ? (
           <Segmented
             label={t('toolbar.arrangement')}
             value={view.arrangement}
@@ -102,9 +113,9 @@ export function Toolbar({ view, total, doneCount, onNewTask, onOpenSettings }: T
           />
         ) : null}
 
-        {grouped && view.arrangement === 'grid' ? (
+        {grouped && view !== null && view.arrangement === 'grid' ? (
           <label className="grid-columns">
-            <span className="visually-hidden">{t('toolbar.arrangement')}</span>
+            <span className="visually-hidden">{t('view.field.columns')}</span>
             <select
               className="select"
               value={view.gridColumns}
@@ -123,16 +134,6 @@ export function Toolbar({ view, total, doneCount, onNewTask, onOpenSettings }: T
 
         <Menu label={t('toolbar.theme')} icon="sun" items={themeItems} />
         <Menu label={t('toolbar.language')} icon="globe" items={languageItems} />
-
-        <button
-          type="button"
-          className="icon-button"
-          title={t('toolbar.settings')}
-          aria-label={t('toolbar.settings')}
-          onClick={onOpenSettings}
-        >
-          <Icon name="settings" />
-        </button>
 
         <button type="button" className="primary" onClick={onNewTask}>
           <Icon name="plus" />

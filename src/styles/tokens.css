@@ -171,6 +171,8 @@
   --space-8: 40px;
 
   /* ---- layout --------------------------------------------------------- */
+  --app-padding: 16px;
+  --app-gap: 20px;
   --sidebar-width: 276px;
   --sidebar-min-width: 240px;
   --sidebar-max-width: 360px;

@@ -123,7 +123,7 @@ test('deletes to the trash and restores from it', async ({ page }) => {
 })
 
 test('opens the settings window and moves between panes', async ({ page }) => {
-  await page.locator('.toolbar').getByRole('button', { name: '设置' }).click()
+  await page.locator('.sidebar').getByRole('button', { name: '设置' }).click()
   const settings = page.locator('dialog.settings-window')
   await expect(settings).toBeVisible()
 
@@ -145,4 +145,33 @@ test('persists changes across a reload', async ({ page }) => {
   await page.goto('/')
   await page.locator('.nav-row', { hasText: '全部任务' }).click()
   await expect(page.locator('.task-row', { hasText: '刷新后仍在的任务' })).toBeVisible()
+})
+
+test('the timetable is its own tab, not a per-view layout', async ({ page }) => {
+  const tabs = page.locator('.tabs .tab')
+  await expect(tabs).toHaveCount(2)
+  await expect(tabs.nth(0)).toHaveText(/视图/)
+
+  await tabs.nth(1).click()
+  await expect(page.locator('.toolbar h1')).toHaveText('时间表')
+  await expect(page.getByRole('group', { name: '布局' })).toHaveCount(0)
+  await expect(page.locator('.empty-state')).toContainText('M2')
+
+  await tabs.nth(0).click()
+  await expect(page.getByRole('group', { name: '布局' })).toHaveCount(1)
+})
+
+test('creates a custom view that is listed under My views', async ({ page }) => {
+  const myViews = page.locator('.sidebar-section', { hasText: '我的视图' })
+  await expect(myViews).toContainText('还没有自定义视图')
+
+  await myViews.getByRole('button', { name: '新建视图' }).click()
+  await page.locator('#view-name').fill('e2e 自定义视图')
+  await page.locator('#view-group').selectOption('tag')
+  await page.locator('#view-arrangement').selectOption('columns')
+  await page.locator('button[form="pantodo-view-form"]').click()
+
+  await expect(page.locator('.toolbar h1')).toHaveText('e2e 自定义视图')
+  await expect(myViews.locator('.nav-row', { hasText: 'e2e 自定义视图' })).toHaveCount(1)
+  await expect(page.locator('.group-board[data-arrangement="columns"]')).toBeVisible()
 })

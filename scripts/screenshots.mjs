@@ -1,5 +1,5 @@
 /**
- * Headless screenshots of the real React UI, used as the M1 acceptance evidence.
+ * Headless screenshots of every screen, used as the acceptance evidence for the UI.
  *
  * The dev server is started here so the script is self-contained (`npm run screenshots`).
  */
@@ -55,41 +55,157 @@ async function main() {
       colorScheme: 'light',
     })
     const page = await context.newPage()
+    let index = 0
 
     const shot = async (name) => {
-      await page.screenshot({ path: path.join(OUT, `${name}.png`) })
-      console.log(`saved ${name}.png`)
+      index += 1
+      const file = `${String(index).padStart(2, '0')}-${name}.png`
+      await page.screenshot({ path: path.join(OUT, file) })
+      console.log(`saved ${file}`)
+    }
+
+    const pickTheme = async (label) => {
+      await page.locator('.toolbar .menu').first().locator('summary').click()
+      await page.locator('.menu-panel .menu-item', { hasText: label }).click()
+      await page.waitForTimeout(120)
+    }
+
+    const pickLanguage = async (label) => {
+      await page.locator('.toolbar .menu').nth(1).locator('summary').click()
+      await page.locator('.menu-panel .menu-item', { hasText: label }).click()
+      await page.waitForTimeout(120)
+    }
+
+    const openView = async (label) => {
+      await page.locator('.tabs .tab').first().click()
+      await page.locator('.nav-row', { hasText: label }).first().click()
+      await page.waitForTimeout(150)
     }
 
     await page.goto(`${BASE}/?reset=1`)
     await page.waitForSelector('.task-row')
-    await shot('01-today-light')
 
-    await page.locator('.nav-row', { hasText: '四象限' }).click()
-    await page.waitForSelector('.group-board[data-arrangement="grid"]')
-    await shot('02-quadrant-light')
+    // --- views, light -------------------------------------------------------
+    await shot('today-light')
+    await openView('收件箱')
+    await shot('inbox-light')
+    await openView('即将到来')
+    await shot('upcoming-light')
+    await openView('全部任务')
+    await shot('all-tasks-light')
 
-    await page.locator('.toolbar .menu').first().locator('summary').click()
-    await page.locator('.menu-panel .menu-item', { hasText: '深色' }).click()
-    await page.waitForFunction(() => document.documentElement.dataset.theme === 'dark')
-    await shot('03-quadrant-dark')
+    // --- the quadrant, the three arrangements ------------------------------
+    await openView('四象限')
+    await shot('quadrant-grid-light')
+    await page
+      .getByRole('group', { name: '排列方式' })
+      .getByRole('button', { name: '横向' })
+      .click()
+    await shot('quadrant-columns-light')
+    await page
+      .getByRole('group', { name: '排列方式' })
+      .getByRole('button', { name: '纵向' })
+      .click()
+    await shot('quadrant-vertical-light')
 
-    await page.locator('.nav-row', { hasText: '全部任务' }).click()
-    await shot('04-all-tasks-dark')
+    // --- custom view manager ----------------------------------------------
+    await page.locator('.tabs .tab').first().click()
+    await page
+      .locator('.sidebar-section', { hasText: '我的视图' })
+      .getByRole('button', { name: '新建视图' })
+      .click()
+    await page.locator('#view-name').fill('本周要紧事')
+    await page.locator('#view-group').selectOption('tag')
+    await page.locator('#view-arrangement').selectOption('columns')
+    await page
+      .locator('#pantodo-view-form')
+      .getByRole('button', { name: '重要', exact: true })
+      .click()
+    await shot('view-dialog')
+    await page.locator('button[form="pantodo-view-form"]').click()
+    await page.waitForTimeout(200)
+    await shot('custom-view-created')
 
-    await page.locator('.toolbar .menu').nth(1).locator('summary').click()
-    await page.locator('.menu-panel .menu-item', { hasText: 'English' }).click()
-    await page.locator('.nav-row', { hasText: 'Inbox' }).click()
-    await shot('05-inbox-english-dark')
-
-    await page.locator('.toolbar').getByRole('button', { name: 'Settings' }).click()
-    await page.locator('dialog.settings-window').waitFor()
-    await shot('06-settings-dark')
-    await page.keyboard.press('Escape')
-
+    // --- task dialogs ------------------------------------------------------
     await page.locator('.toolbar .primary').click()
-    await page.locator('#task-title').fill('Screenshot: new task')
-    await shot('07-task-dialog-dark')
+    await page.locator('#task-title').fill('准备下周的路线图评审')
+    await page.locator('#task-notes').fill('整理三个候选方向，各给一个取舍建议。')
+    await page.locator('#task-estimate').fill('45')
+    await shot('task-dialog-new')
+    await page.locator('button[form="pantodo-task-form"]').click()
+    await page.waitForTimeout(150)
+
+    await openView('全部任务')
+    const row = page.locator('.task-row').first()
+    await row.hover()
+    await row.locator('button[aria-label="编辑"]').click()
+    await shot('task-dialog-edit')
+    await page.locator('.dialog-header .icon-button').click()
+
+    // --- project + tag dialogs --------------------------------------------
+    await page
+      .locator('.sidebar-section', { hasText: '项目' })
+      .getByRole('button', { name: '新建项目' })
+      .click()
+    await page.locator('#entity-name').fill('个人')
+    await shot('project-dialog')
+    await page.locator('.dialog-header .icon-button').click()
+
+    await page
+      .locator('.sidebar-section', { hasText: '标签' })
+      .getByRole('button', { name: '新建标签' })
+      .click()
+    await page.locator('#entity-name').fill('等待他人')
+    await shot('tag-dialog')
+    await page.locator('.dialog-header .icon-button').click()
+
+    // --- trash with content ------------------------------------------------
+    await openView('全部任务')
+    const trashRow = page.locator('.task-row').last()
+    await trashRow.hover()
+    await trashRow.locator('button[aria-label="删除"]').click()
+    await page.locator('.dialog .danger-button').click()
+    await page.waitForTimeout(150)
+    await openView('回收站')
+    await shot('trash-with-item')
+
+    // --- search + empty state ---------------------------------------------
+    await page.locator('#pantodo-search').fill('zzz-没有结果')
+    await shot('search-empty')
+    await page.locator('#pantodo-search').fill('')
+
+    // --- timetable tab -----------------------------------------------------
+    await page.locator('.tabs .tab').nth(1).click()
+    await page.waitForTimeout(150)
+    await shot('timetable-tab')
+
+    // --- settings, all six panes (dark) ------------------------------------
+    await pickTheme('深色')
+    await page.locator('.sidebar').getByRole('button', { name: '设置' }).click()
+    await page.locator('dialog.settings-window').waitFor()
+    const panes = ['通用', '提醒', '计时', '同步', '数据', '关于']
+    for (const pane of panes) {
+      await page.locator('.settings-nav button', { hasText: pane }).click()
+      await page.waitForTimeout(120)
+      await shot(`settings-${pane}`)
+    }
+    await page.locator('.settings-footer .primary').click()
+
+    // --- dark views --------------------------------------------------------
+    await openView('四象限')
+    await shot('quadrant-dark')
+    await openView('今天')
+    await shot('today-dark')
+
+    // --- English, dark -----------------------------------------------------
+    await pickLanguage('English')
+    await page.waitForTimeout(150)
+    await shot('today-dark-english')
+
+    await pickTheme('Light')
+    await pickLanguage('简体中文')
+    await page.waitForTimeout(150)
+    await shot('today-light-restored')
 
     await browser.close()
     console.log(`screenshots written to ${OUT}`)

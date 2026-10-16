@@ -5,7 +5,7 @@ import { groupTasks, selectTasks, sortTasks } from '@/domain/filters'
 import { paletteFor } from '@/domain/palette'
 import { useAppStore } from '@/domain/store'
 import { applyTheme, resolveTheme, systemPrefersDark } from '@/domain/theme'
-import type { Project, ResolvedTheme, Tag, Task, ThemePreference } from '@/domain/types'
+import type { Project, ResolvedTheme, Tag, Task, ThemePreference, View } from '@/domain/types'
 import { nextStatus } from '@/domain/types'
 import { t } from '@/i18n'
 
@@ -20,10 +20,12 @@ import { TaskDialog } from './components/TaskDialog'
 import type { TaskLookup } from './components/TaskList'
 import { Toast } from './components/Toast'
 import { Toolbar } from './components/Toolbar'
+import { ViewDialog } from './components/ViewDialog'
 
 type DialogState =
   | { kind: 'task'; task: Task | null }
   | { kind: 'entity'; entityKind: 'project' | 'tag'; entity: Project | Tag | null }
+  | { kind: 'view'; view: View | null }
   | { kind: 'confirm-delete'; task: Task }
   | { kind: 'confirm-empty-trash' }
   | { kind: 'settings' }
@@ -57,6 +59,7 @@ export function App() {
   const tags = useAppStore((state) => state.tags)
   const taskTags = useAppStore((state) => state.taskTags)
   const settings = useAppStore((state) => state.settings)
+  const activeTab = useAppStore((state) => state.activeTab)
   const activeViewId = useAppStore((state) => state.activeViewId)
   const search = useAppStore((state) => state.search)
   const tagFilterId = useAppStore((state) => state.tagFilterId)
@@ -187,6 +190,9 @@ export function App() {
   }, [orderedViews, setActiveView])
 
   const trashedCount = tasks.filter((task) => task.deletedAt !== null).length
+  const searching = debouncedSearch.trim() !== ''
+  const isCustomEmptyView =
+    activeView !== null && !activeView.builtin && activeView.groups.length === 0
 
   return (
     <>
@@ -197,50 +203,59 @@ export function App() {
           theme={theme}
           onNewProject={() => setDialog({ kind: 'entity', entityKind: 'project', entity: null })}
           onNewTag={() => setDialog({ kind: 'entity', entityKind: 'tag', entity: null })}
+          onNewView={() => setDialog({ kind: 'view', view: null })}
           onEditProject={(project) =>
             setDialog({ kind: 'entity', entityKind: 'project', entity: project })
           }
           onEditTag={(tag) => setDialog({ kind: 'entity', entityKind: 'tag', entity: tag })}
+          onEditView={(view) => setDialog({ kind: 'view', view })}
           onOpenSettings={() => setDialog({ kind: 'settings' })}
         />
 
         <main className="main">
-          {activeView === null ? null : (
-            <Toolbar
-              view={activeView}
-              total={filtered.length}
-              doneCount={doneCount}
-              onNewTask={() => setDialog({ kind: 'task', task: null })}
-              onOpenSettings={() => setDialog({ kind: 'settings' })}
-            />
-          )}
+          <Toolbar
+            tab={activeTab}
+            view={activeView}
+            total={filtered.length}
+            doneCount={doneCount}
+            onNewTask={() => setDialog({ kind: 'task', task: null })}
+          />
 
           <div className="reader">
             {error !== null ? <p className="banner">{error}</p> : null}
 
             {!ready ? (
               <p className="banner">…</p>
-            ) : activeView === null ? null : activeView.layout === 'timetable' ? (
-              <p className="banner">{t('settings.timerNote')}</p>
-            ) : filtered.length === 0 && activeView.groups.length === 0 ? (
+            ) : activeTab === 'timetable' ? (
+              <EmptyState
+                icon="calendar"
+                titleKey="nav.tab.timetable"
+                bodyKey="timetable.placeholder"
+              />
+            ) : activeView === null ? null : filtered.length === 0 &&
+              activeView.groups.length === 0 ? (
               <EmptyState
                 icon={activeView.preset === 'trash' ? 'trash' : 'calendarCheck'}
                 titleKey={
                   activeView.preset === 'trash'
                     ? 'empty.trashTitle'
-                    : debouncedSearch.trim() === ''
-                      ? 'empty.title'
-                      : 'empty.searchTitle'
+                    : searching
+                      ? 'empty.searchTitle'
+                      : isCustomEmptyView
+                        ? 'empty.customViewTitle'
+                        : 'empty.title'
                 }
                 bodyKey={
                   activeView.preset === 'trash'
                     ? 'empty.trashBody'
-                    : debouncedSearch.trim() === ''
-                      ? 'empty.body'
-                      : 'empty.searchBody'
+                    : searching
+                      ? 'empty.searchBody'
+                      : isCustomEmptyView
+                        ? 'empty.customViewBody'
+                        : 'empty.body'
                 }
                 action={
-                  activeView.preset === 'trash' || debouncedSearch.trim() !== ''
+                  activeView.preset === 'trash' || searching
                     ? undefined
                     : {
                         labelKey: 'empty.cta',
@@ -285,6 +300,10 @@ export function App() {
           entity={dialog.entity}
           onClose={() => setDialog(null)}
         />
+      ) : null}
+
+      {dialog?.kind === 'view' ? (
+        <ViewDialog view={dialog.view} onClose={() => setDialog(null)} />
       ) : null}
 
       {dialog?.kind === 'settings' ? <SettingsDialog onClose={() => setDialog(null)} /> : null}

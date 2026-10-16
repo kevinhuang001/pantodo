@@ -63,10 +63,16 @@ A view is: name + icon + filter (tags any/all, project, status, date range, text
 N×M grid) + sort. Group headers can be dragged to reorder; the arrangement can be switched at any
 time and is stored in the view. **The Eisenhower matrix is an ordinary view**: group by tag, four
 fixed groups, 2×2 grid. First launch seeds Inbox, Today, Upcoming, All, plus a quadrant example with
-empty `important` and `urgent` tags. **Today = due today OR scheduled today.** A view can be laid out
-as list, board, quadrant or timetable.
+empty `important` and `urgent` tags. **Today = due today OR scheduled today.**
 
-### 3.3 Timetable
+**Navigation (revised after UI review):** the app has two top-level tabs — **视图 (Views)** and
+**时间表 (Timetable)**. Under 视图 the sidebar separates **默认视图** (the built-in five plus trash)
+from **我的视图** (user-created views, with a `+` that opens the view editor). A view is therefore
+laid out as list, board or quadrant; the timetable is _not_ a per-view layout any more, it is its own
+tab. Custom views are created/edited through a dialog covering name, icon, filter, grouping,
+arrangement and grid width.
+
+### 3.3 Timetable (its own tab)
 
 Week (default), Day and Month views. Drag on empty grid to create, drag to move, drag an edge to
 resize, 15-minute snapping, 00:00–24:00 scrollable, weeks start Monday, browser-local time zone only.

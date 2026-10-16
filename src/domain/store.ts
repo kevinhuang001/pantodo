@@ -7,6 +7,9 @@ import { resolveLocale, setLocale } from '@/i18n'
 import { nowIso } from './date'
 import { newId } from './ids'
 import type {
+  AppTab,
+  GroupArrangement,
+  GroupField,
   Id,
   Project,
   ScheduleBlock,
@@ -15,6 +18,8 @@ import type {
   Task,
   TaskStatus,
   View,
+  ViewFilter,
+  ViewLayout,
   Workspace,
 } from './types'
 
@@ -29,6 +34,16 @@ export interface NewTaskInput {
   status?: TaskStatus
   tagIds?: Id[]
   block?: { startAt: string; endAt: string } | null
+}
+
+export interface NewViewInput {
+  name: string
+  icon: string
+  filter: ViewFilter
+  groupBy: GroupField
+  arrangement: GroupArrangement
+  gridColumns: number
+  layout: ViewLayout
 }
 
 interface Toast {
@@ -48,6 +63,7 @@ export interface AppState {
   views: View[]
   settings: Settings
 
+  activeTab: AppTab
   activeViewId: Id | null
   search: string
   selectedTaskId: Id | null
@@ -59,6 +75,7 @@ export interface AppState {
   init: () => Promise<void>
   resetWorkspace: () => Promise<void>
 
+  setActiveTab: (tab: AppTab) => void
   setActiveView: (id: Id) => void
   setSearch: (value: string) => void
   selectTask: (id: Id | null) => void
@@ -86,6 +103,8 @@ export interface AppState {
   softDeleteTag: (id: Id) => Promise<void>
 
   updateView: (id: Id, patch: Partial<View>) => Promise<void>
+  createView: (input: NewViewInput) => Promise<Id>
+  softDeleteView: (id: Id) => Promise<void>
   reorderGroups: (viewId: Id, from: number, to: number) => Promise<void>
 
   updateSettings: (patch: Partial<Settings>) => Promise<void>
@@ -136,6 +155,7 @@ export const useAppStore = create<AppState>()((set, get) => ({
   ready: false,
   error: null,
   ...workspaceSlice(emptyWorkspace),
+  activeTab: 'views',
   activeViewId: null,
   search: '',
   selectedTaskId: null,
@@ -163,8 +183,18 @@ export const useAppStore = create<AppState>()((set, get) => ({
     get().notify('toast.reset')
   },
 
+  setActiveTab(tab) {
+    set({ activeTab: tab })
+  },
+
   setActiveView(id) {
-    set({ activeViewId: id, selectedTaskId: null, tagFilterId: null, projectFilterId: null })
+    set({
+      activeViewId: id,
+      activeTab: 'views',
+      selectedTaskId: null,
+      tagFilterId: null,
+      projectFilterId: null,
+    })
   },
 
   setSearch(value) {
@@ -401,6 +431,49 @@ export const useAppStore = create<AppState>()((set, get) => ({
     if (current === undefined) return
     const next = withUpdated(current, patch)
     set({ views: upsert(get().views, next) })
+    await bridge.upsertView(next)
+  },
+
+  async createView(input) {
+    const now = nowIso()
+    const views = get().views
+    const view: View = {
+      id: newId(),
+      createdAt: now,
+      updatedAt: now,
+      deletedAt: null,
+      name: input.name.trim(),
+      icon: input.icon,
+      builtin: false,
+      preset: null,
+      filter: input.filter,
+      groupBy: input.groupBy,
+      arrangement: input.arrangement,
+      gridColumns: input.gridColumns,
+      layout: input.layout,
+      sort: 'manual',
+      groups: [],
+      sortOrder: views.reduce((max, candidate) => Math.max(max, candidate.sortOrder), 0) + 1,
+    }
+    set({
+      views: [...views, view],
+      activeViewId: view.id,
+      activeTab: 'views',
+      selectedTaskId: null,
+    })
+    await bridge.upsertView(view)
+    get().notify('toast.viewCreated')
+    return view.id
+  },
+
+  async softDeleteView(id) {
+    const current = get().views.find((view) => view.id === id)
+    if (current === undefined || current.builtin) return
+    const next = withUpdated(current, { deletedAt: nowIso() })
+    const views = upsert(get().views, next)
+    const remaining = views.filter((view) => view.deletedAt === null && view.preset !== 'trash')
+    const activeViewId = get().activeViewId === id ? (remaining[0]?.id ?? null) : get().activeViewId
+    set({ views, activeViewId })
     await bridge.upsertView(next)
   },
 

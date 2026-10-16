@@ -1,10 +1,10 @@
 import { useMemo } from 'react'
 
-import { colorFor, selectTasks } from '@/domain/filters'
 import { viewDisplayName } from '@/domain/display'
+import { colorFor, selectTasks } from '@/domain/filters'
 import { paletteFor } from '@/domain/palette'
 import { useAppStore } from '@/domain/store'
-import type { Project, Tag, Task } from '@/domain/types'
+import type { Project, Tag, Task, View } from '@/domain/types'
 import { t } from '@/i18n'
 
 import { Icon } from './Icon'
@@ -15,12 +15,24 @@ interface SidebarProps {
   theme: 'light' | 'dark'
   onNewProject: () => void
   onNewTag: () => void
+  onNewView: () => void
   onEditProject: (project: Project) => void
   onEditTag: (tag: Tag) => void
+  onEditView: (view: View) => void
   onOpenSettings: () => void
 }
 
-const VIEW_ICONS = new Set<IconName>(['inbox', 'sun', 'calendar', 'list', 'grid', 'trash'])
+const VIEW_ICONS = new Set<IconName>([
+  'inbox',
+  'sun',
+  'calendar',
+  'list',
+  'grid',
+  'trash',
+  'layers',
+  'sliders',
+  'tag',
+])
 
 function viewIcon(icon: string): IconName {
   return VIEW_ICONS.has(icon as IconName) ? (icon as IconName) : 'list'
@@ -40,8 +52,10 @@ export function Sidebar({
   theme,
   onNewProject,
   onNewTag,
+  onNewView,
   onEditProject,
   onEditTag,
+  onEditView,
   onOpenSettings,
 }: SidebarProps) {
   const views = useAppStore((state) => state.views)
@@ -51,10 +65,12 @@ export function Sidebar({
   const taskTags = useAppStore((state) => state.taskTags)
   const scheduleBlocks = useAppStore((state) => state.scheduleBlocks)
   const search = useAppStore((state) => state.search)
+  const activeTab = useAppStore((state) => state.activeTab)
   const activeViewId = useAppStore((state) => state.activeViewId)
   const tagFilterId = useAppStore((state) => state.tagFilterId)
   const projectFilterId = useAppStore((state) => state.projectFilterId)
   const setSearch = useAppStore((state) => state.setSearch)
+  const setActiveTab = useAppStore((state) => state.setActiveTab)
   const setActiveView = useAppStore((state) => state.setActiveView)
   const setTagFilter = useAppStore((state) => state.setTagFilter)
   const setProjectFilter = useAppStore((state) => state.setProjectFilter)
@@ -92,12 +108,42 @@ export function Sidebar({
     return counts
   }, [tasks, taskTags])
 
-  const primaryViews = views
-    .filter((view) => view.deletedAt === null && view.preset !== 'trash')
+  const sortedViews = views
+    .filter((view) => view.deletedAt === null)
     .sort((a, b) => a.sortOrder - b.sortOrder)
-  const trashView = views.find((view) => view.preset === 'trash' && view.deletedAt === null) ?? null
+  const defaultViews = sortedViews.filter((view) => view.builtin)
+  const customViews = sortedViews.filter((view) => !view.builtin)
   const visibleProjects = projects.filter((project) => project.deletedAt === null)
   const visibleTags = tags.filter((tag) => tag.deletedAt === null)
+
+  const renderViewRow = (view: View) => {
+    const active = view.id === activeViewId && activeTab === 'views'
+    return (
+      <div key={view.id} className="nav-row-wrap">
+        <button
+          type="button"
+          className={active ? 'nav-row active' : 'nav-row'}
+          aria-current={active ? 'page' : undefined}
+          onClick={() => setActiveView(view.id)}
+        >
+          <Icon name={viewIcon(view.icon)} />
+          <span className="nav-label">{viewDisplayName(view, t)}</span>
+          <span className="count">{viewCounts.get(view.id) ?? 0}</span>
+        </button>
+        {view.builtin ? null : (
+          <button
+            type="button"
+            className="icon-button row-action"
+            aria-label={t('dialog.editView')}
+            title={t('dialog.editView')}
+            onClick={() => onEditView(view)}
+          >
+            <Icon name="pencil" size={13} />
+          </button>
+        )}
+      </div>
+    )
+  }
 
   return (
     <aside className="sidebar" aria-label={t('a11y.sidebar')}>
@@ -135,110 +181,147 @@ export function Sidebar({
           />
         </div>
 
+        <div className="tabs" role="tablist" aria-label={t('a11y.primaryNav')}>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeTab === 'views'}
+            className={activeTab === 'views' ? 'tab active' : 'tab'}
+            onClick={() => setActiveTab('views')}
+          >
+            <Icon name="list" size={14} />
+            {t('nav.tab.views')}
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeTab === 'timetable'}
+            className={activeTab === 'timetable' ? 'tab active' : 'tab'}
+            onClick={() => setActiveTab('timetable')}
+          >
+            <Icon name="calendar" size={14} />
+            {t('nav.tab.timetable')}
+          </button>
+        </div>
+
         <div className="sidebar-scroll">
-          <nav className="sidebar-section" aria-label={t('a11y.primaryNav')}>
-            {[...primaryViews, ...(trashView === null ? [] : [trashView])].map((view) => (
-              <button
-                key={view.id}
-                type="button"
-                className={view.id === activeViewId ? 'nav-row active' : 'nav-row'}
-                aria-current={view.id === activeViewId ? 'page' : undefined}
-                onClick={() => setActiveView(view.id)}
-              >
-                <Icon name={viewIcon(view.icon)} />
-                <span className="nav-label">{viewDisplayName(view, t)}</span>
-                <span className="count">{viewCounts.get(view.id) ?? 0}</span>
-              </button>
-            ))}
-          </nav>
+          {activeTab === 'views' ? (
+            <>
+              <nav className="sidebar-section" aria-label={t('nav.section.defaultViews')}>
+                {defaultViews.map(renderViewRow)}
+              </nav>
 
-          <section className="sidebar-section">
-            <header className="sidebar-section-head">
-              <span className="eyebrow">{t('nav.section.projects')}</span>
-              <button
-                type="button"
-                className="icon-button"
-                title={t('nav.newProject')}
-                aria-label={t('nav.newProject')}
-                onClick={onNewProject}
-              >
-                <Icon name="plus" size={14} />
-              </button>
-            </header>
-            {visibleProjects.length === 0 ? (
-              <p className="sidebar-empty">{t('nav.noProjects')}</p>
-            ) : (
-              visibleProjects.map((project) => (
-                <div key={project.id} className="nav-row-wrap">
+              <section className="sidebar-section">
+                <header className="sidebar-section-head">
+                  <span className="eyebrow">{t('nav.section.myViews')}</span>
                   <button
                     type="button"
-                    className={projectFilterId === project.id ? 'nav-row active' : 'nav-row'}
-                    onClick={() => {
-                      setTagFilter(null)
-                      setProjectFilter(projectFilterId === project.id ? null : project.id)
-                    }}
+                    className="icon-button"
+                    title={t('nav.newView')}
+                    aria-label={t('nav.newView')}
+                    onClick={onNewView}
                   >
-                    <span className="dot" style={{ background: colorFor(project, palette) }} />
-                    <span className="nav-label">{project.name}</span>
-                    <span className="count">{projectCounts.get(project.id) ?? 0}</span>
+                    <Icon name="plus" size={14} />
                   </button>
-                  <button
-                    type="button"
-                    className="icon-button row-action"
-                    aria-label={t('task.action.edit')}
-                    title={t('task.action.edit')}
-                    onClick={() => onEditProject(project)}
-                  >
-                    <Icon name="pencil" size={13} />
-                  </button>
-                </div>
-              ))
-            )}
-          </section>
+                </header>
+                {customViews.length === 0 ? (
+                  <p className="sidebar-empty">{t('nav.noViews')}</p>
+                ) : (
+                  customViews.map(renderViewRow)
+                )}
+              </section>
 
-          <section className="sidebar-section">
-            <header className="sidebar-section-head">
-              <span className="eyebrow">{t('nav.section.tags')}</span>
-              <button
-                type="button"
-                className="icon-button"
-                title={t('nav.newTag')}
-                aria-label={t('nav.newTag')}
-                onClick={onNewTag}
-              >
-                <Icon name="plus" size={14} />
-              </button>
-            </header>
-            {visibleTags.length === 0 ? (
-              <p className="sidebar-empty">{t('nav.noTags')}</p>
-            ) : (
-              visibleTags.map((tag) => (
-                <div key={tag.id} className="nav-row-wrap">
+              <section className="sidebar-section">
+                <header className="sidebar-section-head">
+                  <span className="eyebrow">{t('nav.section.projects')}</span>
                   <button
                     type="button"
-                    className={tagFilterId === tag.id ? 'nav-row active' : 'nav-row'}
-                    onClick={() => {
-                      setProjectFilter(null)
-                      setTagFilter(tagFilterId === tag.id ? null : tag.id)
-                    }}
+                    className="icon-button"
+                    title={t('nav.newProject')}
+                    aria-label={t('nav.newProject')}
+                    onClick={onNewProject}
                   >
-                    <span className="dot" style={{ background: colorFor(tag, palette) }} />
-                    <span className="nav-label">{tag.name}</span>
-                    <span className="count">{tagCounts.get(tag.id) ?? 0}</span>
+                    <Icon name="plus" size={14} />
                   </button>
+                </header>
+                {visibleProjects.length === 0 ? (
+                  <p className="sidebar-empty">{t('nav.noProjects')}</p>
+                ) : (
+                  visibleProjects.map((project) => (
+                    <div key={project.id} className="nav-row-wrap">
+                      <button
+                        type="button"
+                        className={projectFilterId === project.id ? 'nav-row active' : 'nav-row'}
+                        onClick={() => {
+                          setTagFilter(null)
+                          setProjectFilter(projectFilterId === project.id ? null : project.id)
+                        }}
+                      >
+                        <span className="dot" style={{ background: colorFor(project, palette) }} />
+                        <span className="nav-label">{project.name}</span>
+                        <span className="count">{projectCounts.get(project.id) ?? 0}</span>
+                      </button>
+                      <button
+                        type="button"
+                        className="icon-button row-action"
+                        aria-label={t('task.action.edit')}
+                        title={t('task.action.edit')}
+                        onClick={() => onEditProject(project)}
+                      >
+                        <Icon name="pencil" size={13} />
+                      </button>
+                    </div>
+                  ))
+                )}
+              </section>
+
+              <section className="sidebar-section">
+                <header className="sidebar-section-head">
+                  <span className="eyebrow">{t('nav.section.tags')}</span>
                   <button
                     type="button"
-                    className="icon-button row-action"
-                    aria-label={t('task.action.edit')}
-                    title={t('task.action.edit')}
-                    onClick={() => onEditTag(tag)}
+                    className="icon-button"
+                    title={t('nav.newTag')}
+                    aria-label={t('nav.newTag')}
+                    onClick={onNewTag}
                   >
-                    <Icon name="pencil" size={13} />
+                    <Icon name="plus" size={14} />
                   </button>
-                </div>
-              ))
-            )}
-          </section>
+                </header>
+                {visibleTags.length === 0 ? (
+                  <p className="sidebar-empty">{t('nav.noTags')}</p>
+                ) : (
+                  visibleTags.map((tag) => (
+                    <div key={tag.id} className="nav-row-wrap">
+                      <button
+                        type="button"
+                        className={tagFilterId === tag.id ? 'nav-row active' : 'nav-row'}
+                        onClick={() => {
+                          setProjectFilter(null)
+                          setTagFilter(tagFilterId === tag.id ? null : tag.id)
+                        }}
+                      >
+                        <span className="dot" style={{ background: colorFor(tag, palette) }} />
+                        <span className="nav-label">{tag.name}</span>
+                        <span className="count">{tagCounts.get(tag.id) ?? 0}</span>
+                      </button>
+                      <button
+                        type="button"
+                        className="icon-button row-action"
+                        aria-label={t('task.action.edit')}
+                        title={t('task.action.edit')}
+                        onClick={() => onEditTag(tag)}
+                      >
+                        <Icon name="pencil" size={13} />
+                      </button>
+                    </div>
+                  ))
+                )}
+              </section>
+            </>
+          ) : (
+            <p className="sidebar-hint">{t('timetable.placeholder')}</p>
+          )}
         </div>
       </div>
 

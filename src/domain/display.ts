@@ -46,8 +46,14 @@ export const LAYOUT_LABEL_KEYS = {
   list: 'view.layout.list',
   board: 'view.layout.board',
   quadrant: 'view.layout.quadrant',
-  timetable: 'view.layout.timetable',
 } as const satisfies Record<View['layout'], MessageKey>
+
+export const GROUP_BY_LABEL_KEYS = {
+  none: 'view.groupBy.none',
+  tag: 'view.groupBy.tag',
+  project: 'view.groupBy.project',
+  status: 'view.groupBy.status',
+} as const
 
 export const ARRANGEMENT_LABEL_KEYS = {
   vertical: 'toolbar.arrange.vertical',
