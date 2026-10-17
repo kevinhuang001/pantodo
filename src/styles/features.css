@@ -637,7 +637,7 @@
   position: absolute;
   left: 0;
   right: 0;
-  border-top: 1px solid #b78969;
+  border-top: 1px dashed color-mix(in srgb, var(--accent) 42%, transparent);
   z-index: 6;
   pointer-events: none;
 }
@@ -648,34 +648,55 @@
   left: 0;
   top: -3px;
   border-radius: 50%;
-  background: #b78969;
+  background: var(--accent);
 }
 .deadline-labels {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 2px;
-  transform: translateY(-50%);
-  padding-left: 7px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 3px;
+  padding: 3px 6px 0 8px;
 }
 .deadline-label {
   pointer-events: auto;
-  display: block;
-  max-width: 100%;
-  font-size: 8px;
-  line-height: 1.7;
-  color: #a87656;
-  background: color-mix(in srgb, var(--surface-strong) 95%, transparent);
-  padding: 0 4px;
-  border-radius: 3px;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  overflow: hidden;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  width: 100%;
+  min-height: 27px;
+  padding: 4px 7px;
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--border));
+  border-left: 3px solid var(--accent);
+  border-radius: 6px;
+  color: var(--accent-strong);
+  background: color-mix(in srgb, var(--accent) 8%, var(--surface-strong));
+  font-size: 11px;
+  text-align: left;
+  box-shadow: 0 2px 6px #0000000a;
+}
+.deadline-label svg,
+.deadline-label time {
+  flex-shrink: 0;
+}
+.deadline-label time {
+  font-variant-numeric: tabular-nums;
+  font-weight: 650;
+}
+.deadline-label > span {
+  overflow-wrap: anywhere;
+  line-height: 1.4;
+}
+.deadline-label:hover,
+.deadline-label:focus-visible {
+  background: var(--surface-strong);
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
 }
 .deadline-label.completed {
+  opacity: 0.7;
+}
+.deadline-label.completed > span {
   text-decoration: line-through;
-  opacity: 0.65;
 }
 .month-calendar {
   display: flex;
@@ -754,14 +775,16 @@
   flex-shrink: 0;
 }
 .month-event.deadline-event {
-  border-top: 1px solid #b78969;
-  border-radius: 0;
-  background: none;
-  padding-top: 2px;
-  color: #a87656;
+  border-top: 1px dashed color-mix(in srgb, var(--accent) 42%, transparent);
+  border-radius: 5px;
+  background: var(--accent-soft);
+  color: var(--accent-strong);
 }
 .deadline-prefix {
-  font-size: 7px;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 9px;
   flex-shrink: 0;
 }
 .month-more {

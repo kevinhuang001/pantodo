@@ -230,65 +230,61 @@
   color: var(--accent);
   border-radius: 10px;
 }
-.schedule-endpoints {
-  padding: 0 10px 10px;
+.schedule-editor {
+  padding: 0 16px 16px;
 }
 .schedule-endpoint {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  min-height: 48px;
-  padding: 6px;
-}
-.schedule-endpoint[data-endpoint='due'] {
-  border-top: 1px solid var(--hairline);
-  margin-top: 6px;
-  padding-top: 12px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
 }
 .endpoint-label {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  flex-shrink: 0;
   color: var(--text-muted);
   font-size: 11px;
 }
-.endpoint-label > svg {
-  color: var(--text-subtle);
-}
-.schedule-endpoint > div {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 62px 22px;
-  width: 210px;
-  align-items: center;
-  gap: 4px;
-}
-.schedule-endpoint button {
-  box-shadow: none;
-  border: 0;
-  height: 32px;
-  min-height: 32px;
-  padding: 0 7px;
-  font-size: 12px;
-  border-radius: 7px;
-  gap: 4px;
+.schedule-editor .datetime-field {
   background: var(--surface-sunken);
-  font-variant-numeric: tabular-nums;
+  border-color: var(--hairline);
+  padding: 6px;
+  border-radius: 10px;
 }
-.schedule-endpoint button > svg {
-  display: none;
+.schedule-editor .datetime-field > button {
+  height: 34px;
+  font-size: 12px;
 }
-.schedule-endpoint [data-size='icon'] {
-  width: 22px;
-  padding: 0;
-  background: transparent;
+.schedule-duration-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 14px;
+  font-size: 12px;
 }
-.schedule-endpoint [data-size='icon'] > svg {
-  display: block;
+.schedule-duration-row .capture-property {
+  color: var(--accent-strong);
+  min-width: 100px;
+  justify-content: center;
+  border-color: var(--hairline);
 }
-.schedule-endpoint [data-size='icon']:disabled {
-  opacity: 0;
+.schedule-result {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 0 0;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+.schedule-result output {
+  color: var(--accent-strong);
+  font-weight: 550;
+  margin-left: auto;
+}
+.schedule-due-field {
+  border-top: 1px solid var(--hairline);
+  padding-top: 16px;
+  margin-top: 16px;
 }
 .capture-picker-footer {
   padding: 10px 14px;

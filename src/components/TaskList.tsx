@@ -1,6 +1,8 @@
 import type { MessageKey } from '@/i18n'
 import { getLocale, t } from '@/i18n'
 import { formatDateTime, formatMinutes } from '@/domain/date'
+import { Flag } from 'lucide-react'
+import { STATUS_LABEL_KEYS } from '@/domain/display'
 import { colorFor, dueState } from '@/domain/filters'
 import type { Id, Project, Tag, Task } from '@/domain/types'
 
@@ -73,6 +75,7 @@ export function TaskRow({ task, lookup }: { task: Task; lookup: TaskLookup }) {
         <span className="task-title">{task.title}</span>
         {task.notes ? <span className="task-description">{task.notes}</span> : null}
         <span className="task-meta">
+          <span className="chip task-status">{t(STATUS_LABEL_KEYS[task.status])}</span>
           {project === null ? null : (
             <span className="chip">
               <span className="project-emoji" aria-hidden="true">
@@ -96,19 +99,32 @@ export function TaskRow({ task, lookup }: { task: Task; lookup: TaskLookup }) {
       >
         {task.startAt ? (
           <span className="task-plan">
+            <span className="timing-label">{t('plan.start')}</span>
             <Icon name="calendar" size={12} />
             {formatDateTime(task.startAt, locale)}
           </span>
         ) : null}
-        {task.dueAt === null ? (
-          <span className="task-unscheduled">—</span>
-        ) : (
+        {task.endAt ? (
+          <span className="task-plan">
+            <span className="timing-label">{t('plan.end')}</span>
+            {formatDateTime(task.endAt, locale)}
+          </span>
+        ) : null}
+        {task.dueAt === null ? null : (
           <span className={state === 'overdue' ? 'task-due overdue' : 'task-due'}>
-            <Icon name="calendar" size={13} />
+            <span className="timing-label">{t('task.field.due')}</span>
+            <Flag size={13} />
             {formatDateTime(task.dueAt, locale)}
           </span>
         )}
-        {task.estimateMinutes === null ? null : (
+        {!task.startAt || !task.endAt ? null : (
+          <span className="task-estimate">
+            <span className="timing-label">{t('plan.duration')}</span>
+            <Icon name="clock" size={11} />
+            {formatMinutes(Math.round((Date.parse(task.endAt) - Date.parse(task.startAt)) / 60000))}
+          </span>
+        )}
+        {task.estimateMinutes === null || (task.startAt && task.endAt) ? null : (
           <span className="task-estimate">
             <Icon name="clock" size={11} />
             {formatMinutes(task.estimateMinutes)}

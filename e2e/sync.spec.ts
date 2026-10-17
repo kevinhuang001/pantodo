@@ -260,7 +260,7 @@ test('view column count defaults to two and is edited only in view settings', as
   await page.locator('.nav-row', { hasText: '我的工作台' }).click()
   await expect(page.locator('.panel-toolbar').getByRole('combobox')).toHaveCount(0)
   await expect(
-    page.locator('.toolbar').getByRole('button', { name: '分栏', exact: true }),
+    page.locator('.view-actions').getByRole('button', { name: '分栏', exact: true }),
   ).toHaveAttribute('aria-pressed', 'true')
   await page.getByRole('button', { name: '视图设置', exact: true }).click()
   await expect(page.locator('#view-column-count')).toContainText('2')

@@ -1,7 +1,7 @@
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from './ui/tooltip'
 import { Rows3, Columns3 } from 'lucide-react'
 import { beginWindowDrag } from '@/window'
-import { viewDisplayName, ARRANGEMENT_LABEL_KEYS } from '@/domain/display'
+import { ARRANGEMENT_LABEL_KEYS } from '@/domain/display'
 import { useAppStore } from '@/domain/store'
 import type { AppTab, View } from '@/domain/types'
 import { t } from '@/i18n'
@@ -12,24 +12,12 @@ import { PresentationPicker } from './PresentationPicker'
 export function Toolbar({
   tab,
   view,
-  total,
-  doneCount,
   onEditView,
 }: {
   tab: AppTab
   view: View | null
-  total: number
-  doneCount: number
   onEditView: () => void
 }) {
-  const title =
-    tab === 'statistics'
-      ? t('nav.statistics')
-      : tab === 'timetable'
-        ? t('nav.tab.timetable')
-        : view
-          ? viewDisplayName(view, t)
-          : t('views.section')
   const showModes = tab === 'views' && view && view.preset !== 'inbox'
   const patch = (value: Partial<View>) => {
     if (view)
@@ -38,23 +26,9 @@ export function Toolbar({
         .updateView(view.id, value)
         .catch(() => useAppStore.getState().notify('work.failed'))
   }
+  if (!showModes) return null
   return (
-    <header className="toolbar" onMouseDown={beginWindowDrag}>
-      <div className="toolbar-title">
-        <h1>
-          {tab === 'views' && view?.emoji ? (
-            <span className="title-emoji" aria-hidden="true">
-              {view.emoji}{' '}
-            </span>
-          ) : null}
-          {title}
-        </h1>
-        {showModes ? (
-          <span className="view-task-count">
-            {total - doneCount} / {total}
-          </span>
-        ) : null}
-      </div>
+    <header className="view-actions" onMouseDown={beginWindowDrag}>
       <span className="toolbar-spacer" />
       {showModes && view.preset === null ? (
         <TooltipProvider delayDuration={250} disableHoverableContent>

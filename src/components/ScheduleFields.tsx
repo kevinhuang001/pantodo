@@ -1,8 +1,14 @@
 import { DateTimeField } from './DateTimeField'
-import { Input } from './ui/input'
+import { CaptureEstimatePicker } from './CaptureEstimatePicker'
 import { Button } from './ui/button'
-import { t } from '@/i18n'
-import { changeSchedule, type ScheduleValues } from '@/domain/planning'
+import { getLocale, t } from '@/i18n'
+import { formatDateTime, fromLocalInputValue } from '@/domain/date'
+import {
+  changeDuration,
+  changeSchedule,
+  scheduleDuration,
+  type ScheduleValues,
+} from '@/domain/planning'
 export function ScheduleFields({
   value,
   onChange,
@@ -12,57 +18,38 @@ export function ScheduleFields({
   onChange: (value: ScheduleValues) => void
   prefix?: string
 }) {
-  const patch = (key: keyof ScheduleValues, next: string) => onChange({ ...value, [key]: next })
   return (
     <fieldset className="schedule-fields">
       <legend>{t('plan.title')}</legend>
-      <div className="form-row">
-        <div className="field">
-          <label htmlFor={prefix + '-start'}>{t('plan.start')}</label>
-          <DateTimeField
-            id={prefix + '-start'}
-
-            value={value.start}
-            onChange={(next) => onChange(changeSchedule(value, 'start', next))}
-          />
-        </div>
-        <div className="field">
-          <label htmlFor={prefix + '-end'}>{t('plan.end')}</label>
-          <DateTimeField
-            id={prefix + '-end'}
-
-            value={value.end}
-            min={value.start || undefined}
-            fallback={value.start}
-            onChange={(next) => patch('end', next)}
-          />
-        </div>
+      <div className="field">
+        <label htmlFor={prefix + '-start'}>{t('plan.start')}</label>
+        <DateTimeField
+          id={prefix + '-start'}
+          value={value.start}
+          onChange={(next) => onChange(changeSchedule(value, 'start', next))}
+        />
       </div>
-      <div className="form-row">
-        <div className="field">
-          <label htmlFor={prefix + '-due'}>{t('task.field.due')}</label>
-          <DateTimeField
-            id={prefix + '-due'}
-
-            value={value.due}
-            onChange={(next) => patch('due', next)}
-          />
-        </div>
-        <div className="field">
-          <label htmlFor={prefix + '-estimate'}>{t('task.field.estimate')}</label>
-          <Input
-            id={prefix + '-estimate'}
-            className="input"
-            type="number"
-            min={1}
-            max={100000}
-            step={1}
-            value={value.estimate}
-            onChange={(event) => patch('estimate', event.target.value)}
-          />
-        </div>
+      <div className="schedule-duration-row">
+        <span>{t('plan.duration')}</span>
+        <CaptureEstimatePicker
+          value={String(scheduleDuration(value))}
+          onChange={(next) => onChange(changeDuration(value, next))}
+        />
       </div>
-      <p className="field-hint">{t('plan.hint')}</p>
+      {value.end ? (
+        <div className="schedule-result">
+          <span>{t('plan.end')}</span>
+          <output>{formatDateTime(fromLocalInputValue(value.end), getLocale())}</output>
+        </div>
+      ) : null}
+      <div className="field schedule-due-field">
+        <label htmlFor={prefix + '-due'}>{t('task.field.due')}</label>
+        <DateTimeField
+          id={prefix + '-due'}
+          value={value.due}
+          onChange={(next) => onChange(changeSchedule(value, 'due', next))}
+        />
+      </div>
       <Button
         type="button"
         className="text-button"

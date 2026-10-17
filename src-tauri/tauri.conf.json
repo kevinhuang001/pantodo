@@ -27,9 +27,10 @@
         "hiddenTitle": true,
         "noRedirectionBitmap": true,
         "windowEffects": {
-          "effects": ["sidebar", "acrylic"],
+          "effects": ["underWindowBackground", "acrylic"],
           "state": "active",
-          "radius": 14
+          "radius": 14,
+          "color": [235, 240, 238, 80]
         },
         "resizable": true,
         "maximizable": true,

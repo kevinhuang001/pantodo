@@ -1,3 +1,4 @@
+import { selectDuration } from '../scripts/date-fixture.mjs'
 import { choose } from './helpers'
 import { expect, test } from '@playwright/test'
 
@@ -43,7 +44,7 @@ test('renders the flush glass frame with the seeded views', async ({ page }) => 
   }
   await expect(page.locator('.nav-row', { hasText: '即将到来' })).toHaveCount(0)
   await expect(page.locator('.toolbar .primary')).toHaveCount(0)
-  await expect(page.locator('.toolbar h1')).toHaveText('全部任务')
+  await expect(page.locator('.nav-row.active')).toContainText('全部任务')
 })
 
 test('captures a task from the inbox composer', async ({ page }) => {
@@ -81,7 +82,8 @@ test('edits a task through the dialog', async ({ page }) => {
   await row.locator('button[aria-label="编辑"]').click()
   await expect(page.locator('[role="dialog"].dialog')).toBeVisible()
   await page.locator('#task-title').fill(`${title}：改过了`)
-  await page.locator('#task-estimate').fill('90')
+  await page.getByRole('button', { name: '持续时间', exact: true }).click()
+  await selectDuration(page, '90')
   await page.locator('button[form="pantodo-task-form"]').click()
 
   await expect(page.locator('.task-row', { hasText: '改过了' })).toBeVisible()
@@ -97,7 +99,7 @@ test('keeps creation focused and opens saved composed views', async ({ page }) =
   await page.locator('.nav-row', { hasText: '我的工作台' }).click()
   await expect(page.locator('.composed-panel')).toHaveCount(3)
   await expect(page.locator('.preview-badge')).toHaveCount(0)
-  await expect(page.locator('.toolbar h1')).toContainText('我的工作台')
+  await expect(page.locator('.nav-row.active')).toContainText('我的工作台')
 })
 
 test('changes saved panel layouts', async ({ page }) => {
@@ -133,7 +135,7 @@ test('switches language and re-localises built-in views', async ({ page }) => {
   await page.getByRole('button', { name: '设置', exact: true }).click()
   await choose(page, page.getByRole('combobox', { name: '语言', exact: true }), 'en')
 
-  await expect(page.locator('.toolbar h1')).toHaveText('All tasks')
+  await expect(page.locator('.nav-row.active')).toContainText('All tasks')
   await expect(page.locator('.nav-row', { hasText: 'Create' })).toHaveCount(1)
 })
 
@@ -180,7 +182,7 @@ test('opens the settings window and moves between panes', async ({ page }) => {
 test('the timetable is a left-hand row with a zoomable week grid', async ({ page }) => {
   await page.locator('.nav-row', { hasText: '时间表' }).click()
 
-  await expect(page.locator('.toolbar h1')).toHaveText('时间表')
+  await expect(page.locator('.nav-row.active')).toContainText('时间表')
   await expect(page.locator('.timetable .tt-column')).toHaveCount(7)
   await expect(page.locator('.timetable .tt-hour')).toHaveCount(24)
   await expect(page.locator('.timetable .tt-block').first()).toBeVisible()
@@ -206,7 +208,7 @@ test('creates a custom view that joins the views list', async ({ page }) => {
 
   await page.locator('#view-name').fill('e2e 自定义视图')
   await page.locator('button[form="pantodo-view-form"]').click()
-  await expect(page.locator('.toolbar h1')).toContainText('e2e 自定义视图')
+  await expect(page.locator('.nav-row.active')).toContainText('e2e 自定义视图')
   await expect(page.locator('.nav-row', { hasText: 'e2e 自定义视图' })).toHaveCount(1)
   await expect(page.getByRole('button', { name: '添加面板', exact: true })).toBeVisible()
   await expect(page.locator('.composed-panel')).toHaveCount(0)

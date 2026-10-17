@@ -89,7 +89,11 @@ export function WindowChrome() {
               )}
               onClick={() => action(kind)}
             >
-              {kind === 'close' ? (
+              {mac && kind === 'maximize' ? (
+                <svg viewBox="0 0 12 12" aria-hidden="true" className="mac-zoom-glyph">
+                  <path d="M2 7V2h5zM5 10h5V5z" fill="currentColor" />
+                </svg>
+              ) : kind === 'close' ? (
                 <X size={12} />
               ) : kind === 'minimize' ? (
                 <Minus size={12} />

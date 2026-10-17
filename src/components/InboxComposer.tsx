@@ -1,7 +1,6 @@
 import { Input } from './ui/input'
 import { Textarea } from './ui/textarea'
 import { CaptureEntityPicker } from './CaptureEntityPicker'
-import { CaptureEstimatePicker } from './CaptureEstimatePicker'
 import { CaptureSchedulePicker } from './CaptureSchedulePicker'
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
@@ -118,10 +117,7 @@ export function InboxComposer() {
           <div className="capture-card-bottom">
             <div className="capture-options">
               <CaptureSchedulePicker value={time} onChange={setTime} />
-              <CaptureEstimatePicker
-                value={time.estimate}
-                onChange={(estimate) => setTime((current) => ({ ...current, estimate }))}
-              />
+              <CaptureSchedulePicker value={time} onChange={setTime} dueOnly />
               {(['project', 'tags'] as const).map((kind) => (
                 <CaptureEntityPicker
                   key={kind}

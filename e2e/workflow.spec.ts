@@ -1,4 +1,4 @@
-import { setDateTimeField } from '../scripts/date-fixture.mjs'
+import { selectDuration, setDateTimeField } from '../scripts/date-fixture.mjs'
 import { setCaptureSchedule } from '../scripts/capture-fixture.mjs'
 import { choose } from './helpers'
 import { test, expect } from '@playwright/test'
@@ -47,7 +47,8 @@ test('creates a planned Todo with an independent deadline marker and edits it fr
   await line.click()
   await page.locator('#task-title').fill('准备实验报告（已调整）')
   await setDateTimeField(page, 'task-start', '2026-10-19T12:00')
-  await setDateTimeField(page, 'task-end', '2026-10-19T13:00')
+  await page.getByRole('button', { name: '持续时间', exact: true }).click()
+  await selectDuration(page, '60')
   await page.locator('button[form="pantodo-task-form"]').click()
   await expect(page.locator(`[data-todo-id="${todo.id}"]`)).toContainText('12:00')
 })
@@ -179,7 +180,8 @@ test('projects and saved views support emoji', async ({ page }) => {
   await page.locator('em-emoji-picker input[type=search]').fill('rocket')
   await page.getByRole('button', { name: '🚀', exact: true }).click()
   await page.locator('button[form="pantodo-view-form"]').click()
-  await expect(page.locator('.toolbar h1')).toContainText('🚀 实验面板')
+  await expect(page.locator('.nav-row.active')).toContainText('实验面板')
+  await expect(page.locator('.nav-row.active .nav-emoji')).toHaveText('🚀')
   await expect(page.locator('.composed-panel')).toHaveCount(0)
 })
 

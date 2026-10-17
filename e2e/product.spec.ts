@@ -23,7 +23,7 @@ test('view creation contains only identity fields and supports cancelling an emo
   expect(popup!.y + popup!.height).toBeLessThanOrEqual(page.viewportSize()!.height - 11)
   await page.getByRole('button', { name: '🔬', exact: true }).click()
   await page.locator('button[form="pantodo-view-form"]').click()
-  await expect(page.locator('.toolbar h1')).toContainText('论文进度')
+  await expect(page.locator('.nav-row.active')).toContainText('论文进度')
   await expect(page.locator('.composed-panel')).toHaveCount(0)
   await page.getByRole('button', { name: '添加面板', exact: true }).click()
   await page.locator('#panel-name').fill('实验')
@@ -86,14 +86,11 @@ test('three second focus transition is automatic, can be cancelled and never req
   await expect(page.locator('.work-timer')).toBeVisible()
 })
 
-test('capture selectors open on demand and the end starts from the selected start', async ({
-  page,
-}) => {
+test('capture selectors open on demand and calculate a cross-midnight end', async ({ page }) => {
   const trigger = page.getByRole('button', { name: '安排时间', exact: true })
   await trigger.click()
   await expect(page.locator('[data-slot="calendar"]')).toHaveCount(0)
-  const start = page.locator('[data-endpoint="start"]'),
-    end = page.locator('[data-endpoint="end"]')
+  const start = page.locator('[data-endpoint="start"]')
   await start.locator('button').nth(0).click()
   const popup = page.locator('.date-popover')
   const bounds = await popup.boundingBox(),
@@ -102,15 +99,8 @@ test('capture selectors open on demand and the end starts from the selected star
   await popup.locator('button[data-day="2026/10/20"]').click()
   await start.locator('button').nth(1).click()
   await selectClockTime(page, '23:45')
-  await end.locator('button').nth(0).click()
-  await expect(page.locator('.date-popover button[data-day="2026/10/20"]')).toHaveAttribute(
-    'data-selected-single',
-    'true',
-  )
-  await page.locator('.date-popover button[data-day="2026/10/21"]').click()
-  await end.locator('button').nth(1).click()
-  await expect(page.locator('.clock-preview output')).toHaveText('23:45')
-  await selectClockTime(page, '00:15')
+  await expect(page.locator('.schedule-result')).toContainText('00:15')
+  await expect(page.locator('[data-endpoint=end],[data-endpoint=due]')).toHaveCount(0)
   await page
     .locator('.capture-schedule-picker')
     .getByRole('button', { name: '完成', exact: true })
@@ -120,7 +110,8 @@ test('capture selectors open on demand and the end starts from the selected star
 })
 
 test('capture estimate offers quick durations and a custom value', async ({ page }) => {
-  const trigger = page.getByRole('button', { name: '预估时长', exact: true })
+  await page.getByRole('button', { name: '安排时间', exact: true }).click()
+  const trigger = page.getByRole('button', { name: '持续时间', exact: true })
   await trigger.click()
   await page.getByRole('button', { name: '45分', exact: true }).click()
   await expect(trigger).toContainText('45分')

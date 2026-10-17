@@ -23,7 +23,7 @@ test('create is one borderless writing surface with a stable, nonrepeating quote
   await page.locator('.nav-row', { hasText: '全部任务' }).click()
   await page.locator('.nav-row', { hasText: '创建' }).click()
   await expect(page.locator('.capture-greeting h2')).not.toHaveText(quote)
-  expect((await page.locator('.toolbar').boundingBox())!.height).toBeLessThanOrEqual(44)
+  await expect(page.locator('.toolbar,.toolbar-breadcrumb')).toHaveCount(0)
 })
 
 test('custom views contain panels, each with independent list/gallery content', async ({
@@ -31,9 +31,9 @@ test('custom views contain panels, each with independent list/gallery content', 
 }) => {
   await page.locator('.nav-row', { hasText: '我的工作台' }).click()
   await expect(page.locator('.composed-panel')).toHaveCount(3)
-  await expect(page.locator('.toolbar').getByRole('group', { name: '排列方式' })).toBeVisible()
+  await expect(page.locator('.view-actions').getByRole('group', { name: '排列方式' })).toBeVisible()
   await expect(
-    page.locator('.toolbar').getByRole('group', { name: '展示方式', exact: true }),
+    page.locator('.view-actions').getByRole('group', { name: '展示方式', exact: true }),
   ).toHaveCount(0)
   const panel = page.locator('.composed-panel').nth(1)
   const id = await panel.getAttribute('data-panel-id')

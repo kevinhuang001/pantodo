@@ -33,7 +33,7 @@ test('native platform controls, title dragging and all eight resize edges dispat
   ).toBe('rgb(255, 95, 87)')
   await page.getByRole('button', { name: '最小化', exact: true }).click()
   await page.getByRole('button', { name: '最大化', exact: true }).click()
-  await page.locator('.toolbar-title').click()
+  await page.locator('.window-drag').click({ position: { x: 320, y: 20 } })
   for (const edge of [
     'North',
     'NorthEast',

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Check, Timer, X } from 'lucide-react'
+import { Check, Timer } from 'lucide-react'
 import { t } from '@/i18n'
 import { Button } from './ui/button'
 import { SelectField } from './SelectField'
@@ -36,10 +36,10 @@ export function CaptureEstimatePicker({
           type="button"
           className="capture-property"
           data-filled={!!value}
-          aria-label={t('picker.estimate')}
+          aria-label={t('plan.duration')}
         >
           <Timer size={15} />
-          <span>{value ? duration(Number(value)) : t('capture.estimateShort')}</span>
+          <span>{value ? duration(Number(value)) : t('plan.duration')}</span>
         </Button>
       </PopoverTrigger>
       <PopoverContent
@@ -53,12 +53,12 @@ export function CaptureEstimatePicker({
           <span className="picker-emblem">
             <Timer size={18} />
           </span>
-          <strong>{t('picker.estimate')}</strong>
+          <strong>{t('plan.duration')}</strong>
         </header>
         <output className="duration-preview" aria-live="polite">
           {duration(draft) || '0' + t('picker.minutesShort')}
         </output>
-        <div className="estimate-presets" role="group" aria-label={t('picker.estimate')}>
+        <div className="estimate-presets" role="group" aria-label={t('plan.duration')}>
           {PRESETS.map((minutes) => (
             <Button
               key={minutes}
@@ -103,18 +103,6 @@ export function CaptureEstimatePicker({
           </div>
         </div>
         <footer className="capture-picker-footer">
-          <Button
-            variant="ghost"
-            size="sm"
-            disabled={!value}
-            onClick={() => {
-              onChange('')
-              setOpen(false)
-            }}
-          >
-            <X size={13} />
-            {t('picker.clearEstimate')}
-          </Button>
           <Button
             size="sm"
             disabled={draft < 1 || draft > 100000}

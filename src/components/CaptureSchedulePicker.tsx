@@ -1,43 +1,38 @@
 import { useState } from 'react'
-import { CalendarDays, Check, Clock3, X, Flag, ArrowDownRight } from 'lucide-react'
-import { changeSchedule, type ScheduleEndpoint, type ScheduleValues } from '@/domain/planning'
+import { CalendarDays, Check, Flag, X, ArrowDownRight } from 'lucide-react'
+import {
+  changeSchedule,
+  changeDuration,
+  scheduleDuration,
+  type ScheduleValues,
+} from '@/domain/planning'
+import { formatDateTime, fromLocalInputValue, formatMinutes } from '@/domain/date'
 import { getLocale, t } from '@/i18n'
-import { DatePickerPopover, TimePickerPopover } from './DateTimePicker'
+import { DateTimeField } from './DateTimeField'
+import { CaptureEstimatePicker } from './CaptureEstimatePicker'
 import { Button } from './ui/button'
 import { Popover, PopoverTrigger, PopoverContent } from './ui/popover'
-
-const endpoints = ['start', 'end', 'due'] as const
-const labels = { start: 'plan.start', end: 'plan.end', due: 'task.field.due' } as const
 
 export function CaptureSchedulePicker({
   value,
   onChange,
+  dueOnly = false,
 }: {
   value: ScheduleValues
   onChange: (value: ScheduleValues) => void
+  dueOnly?: boolean
 }) {
   const [open, setOpen] = useState(false)
   const [draft, setDraft] = useState(value)
-  const displayDate = (raw: string) =>
-    new Intl.DateTimeFormat(getLocale(), { month: 'short', day: 'numeric' }).format(new Date(raw))
-  const invalid =
-    !!(draft.start || draft.end) && (!draft.start || !draft.end || draft.end <= draft.start)
-  const summary = value.start
-    ? displayDate(value.start) +
-      ' ' +
-      value.start.slice(11) +
-      (value.end ? '–' + value.end.slice(11) : '')
-    : value.due
-      ? displayDate(value.due) + ' · ' + t('capture.due')
-      : t('picker.time')
-  const update = (endpoint: ScheduleEndpoint, next: string) =>
-    setDraft(changeSchedule(draft, endpoint, next))
+  const date = (raw: string) => formatDateTime(fromLocalInputValue(raw), getLocale())
+  const raw = dueOnly ? value.due : value.start
+  const label = dueOnly ? t('task.field.due') : t('plan.title')
   return (
     <Popover
       open={open}
-      onOpenChange={(open) => {
-        if (open) setDraft(value)
-        setOpen(open)
+      onOpenChange={(next) => {
+        if (next) setDraft(value)
+        setOpen(next)
       }}
     >
       <PopoverTrigger asChild>
@@ -45,11 +40,17 @@ export function CaptureSchedulePicker({
           variant="ghost"
           type="button"
           className="capture-property"
-          data-filled={!!(value.start || value.due)}
-          aria-label={t('plan.title')}
+          data-filled={!!raw}
+          aria-label={label}
         >
-          <CalendarDays size={15} />
-          <span>{summary}</span>
+          {dueOnly ? <Flag size={15} /> : <CalendarDays size={15} />}
+          <span>
+            {raw
+              ? date(raw) + (dueOnly ? '' : ' · ' + formatMinutes(scheduleDuration(value)))
+              : dueOnly
+                ? t('capture.due')
+                : t('picker.time')}
+          </span>
         </Button>
       </PopoverTrigger>
       <PopoverContent
@@ -61,83 +62,58 @@ export function CaptureSchedulePicker({
       >
         <header className="capture-picker-heading">
           <span className="picker-emblem">
-            <CalendarDays size={18} />
+            {dueOnly ? <Flag size={18} /> : <CalendarDays size={18} />}
           </span>
-          <strong>{t('plan.title')}</strong>
+          <strong>{label}</strong>
         </header>
-        <div className="schedule-endpoints">
-          {endpoints.map((endpoint) => (
-            <div className="schedule-endpoint" key={endpoint} data-endpoint={endpoint}>
-              <span className="endpoint-label">
-                {endpoint === 'due' ? (
-                  <Flag size={14} />
-                ) : endpoint === 'end' ? (
-                  <ArrowDownRight size={14} />
-                ) : (
-                  <CalendarDays size={14} />
-                )}
-                <span>{t(labels[endpoint])}</span>
-              </span>
-              <div>
-                <DatePickerPopover
-                  value={draft[endpoint]}
-                  fallback={endpoint === 'end' ? draft.start : undefined}
-                  onChange={(next) => update(endpoint, next)}
-                >
-                  <Button
-                    variant="ghost"
-                    aria-label={t(labels[endpoint]) + ' · ' + t('calendar.range')}
-                  >
-                    <CalendarDays size={13} />
-                    {draft[endpoint] ? displayDate(draft[endpoint]) : t('picker.chooseDate')}
-                  </Button>
-                </DatePickerPopover>
-                <TimePickerPopover
-                  value={draft[endpoint]}
-                  fallback={endpoint === 'end' ? draft.start : undefined}
-                  onChange={(next) => update(endpoint, next)}
-                >
-                  <Button
-                    variant="ghost"
-                    aria-label={t(labels[endpoint]) + ' · ' + t('picker.time')}
-                  >
-                    <Clock3 size={13} />
-                    {draft[endpoint] ? draft[endpoint].slice(11) : '—'}
-                  </Button>
-                </TimePickerPopover>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  disabled={!draft[endpoint]}
-                  aria-label={t('picker.clearDate') + ' · ' + t(labels[endpoint])}
-                  onClick={() => update(endpoint, '')}
-                >
-                  <X size={13} />
-                </Button>
+        <div className="schedule-editor">
+          <div className="schedule-endpoint" data-endpoint={dueOnly ? 'due' : 'start'}>
+            <span className="endpoint-label">
+              {dueOnly ? t('task.field.due') : t('plan.start')}
+            </span>
+            <DateTimeField
+              value={dueOnly ? draft.due : draft.start}
+              aria-label={dueOnly ? t('task.field.due') : t('plan.start')}
+              onChange={(next) => setDraft(changeSchedule(draft, dueOnly ? 'due' : 'start', next))}
+            />
+          </div>
+          {!dueOnly ? (
+            <>
+              <div className="schedule-duration-row">
+                <span className="endpoint-label">{t('plan.duration')}</span>
+                <CaptureEstimatePicker
+                  value={String(scheduleDuration(draft))}
+                  onChange={(next) => setDraft(changeDuration(draft, next))}
+                />
               </div>
-            </div>
-          ))}
+              {draft.end ? (
+                <div className="schedule-result">
+                  <ArrowDownRight size={14} />
+                  <span>{t('plan.end')}</span>
+                  <output>{date(draft.end)}</output>
+                </div>
+              ) : null}
+            </>
+          ) : null}
         </div>
-        {draft.start && draft.end && draft.end <= draft.start ? (
-          <p role="alert" className="form-error">
-            {t('time.invalidRange')}
-          </p>
-        ) : null}
         <footer className="capture-picker-footer">
           <Button
             variant="ghost"
             size="sm"
-            disabled={!(draft.start || draft.end || draft.due)}
-            onClick={() => setDraft({ ...draft, start: '', end: '', due: '' })}
+            disabled={!(dueOnly ? draft.due : draft.start)}
+            onClick={() => setDraft(changeSchedule(draft, dueOnly ? 'due' : 'start', ''))}
           >
             <X size={13} />
             {t('picker.clearDate')}
           </Button>
           <Button
             size="sm"
-            disabled={invalid}
             onClick={() => {
-              onChange(draft)
+              onChange(
+                dueOnly
+                  ? { ...value, due: draft.due }
+                  : { ...value, start: draft.start, end: draft.end, estimate: draft.estimate },
+              )
               setOpen(false)
             }}
           >

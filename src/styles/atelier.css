@@ -253,15 +253,6 @@
 .toolbar-title > .count {
   display: none;
 }
-.toolbar-breadcrumb {
-  display: flex;
-  gap: 15px;
-  color: var(--text-subtle);
-  font-size: 11px;
-}
-.toolbar-breadcrumb > span {
-  color: var(--border-strong);
-}
 .toolbar-actions {
   gap: 7px;
 }
@@ -484,7 +475,7 @@
   white-space: nowrap;
 }
 .task-due.overdue {
-  color: #b88668;
+  color: var(--accent-strong);
 }
 .task-estimate {
   display: flex;

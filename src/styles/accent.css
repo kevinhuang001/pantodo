@@ -86,8 +86,8 @@
 :root[data-accent] .sidebar {
   background: linear-gradient(
     150deg,
-    color-mix(in srgb, var(--sidebar-wash) 66%, transparent),
-    color-mix(in srgb, var(--sidebar-wash) 54%, transparent)
+    color-mix(in srgb, var(--sidebar-wash) 32%, transparent),
+    color-mix(in srgb, var(--sidebar-wash) 24%, transparent)
   );
 }
 :root[data-accent] .main {
@@ -121,4 +121,9 @@
 }
 :root[data-accent] .task-check {
   border-color: var(--border-strong);
+}
+
+:root[data-accent] .task-due,
+:root[data-accent] .task-plan {
+  color: var(--accent-strong);
 }

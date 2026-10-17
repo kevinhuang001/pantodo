@@ -130,8 +130,6 @@ export function App() {
     return sortTasks(list, activeView, context)
   }, [activeView, tasks, context, debouncedSearch, tagFilterId, projectFilterId, taskTags])
 
-  const doneCount = filtered.filter((task) => task.status === 'done').length
-
   const lookup = useMemo<TaskLookup>(() => {
     const projectsById = new Map(projects.map((project) => [project.id, project]))
     const tagsById = new Map(tags.map((tag) => [tag.id, tag]))
@@ -246,8 +244,6 @@ export function App() {
           <Toolbar
             tab={activeTab}
             view={activeView}
-            total={filtered.length}
-            doneCount={doneCount}
             onEditView={() => {
               if (activeView) setDialog({ kind: 'view', view: activeView })
             }}

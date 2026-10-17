@@ -49,7 +49,7 @@ body,
 .window-drag {
   position: absolute;
   inset: 0 auto 0 0;
-  width: var(--sidebar-width);
+  width: 100%;
   user-select: none;
   pointer-events: auto;
 }
@@ -194,9 +194,6 @@ body,
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-.toolbar-breadcrumb {
-  display: none;
 }
 .view-task-count {
   font-size: 10px;
@@ -579,8 +576,118 @@ body,
   grid-template-columns: 156px minmax(0, 1fr);
 }
 
-/* The native material blurs the desktop; keep its webview overlay clear. */
+/* Native desktop material plus a light tint; Linux compositors may only provide alpha. */
 :root[data-desktop='true'] .sidebar {
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
+  backdrop-filter: blur(20px) saturate(125%);
+  -webkit-backdrop-filter: blur(20px) saturate(125%);
+}
+
+/* Navigation already identifies the page; only view controls remain. */
+.main {
+  padding-top: 44px;
+}
+.view-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  padding: 0 28px 6px;
+}
+.view-actions .toolbar-spacer {
+  flex: 1;
+}
+.is-mac .window-control {
+  width: 14px;
+  height: 14px;
+}
+.is-mac .window-control svg {
+  width: 10px;
+  height: 10px;
+  stroke-width: 2.6;
+}
+.is-mac .window-control.close {
+  color: #7a1614;
+}
+.is-mac .window-control.minimize {
+  color: #825800;
+}
+.is-mac .window-control.maximize {
+  color: #086419;
+}
+.is-mac .window-control.close:hover {
+  background: #ff5f57;
+}
+.is-mac .window-control:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+/* Detail and metadata remain readable in narrow panels and galleries. */
+.task-list .task-row {
+  align-items: start;
+  flex-wrap: wrap;
+}
+.task-list .task-body {
+  flex: 1 1 200px;
+}
+.task-list .task-title {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.task-list .task-description {
+  display: block;
+  max-width: 100%;
+  max-height: none;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 12px;
+  line-height: 1.65;
+  -webkit-line-clamp: unset;
+}
+.task-list .task-timing {
+  flex-shrink: 1;
+  max-width: 100%;
+  gap: 5px;
+}
+.task-list .task-timing > span {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  white-space: normal;
+}
+.task-list .timing-label {
+  font-size: 10px;
+  color: var(--text-muted);
+  margin-right: 3px;
+  flex-shrink: 0;
+}
+.task-list .task-status {
+  color: var(--accent-strong);
+  background: var(--accent-soft);
+}
+.task-gallery .task-body {
+  min-width: 0;
+}
+.task-gallery .task-timing {
+  align-items: start;
+  justify-content: flex-start;
+}
+.task-list .task-timing[data-empty='true'] {
+  display: none;
+}
+@media (max-width: 1100px) {
+  .composed-panel .task-row:not(.task-gallery .task-row) {
+    display: grid;
+    grid-template-columns: 20px minmax(0, 1fr) auto auto;
+  }
+  .composed-panel .task-body {
+    grid-column: 2;
+  }
+  .composed-panel .task-timing {
+    grid-column: 2 / -1;
+    grid-row: 2;
+    align-items: flex-start;
+    padding: 0;
+    margin: 0;
+  }
 }

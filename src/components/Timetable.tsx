@@ -1,3 +1,4 @@
+import { Flag } from 'lucide-react'
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from './ui/tooltip'
 import { useCalendarZoom } from '@/useCalendarZoom'
 import { useEffect, useEffectEvent, useMemo, useRef, useState } from 'react'
@@ -259,7 +260,10 @@ export function Timetable({
                       style={{ '--event-color': taskColor(row.task) } as CSSProperties}
                     >
                       {row.deadline ? (
-                        <span className="deadline-prefix">{t('calendar.deadline')}</span>
+                        <span className="deadline-prefix">
+                          <Flag size={11} />
+                          {t('calendar.deadline')}
+                        </span>
                       ) : (
                         <span className="dot" />
                       )}
@@ -406,7 +410,9 @@ export function Timetable({
                                   }
                                   onClick={() => onEdit(task)}
                                 >
-                                  {clock(task.dueAt!)} · {task.title}
+                                  <Flag size={11} aria-hidden="true" />
+                                  <time>{clock(task.dueAt!)}</time>
+                                  <span>{task.title}</span>
                                 </button>
                               ))}
                           </div>

@@ -218,6 +218,6 @@ test('panel gallery cards fit their content and do not reserve empty metadata or
   expect(shortBox!.height).toBeLessThan(130)
   expect(longBox!.height).toBeGreaterThan(shortBox!.height + 25)
   await expect(short.locator('.task-timing')).toBeHidden()
-  await expect(short.locator('.task-meta')).toBeHidden()
+  await expect(short.locator('.task-status')).toContainText('进行中')
   await expect(short.getByRole('button', { name: '开始工作', exact: true })).toBeVisible()
 })
