@@ -1,4 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from './ui/tooltip'
+import { useCalendarZoom } from '@/useCalendarZoom'
+import { useEffect, useEffectEvent, useMemo, useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
 import {
   addDays,
@@ -95,17 +97,17 @@ export function Timetable({
           : addWeeks(anchor, delta),
     )
   const chooseMode = (next: CalendarMode) => void updateSettings({ calendarMode: next })
-  useEffect(() => {
+  const restoreScroll = useEffectEvent(() => {
     const node = scrollRef.current
-    if (node) {
-      node.scrollTop = scrollHours.current * hourHeight
-    }
-  }, [hourHeight, mode])
+    if (node) node.scrollTop = scrollHours.current * hourHeight
+  })
+  useEffect(() => restoreScroll(), [mode])
   const [error, setError] = useState(false)
   const updateZoom = (height: number) => {
     setError(false)
     void updateSettings({ calendarHourHeight: height }).catch(() => setError(true))
   }
+  useCalendarZoom(scrollRef, hourHeight, setHourHeight, updateZoom, mode !== 'month')
   const eventsFor = (day: Date) =>
     visible
       .flatMap((task) => {
@@ -121,15 +123,6 @@ export function Timetable({
       style={{ '--tt-days': gridDays, '--hour-height': hourHeight + 'px' } as CSSProperties}
     >
       <div className="calendar-controls">
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          className="calendar-today"
-          onClick={() => setAnchor(new Date())}
-        >
-          {t('timetable.today')}
-        </Button>
         <div className="calendar-navigation">
           <Button
             variant="ghost"
@@ -176,19 +169,27 @@ export function Timetable({
           </PopoverContent>
         </Popover>
         <span className="toolbar-spacer" />
-        <div className="calendar-mode" role="group" aria-label={t('calendar.view')}>
-          {(['day', 'week', 'month'] as const).map((key) => (
-            <Button
-              key={key}
-              variant="ghost"
-              size="sm"
-              aria-pressed={mode === key}
-              onClick={() => chooseMode(key)}
-            >
-              {t(('calendar.' + key) as 'calendar.day')}
-            </Button>
-          ))}
-        </div>
+        <TooltipProvider delayDuration={250} disableHoverableContent>
+          <div className="calendar-mode" role="group" aria-label={t('calendar.view')}>
+            {(['day', 'week', 'month'] as const).map((key) => (
+              <Tooltip key={key}>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    aria-pressed={mode === key}
+                    onClick={() => chooseMode(key)}
+                  >
+                    {t(('calendar.' + key) as 'calendar.day')}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" sideOffset={7}>
+                  {t(('calendar.tooltip.' + key) as 'calendar.tooltip.day')}
+                </TooltipContent>
+              </Tooltip>
+            ))}
+          </div>
+        </TooltipProvider>
         {mode !== 'month' ? (
           <div className="calendar-zoom" title={t('calendar.zoom')}>
             <Icon name="search" size={13} />

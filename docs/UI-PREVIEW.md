@@ -21,7 +21,7 @@ npx playwright install chromium
 npm run screenshots
 ```
 
-The command starts/stops Vite itself and uses a separate browser context with sample Todos and a fixed demonstration date. Work records are entered through the real forms. It outputs 21 PNGs in `artifacts/screenshots`, including scheduling, timer, day/week/month calendar, statistics, manual-entry dialog, panel editor, theme/settings and small-window layouts, gallery, board and view dialogs.
+The command starts/stops Vite itself and uses a separate browser context with sample Todos and a fixed demonstration date. Work records are entered through the real forms. It outputs 26 PNGs in `artifacts/screenshots`, including scheduling, timer, day/week/month calendar, statistics, manual-entry dialog, panel editor, theme/settings and small-window layouts, gallery, board, view dialogs, capture metadata popovers and hover tooltips.
 
 `PLAYWRIGHT_CHROMIUM_EXECUTABLE` can select an installed Chromium. `npm run e2e` covers the workflows; `npm test`, typecheck, lint, format and build cover the code.
 

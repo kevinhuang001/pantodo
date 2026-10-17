@@ -1,8 +1,8 @@
 /**
- * Colour palette for projects and tags.
+ * Color palette for tags.
  *
- * Mirrors `--tag-1..8` in src/styles/tokens.css. It is duplicated here on purpose: grouping and
- * colour derivation are pure domain logic that must stay testable outside a browser, where CSS
+ * Mirrors `--tag-1..8` in src/styles/tokens.css. It is duplicated here on purpose: tag color
+ * derivation are pure domain logic that must stay testable outside a browser, where CSS
  * custom properties are not readable.
  */
 export const TAG_PALETTE: readonly string[] = [

@@ -164,7 +164,6 @@ const zhCN = {
   'toast.viewUpdated': '视图已保存',
   'empty.customViewTitle': '这个视图还没有任务',
   'empty.customViewBody': '编辑它的过滤条件，或者新建几个任务。',
-  'timetable.today': '今天',
   'timetable.prev': '上一周',
   'timetable.next': '下一周',
   'views.section': '视图',

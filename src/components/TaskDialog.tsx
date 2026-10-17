@@ -14,7 +14,7 @@ import { t } from '@/i18n'
 import type { MessageKey } from '@/i18n'
 import { Modal } from './Modal'
 import { ScheduleFields } from './ScheduleFields'
-import type { ScheduleValues } from './ScheduleFields'
+import type { ScheduleValues } from '@/domain/planning'
 
 export function TaskDialog({ task, onClose }: { task: Task | null; onClose: () => void }) {
   const projects = useAppStore((state) => state.projects).filter((item) => !item.deletedAt)

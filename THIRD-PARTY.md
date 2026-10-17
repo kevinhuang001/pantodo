@@ -2,11 +2,7 @@
 
 ## Lucide
 
-The inline icon geometry in `src/components/Icon.tsx` is derived from [Lucide](https://lucide.dev),
-which is licensed under the **ISC License**. Icons are inlined as SVG paths (rendered at
-`stroke-width="1.8"`, matching the visual language of
-[Glassmark](https://github.com/kevinhuang001/bookmark-web)) so that Pantodo ships no icon runtime
-dependency.
+Pantodo uses [Lucide](https://lucide.dev) through `lucide-react` and a small set of inline SVG paths in `src/components/Icon.tsx`. Lucide is licensed under the **ISC License**.
 
 ```
 ISC License
@@ -27,10 +23,7 @@ TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF 
 
 ## Visual design reference
 
-The frosted-glass visual language, palette anchors and key metrics (accent `#2d6d95`, 30px glass
-blur, 20px window radius, cool low-alpha shadows) are inherited from the author's earlier project
-**Glassmark** — `kevinhuang001/bookmark-web`. No code is copied from it; the values were consolidated
-into `src/styles/tokens.css` and a dark palette was added (Glassmark is light-only).
+The author's [Glassmark](https://github.com/kevinhuang001/bookmark-web) is a visual reference for the frosted sidebar and frameless window. Pantodo maintains its own components, layout and theme tokens.
 
 ## Native power monitor
 

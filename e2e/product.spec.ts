@@ -86,14 +86,17 @@ test('three second focus transition is automatic, can be cancelled and never req
   await expect(page.locator('.work-timer')).toBeVisible()
 })
 
-test('in-app calendar selects a date without a native date input', async ({ page }) => {
-  await page.getByRole('button', { name: '时间与预估', exact: true }).click()
-  await page.locator('#create-start').fill('2026-10-19T10:00')
-  await page.locator('#create-start').locator('..').getByRole('button').click()
+test('capture calendar uses localized dates and returns focus after closing', async ({ page }) => {
+  const trigger = page.getByRole('button', { name: '时间与预估', exact: true })
+  await trigger.click()
   await expect(page.locator('[data-slot="calendar"]')).toBeVisible()
-  await page.locator('[data-slot="calendar"] button[data-day]').filter({ hasText: /^20$/ }).click()
-  await expect(page.locator('#create-start')).toHaveValue('2026-10-20T10:00')
+  await page.locator('.capture-schedule-picker button[data-day="2026/10/20"]').click()
+  await expect(page.getByRole('tab', { name: '开始时间', exact: true })).toContainText('10月20日')
   await page.keyboard.press('Escape')
   await expect(page.locator('[data-slot="calendar"]')).toHaveCount(0)
-  await expect(page.locator('#create-start').locator('..').getByRole('button')).toBeFocused()
+  await expect(trigger).toBeFocused()
+  await expect(trigger).toContainText('10月20日')
+  await expect(
+    page.locator('.capture-card input[type="date"],.capture-card input[type="datetime-local"]'),
+  ).toHaveCount(0)
 })

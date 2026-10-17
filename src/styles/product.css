@@ -15,12 +15,12 @@ body,
 }
 .sidebar {
   width: var(--sidebar-width);
-  background: linear-gradient(150deg, #f4f8ee2e, #e2ebd814);
+  background: linear-gradient(150deg, #f0f4ebc7, #e5edd8b8);
   border-radius: 14px 0 0 14px;
   padding-top: 44px;
 }
 :root[data-theme='dark'] .sidebar {
-  background: linear-gradient(150deg, #26352b42, #1c2b2124);
+  background: linear-gradient(150deg, #26352bd1, #1c2b21c2);
 }
 .sidebar-top {
   gap: 18px;
@@ -204,7 +204,7 @@ body,
   align-items: center;
   gap: 2px;
 }
-.view-presentation [data-slot='button'] {
+.view-presentation button {
   height: 28px;
   min-height: 28px;
   padding: 0 8px;
@@ -547,24 +547,6 @@ body,
 }
 .settings-footer {
   padding: 14px 22px;
-}
-.capture-select [data-slot='select-trigger'] {
-  min-height: 30px;
-  height: 30px;
-  border: 0;
-  padding: 0;
-  background: transparent;
-  box-shadow: none;
-}
-.capture-tag-popover {
-  width: 250px;
-  padding: 8px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-.capture-tag-popover button {
-  justify-content: flex-start;
 }
 .product-menu {
   min-width: 170px;

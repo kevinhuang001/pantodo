@@ -164,7 +164,6 @@ const en: Record<keyof typeof zhCN, string> = {
   'toast.viewUpdated': 'View saved',
   'empty.customViewTitle': 'Nothing in this view yet',
   'empty.customViewBody': 'Edit its filters, or create a few tasks.',
-  'timetable.today': 'Today',
   'timetable.prev': 'Previous week',
   'timetable.next': 'Next week',
   'views.section': 'Views',

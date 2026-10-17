@@ -13,7 +13,7 @@ Create a Todo with a title, notes, status, project, multiple tags and an optiona
 - **Deadline:** see a thin marker line with its time and title, including Todos without a planned interval.
 - **Both:** see the plan and deadline independently.
 
-The calendar provides **day, week and month** views, date navigation, current-time indication, overlap lanes and continuous zoom in time-grid views. Click a Todo or deadline to edit it. Todos do not drag.
+The calendar provides **day, week and month** views, date navigation, current-time indication, overlap lanes and slider, trackpad pinch, two-finger touch and Ctrl/⌘-wheel zoom in time-grid views. Click a Todo or deadline to edit it. Todos do not drag.
 
 ## Track your work
 
@@ -71,7 +71,7 @@ npm run build
 npm run screenshots
 ```
 
-Install the Playwright browser with `npx playwright install chromium` before UI checks. `PLAYWRIGHT_CHROMIUM_EXECUTABLE` optionally selects an installed Chromium. Screenshots start their own Vite server, exercise an isolated sample workspace and write 21 captures to `artifacts/screenshots`.
+Install the Playwright browser with `npx playwright install chromium` before UI checks. `PLAYWRIGHT_CHROMIUM_EXECUTABLE` optionally selects an installed Chromium. Screenshots start their own Vite server, exercise an isolated sample workspace and write 26 captures to `artifacts/screenshots`.
 
 - [Product rules and data model](docs/SPEC.md)
 - [Interface and verification guide](docs/UI-PREVIEW.md)
@@ -81,4 +81,4 @@ GitHub Actions checks type safety, formatting, lint, unit tests and production b
 
 ### Interface components
 
-Forms use shadcn/ui components (Radix primitives, Tailwind CSS and Lucide). Source components live in `src/components/ui`; `components.json` configures the registry aliases. Selects, calendars, emoji pickers and menus render inside the app, with keyboard navigation and focus handling. Creating a view requires only a name and optional emoji; panels, filters, templates and layout can be configured after creation. The frameless Tauri window provides one compact 44px title row, macOS traffic lights or Windows/Linux controls, drag regions on the title and sidebar, and eight resize edges/corners. The native platform selects the controls. A writing card and a random localized phrase replace the previous dense create screen; explanatory captions and footers are removed. The sidebar uses a transparent webview over native Liquid Glass Clear (with Sidebar fallback) material on macOS and Acrylic on Windows; Linux transparency depends on the compositor.
+Forms use shadcn/ui components (Radix primitives, Tailwind CSS and Lucide). Source components live in `src/components/ui`; `components.json` configures the registry aliases. Selects, calendars, emoji pickers and menus render inside the app, with keyboard navigation and focus handling. Creating a view requires only a name and optional emoji; panels, filters, templates and layout can be configured after creation. The frameless Tauri window provides one compact 44px title row, macOS traffic lights or Windows/Linux controls, drag regions on the title and sidebar, and eight resize edges/corners. The native platform selects the controls. A writing card and a random localized phrase replace the previous dense create screen; explanatory captions and footers are removed. The sidebar uses native frosted Sidebar material on macOS and Acrylic on Windows, covered by a substantial translucent tint so only a little background color shows through; Linux transparency depends on the compositor. Capture metadata uses a calendar popover and searchable project/tag pickers. View controls show localized tooltips on hover and keyboard focus.

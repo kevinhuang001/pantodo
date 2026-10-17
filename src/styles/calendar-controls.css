@@ -9,21 +9,18 @@
   flex-shrink: 0;
   border-bottom: 1px solid var(--hairline);
 }
-.calendar-controls [data-slot='button'] {
+.calendar-controls button {
   min-height: 28px;
   height: 28px;
   font-size: 12px;
   border-radius: 6px;
   gap: 6px;
 }
-.calendar-today {
-  padding: 0 10px;
-}
 .calendar-navigation {
   display: flex;
   gap: 0;
 }
-.calendar-navigation [data-slot='button'] {
+.calendar-navigation button {
   width: 25px;
   padding: 0;
 }
@@ -37,7 +34,7 @@
   border-radius: 7px;
   background: var(--surface-sunken);
 }
-.calendar-mode [data-slot='button'] {
+.calendar-mode button {
   min-width: 34px;
   padding: 0 10px;
   height: 26px;
@@ -113,4 +110,9 @@
   .calendar-range {
     font-size: 11px !important;
   }
+}
+
+.tt-scroll {
+  overflow-anchor: none;
+  touch-action: pan-y;
 }

@@ -1,3 +1,4 @@
+import { setCaptureSchedule } from './capture-fixture.mjs'
 /** Actual app captures from an isolated sample workspace, including completed time-entry flows. */
 import { mkdir, rm } from 'node:fs/promises'
 import path from 'node:path'
@@ -32,8 +33,8 @@ try {
   await page.locator('.capture-desk').waitFor()
   await page.evaluate(() => document.fonts.ready)
   const nav = async (name) => page.locator('.nav-row', { hasText: name }).first().click()
-  const shot = async (name) => {
-    await page.mouse.move(800, 25)
+  const shot = async (name, keepPointer = false) => {
+    if (!keepPointer) await page.mouse.move(800, 25)
     await page.waitForTimeout(240)
     await page.screenshot({ path: path.join(out, name + '.png') })
     console.log('saved ' + name)
@@ -49,12 +50,34 @@ try {
   }
   await shot('01-create')
   await page.locator('#pantodo-inbox-input').fill('读完今天的论文，整理笔记')
-  await page.getByRole('button', { name: '时间与预估', exact: true }).click()
-  await page.locator('#create-start').fill('2026-10-19T16:30')
-  await page.locator('#create-end').fill('2026-10-19T18:00')
-  await page.locator('#create-due').fill('2026-10-19T20:00')
-  await page.locator('#create-estimate').fill('90')
+  await setCaptureSchedule(
+    page,
+    { start: '2026-10-19T16:30', end: '2026-10-19T18:00', due: '2026-10-19T20:00', estimate: '90' },
+    false,
+  )
   await shot('02-create-schedule')
+  await page
+    .locator('.capture-schedule-picker')
+    .getByRole('button', { name: '完成', exact: true })
+    .click()
+  await page.getByRole('button', { name: '项目', exact: true }).click()
+  await shot('22-create-projects')
+  await page.locator('.capture-entity-picker [role="option"]').last().click()
+  await page.getByRole('button', { name: '标签', exact: true }).click()
+  await page
+    .locator('.capture-entity-picker')
+    .getByRole('checkbox', { name: '重要', exact: true })
+    .check()
+  await page
+    .locator('.capture-entity-picker')
+    .getByRole('checkbox', { name: '深度工作', exact: true })
+    .check()
+  await shot('23-create-tags')
+  await page
+    .locator('.capture-entity-picker')
+    .getByRole('button', { name: '完成', exact: true })
+    .click()
+  await shot('24-create-selected')
   await page.getByRole('button', { name: '记下来', exact: true }).click()
   await nav('全部任务')
   await shot('03-todo-list')
@@ -120,6 +143,10 @@ try {
   await page.getByRole('button', { name: '新建视图', exact: true }).click()
   await shot('21-view-create')
   await page.keyboard.press('Escape')
+  await modes.getByRole('button', { name: '画廊', exact: true }).hover()
+  await page.clock.runFor(300)
+  await shot('26-view-tooltip', true)
+  await page.mouse.move(800, 25)
   await page.getByRole('button', { name: '添加面板', exact: true }).click()
   await page.locator('#panel-name').fill('论文与深度工作')
   await page.locator('.emoji-trigger').click()
@@ -129,6 +156,12 @@ try {
   await theme('dark')
   await nav('创建')
   await shot('12-create-dark')
+  await setCaptureSchedule(page, { due: '2026-10-20T18:00' }, false)
+  await shot('25-create-date-dark')
+  await page
+    .locator('.capture-schedule-picker')
+    .getByRole('button', { name: '完成', exact: true })
+    .click()
   await theme('light')
   await page.getByRole('button', { name: '设置', exact: true }).click()
   await shot('13-settings')

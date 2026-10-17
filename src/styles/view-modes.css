@@ -217,7 +217,7 @@
   opacity: 0.6;
 }
 @media (max-width: 1200px) {
-  .view-presentation [data-slot='button'] {
+  .view-presentation button {
     width: 30px;
     padding: 0;
   }

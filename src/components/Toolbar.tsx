@@ -1,3 +1,4 @@
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from './ui/tooltip'
 import { List, LayoutGrid, Columns3, PanelsTopLeft } from 'lucide-react'
 import { beginWindowDrag } from '@/window'
 import { viewDisplayName } from '@/domain/display'
@@ -63,25 +64,32 @@ export function Toolbar({
       </div>
       <span className="toolbar-spacer" />
       {showModes ? (
-        <div className="view-presentation" role="group" aria-label={t('view.presentation')}>
-          {MODES.filter((mode) => mode.key !== 'panels' || view.preset === null).map(
-            ({ key, icon: ModeIcon }) => (
-              <Button
-                key={key}
-                type="button"
-                variant="ghost"
-                size="sm"
-                aria-label={t(('view.' + key) as 'view.list')}
-                aria-pressed={presentation === key}
-                onClick={() => change(key)}
-                title={t(('view.' + key) as 'view.list')}
-              >
-                <ModeIcon size={14} />
-                <span>{t(('view.' + key) as 'view.list')}</span>
-              </Button>
-            ),
-          )}
-        </div>
+        <TooltipProvider delayDuration={250} disableHoverableContent>
+          <div className="view-presentation" role="group" aria-label={t('view.presentation')}>
+            {MODES.filter((mode) => mode.key !== 'panels' || view.preset === null).map(
+              ({ key, icon: ModeIcon }) => (
+                <Tooltip key={key}>
+                  <TooltipTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      aria-label={t(('view.' + key) as 'view.list')}
+                      aria-pressed={presentation === key}
+                      onClick={() => change(key)}
+                    >
+                      <ModeIcon size={14} />
+                      <span>{t(('view.' + key) as 'view.list')}</span>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" sideOffset={7}>
+                    {t(('view.tooltip.' + key) as 'view.tooltip.list')}
+                  </TooltipContent>
+                </Tooltip>
+              ),
+            )}
+          </div>
+        </TooltipProvider>
       ) : null}
       {tab === 'views' && view?.preset === null ? (
         <Button

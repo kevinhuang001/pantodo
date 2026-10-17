@@ -6,7 +6,7 @@ This document describes the current application.
 
 A Todo stores title, notes, status (`todo`, `doing`, `done`, `cancelled`), optional project, multiple tags, optional planned interval, independent deadline, optional estimate and lifecycle timestamps. Both planned endpoints must be present together, with end after start. Plans may cross midnight. Changing a plan does not rewrite actual work.
 
-Projects have a name and emoji. Tags have a name and color. Create is the entry point for new Todos: one writing card, optional notes, project/tags, and expandable scheduling. A localized phrase is chosen from 16 messages on entry without immediately repeating; typing does not change it. Content clicks open the Todo editor. The checkbox cycles Todo → Doing → Done → Todo.
+Projects have a name and emoji. Tags have a name and color. Create is the entry point for new Todos: one writing card, optional notes, project/tags, and a calendar/time popover. A localized phrase is chosen from 16 messages on entry without immediately repeating; typing does not change it. Content clicks open the Todo editor. The checkbox cycles Todo → Doing → Done → Todo.
 
 Navigation contains Create, Today, All Todos, Calendar, Statistics, saved views and Trash. Today includes planned or due Todos for the local day. Deleted Todos appear only in Trash. Todos never drag.
 
@@ -20,13 +20,15 @@ Each panel stores name, emoji, list/gallery presentation, filter, sort and colum
 
 The panel workspace provides layout, column count, Add panel and an Eisenhower template built from two distinct tags. The template appends four editable panels. Pointer, touch and keyboard sorting operate only on panel handles and persist the new order. Move buttons provide another ordering control. Small windows collapse to one column without changing saved spans.
 
+Capture metadata uses three compact triggers. The date popover has separate start/end/deadline targets, a calendar, in-app hour/minute menus and an estimate. Moving the start keeps the planned duration; clearing either planned endpoint clears the pair. Project/tag pickers support search and keyboard navigation, display selected values, and provide colored multi-select tags. View and calendar-mode controls have localized hover/focus tooltips.
+
 Forms use shadcn/ui with Radix primitives. Selects, emoji choices, date calendars and menus render inside the application and support keyboard navigation.
 
 ## Calendar
 
 Day and Week show 24-hour grids with overlapping plans packed into local overlap clusters. Month shows compact plans and deadline entries; additional events open Day. Plans use the first tag color or the accent. Deadlines appear independently, including for unplanned Todos. Completed work is subdued; deleted, archived and cancelled Todos are excluded.
 
-A single 48px control row contains Today, previous/next, the date-range calendar popover, Day/Week/Month and a draggable 36–144 px/hour slider. Zoom has no presets. Calendar mode, scale and week start persist. Clicking a date header opens Day; clicking a plan or deadline opens its Todo editor.
+A single 48px control row contains previous/next, the date-range calendar popover, Day/Week/Month and a draggable 36–144 px/hour slider. Time-grid zoom also supports trackpad pinch, two-finger touch and Ctrl/⌘-wheel gestures. It preserves the hour under the gesture, stays within the slider bounds and persists when the gesture ends. Ordinary scrolling stays unchanged. There are no zoom presets or draggable ruler handles. Calendar mode, scale and week start persist. Clicking a date header opens Day; clicking a plan or deadline opens its Todo editor.
 
 ## Work and focus
 
@@ -48,7 +50,7 @@ Browser preview stores one workspace in localStorage and observes updates from o
 
 The Tauri host writes workspace JSON atomically. Native heartbeats and suspend/exit events close active work at a durable cutoff. Reopening never resumes a timer. A generation counter rejects queued writes from before a cutoff. Browser preview uses five-second heartbeats and stops an interrupted session at its last heartbeat after a gap over 30 seconds.
 
-The window is frameless and resizable. Native platform detection selects macOS traffic lights or Windows/Linux controls. Buttons sit above drag regions. Title/sidebar backgrounds initiate native dragging; eight edges/corners initiate native resize dragging. The webview and sidebar are transparent over Liquid Glass Clear on supported macOS, Sidebar material on earlier macOS and Acrylic on Windows. Linux depends on the compositor. The right pane is opaque. Native file-drop interception is disabled for panel interaction.
+The window is frameless and resizable. Native platform detection selects macOS traffic lights or Windows/Linux controls. Buttons sit above drag regions. Title/sidebar backgrounds initiate native dragging; eight edges/corners initiate native resize dragging. The sidebar uses frosted Sidebar material on macOS and Acrylic on Windows. A substantial tint over the native blur limits background visibility to a slight color glow. Linux depends on the compositor. The right pane is opaque. Native file-drop interception is disabled for panel interaction.
 
 Settings supports light/dark/system appearance, Chinese/English/Japanese, week start, default planned duration and JSON export.
 

@@ -1,3 +1,4 @@
+import { setCaptureSchedule } from '../scripts/capture-fixture.mjs'
 import { choose } from './helpers'
 import { test, expect } from '@playwright/test'
 import type { Page } from '@playwright/test'
@@ -27,11 +28,12 @@ test('creates a planned Todo with an independent deadline marker and edits it fr
   page,
 }) => {
   await page.locator('#pantodo-inbox-input').fill('准备实验报告')
-  await page.getByRole('button', { name: '时间与预估', exact: true }).click()
-  await page.locator('#create-start').fill('2026-10-19T10:00')
-  await page.locator('#create-end').fill('2026-10-19T11:30')
-  await page.locator('#create-due').fill('2026-10-19T16:00')
-  await page.locator('#create-estimate').fill('90')
+  await setCaptureSchedule(page, {
+    start: '2026-10-19T10:00',
+    end: '2026-10-19T11:30',
+    due: '2026-10-19T16:00',
+    estimate: '90',
+  })
   await page.getByRole('button', { name: '记下来', exact: true }).click()
   await expect(page.locator('#pantodo-inbox-input')).toHaveValue('')
   const todo = (await read(page)).tasks.find((task) => task.title === '准备实验报告')!
@@ -51,8 +53,7 @@ test('creates a planned Todo with an independent deadline marker and edits it fr
 
 test('a deadline-only Todo appears as a thin marker without a plan block', async ({ page }) => {
   await page.locator('#pantodo-inbox-input').fill('只设置交付期限')
-  await page.getByRole('button', { name: '时间与预估', exact: true }).click()
-  await page.locator('#create-due').fill('2026-10-19T15:00')
+  await setCaptureSchedule(page, { due: '2026-10-19T15:00' })
   await page.getByRole('button', { name: '记下来', exact: true }).click()
   const task = (await read(page)).tasks.find((task) => task.title === '只设置交付期限')!
   await page.locator('.nav-row', { hasText: '时间表' }).click()

@@ -164,7 +164,6 @@ const ja: Record<keyof typeof zhCN, string> = {
   'toast.viewUpdated': 'ビューを保存しました',
   'empty.customViewTitle': 'このビューにはまだ何もありません',
   'empty.customViewBody': 'フィルターを編集するか、タスクを作成してください。',
-  'timetable.today': '今日',
   'timetable.prev': '前の週',
   'timetable.next': '次の週',
   'views.section': 'ビュー',

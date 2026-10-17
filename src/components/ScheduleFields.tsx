@@ -5,12 +5,7 @@ import { addMinutes } from 'date-fns'
 import { toLocalInputValue } from '@/domain/date'
 import { useAppStore } from '@/domain/store'
 import { t } from '@/i18n'
-export interface ScheduleValues {
-  start: string
-  end: string
-  due: string
-  estimate: string
-}
+import type { ScheduleValues } from '@/domain/planning'
 export function ScheduleFields({
   value,
   onChange,
