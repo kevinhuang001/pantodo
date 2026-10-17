@@ -1,3 +1,4 @@
+import { selectClockTime, selectDuration } from '../scripts/date-fixture.mjs'
 import { test, expect } from '@playwright/test'
 import { choose } from './helpers'
 
@@ -100,8 +101,7 @@ test('capture selectors open on demand and the end starts from the selected star
   expect(bounds!.width - calendar!.width).toBeLessThanOrEqual(2)
   await popup.locator('button[data-day="2026/10/20"]').click()
   await start.locator('button').nth(1).click()
-  await page.locator('.time-popover input').fill('23:45')
-  await page.locator('.time-popover').getByRole('button', { name: '完成', exact: true }).click()
+  await selectClockTime(page, '23:45')
   await end.locator('button').nth(0).click()
   await expect(page.locator('.date-popover button[data-day="2026/10/20"]')).toHaveAttribute(
     'data-selected-single',
@@ -109,9 +109,8 @@ test('capture selectors open on demand and the end starts from the selected star
   )
   await page.locator('.date-popover button[data-day="2026/10/21"]').click()
   await end.locator('button').nth(1).click()
-  await expect(page.locator('.time-popover input')).toHaveValue('23:45')
-  await page.locator('.time-popover input').fill('00:15')
-  await page.locator('.time-popover').getByRole('button', { name: '完成', exact: true }).click()
+  await expect(page.locator('.clock-preview output')).toHaveText('23:45')
+  await selectClockTime(page, '00:15')
   await page
     .locator('.capture-schedule-picker')
     .getByRole('button', { name: '完成', exact: true })
@@ -126,10 +125,9 @@ test('capture estimate offers quick durations and a custom value', async ({ page
   await page.getByRole('button', { name: '45分', exact: true }).click()
   await expect(trigger).toContainText('45分')
   await trigger.click()
-  await page.locator('#create-estimate').fill('95')
-  await page
-    .locator('.capture-estimate-picker')
-    .getByRole('button', { name: '完成', exact: true })
-    .click()
+  await expect(
+    page.locator('.duration-custom').getByRole('combobox', { name: '小时', exact: true }),
+  ).toHaveText('0')
+  await selectDuration(page, '95')
   await expect(trigger).toContainText('1小时35分')
 })

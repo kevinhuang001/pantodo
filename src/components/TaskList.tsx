@@ -90,7 +90,10 @@ export function TaskRow({ task, lookup }: { task: Task; lookup: TaskLookup }) {
         </span>
       </div>
 
-      <div className="task-timing">
+      <div
+        className="task-timing"
+        data-empty={!task.startAt && !task.dueAt && task.estimateMinutes === null}
+      >
         {task.startAt ? (
           <span className="task-plan">
             <Icon name="calendar" size={12} />

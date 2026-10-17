@@ -153,13 +153,12 @@ export function FilterFields({
           </label>
           <DateTimeField
             id={prefix + '-from'}
-            className="input"
 
             value={value.dueFrom ? toLocalInputValue(value.dueFrom) : ''}
-            onChange={(e) =>
+            onChange={(next) =>
               onChange({
                 ...value,
-                dueFrom: e.target.value ? fromLocalInputValue(e.target.value) : undefined,
+                dueFrom: next ? fromLocalInputValue(next) : undefined,
               })
             }
           />
@@ -170,13 +169,12 @@ export function FilterFields({
           </label>
           <DateTimeField
             id={prefix + '-to'}
-            className="input"
 
             value={value.dueTo ? toLocalInputValue(value.dueTo) : ''}
-            onChange={(e) =>
+            onChange={(next) =>
               onChange({
                 ...value,
-                dueTo: e.target.value ? fromLocalInputValue(e.target.value) : undefined,
+                dueTo: next ? fromLocalInputValue(next) : undefined,
               })
             }
           />

@@ -2,12 +2,15 @@ import { useState } from 'react'
 import { Check, Timer, X } from 'lucide-react'
 import { t } from '@/i18n'
 import { Button } from './ui/button'
-import { Input } from './ui/input'
+import { SelectField } from './SelectField'
 import { Popover, PopoverTrigger, PopoverContent } from './ui/popover'
 
 const PRESETS = [15, 30, 45, 60, 90, 120]
-
-/** A duration is its own property, so it gets its own compact chooser instead of sharing the date popover. */
+function duration(minutes: number) {
+  const h = Math.floor(minutes / 60),
+    m = minutes % 60
+  return (h ? `${h}${t('picker.hours')}` : '') + (m ? `${m}${t('picker.minutesShort')}` : '')
+}
 export function CaptureEstimatePicker({
   value,
   onChange,
@@ -15,87 +18,90 @@ export function CaptureEstimatePicker({
   value: string
   onChange: (value: string) => void
 }) {
-  const [open, setOpen] = useState(false)
-  const estimate = Number(value)
-  const valid = value === '' || (/^\d+$/.test(value) && estimate >= 1 && Number(value) <= 100000)
-  const label = (minutes: number) => {
-    if (minutes < 60) return `${minutes}${t('picker.minutesShort')}`
-    const hours = Math.floor(minutes / 60),
-      rest = minutes % 60
-    return rest
-      ? `${hours}${t('picker.hours')}${rest}${t('picker.minutesShort')}`
-      : `${hours}${t('picker.hours')}`
-  }
-  const detail = (minutes: number) => {
-    if (minutes < 60) return `${minutes} ${t('picker.minutes')}`
-    const hours = Math.floor(minutes / 60),
-      rest = minutes % 60
-    return rest
-      ? `${hours} ${t('picker.hours')} ${rest} ${t('picker.minutes')}`
-      : `${hours} ${t('picker.hours')}`
-  }
+  const [open, setOpen] = useState(false),
+    [draft, setDraft] = useState(30)
+  const hour = Math.floor(draft / 60),
+    minute = draft % 60
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover
+      open={open}
+      onOpenChange={(open) => {
+        if (open) setDraft(Number(value) || 30)
+        setOpen(open)
+      }}
+    >
       <PopoverTrigger asChild>
         <Button
           variant="ghost"
           type="button"
           className="capture-property"
-          data-filled={Boolean(value)}
+          data-filled={!!value}
           aria-label={t('picker.estimate')}
         >
           <Timer size={15} />
-          <span>{value ? label(estimate) : t('capture.estimateShort')}</span>
+          <span>{value ? duration(Number(value)) : t('capture.estimateShort')}</span>
         </Button>
       </PopoverTrigger>
       <PopoverContent
         className="capture-estimate-picker"
-        side="right"
-        align="center"
-        sideOffset={12}
+        side="top"
+        align="start"
+        sideOffset={10}
         collisionPadding={12}
       >
-        <header className="estimate-head">
-          <span>{t('picker.estimate')}</span>
-          {value ? <strong>{detail(estimate)}</strong> : <Timer size={17} />}
+        <header className="capture-picker-heading">
+          <span className="picker-emblem">
+            <Timer size={18} />
+          </span>
+          <strong>{t('picker.estimate')}</strong>
         </header>
+        <output className="duration-preview" aria-live="polite">
+          {duration(draft) || '0' + t('picker.minutesShort')}
+        </output>
         <div className="estimate-presets" role="group" aria-label={t('picker.estimate')}>
           {PRESETS.map((minutes) => (
             <Button
               key={minutes}
-              type="button"
-              variant={estimate === minutes ? 'default' : 'outline'}
-              className="estimate-preset"
-              aria-pressed={estimate === minutes}
+              variant="ghost"
+              aria-pressed={draft === minutes}
               onClick={() => {
                 onChange(String(minutes))
                 setOpen(false)
               }}
             >
-              {label(minutes)}
+              {duration(minutes)}
             </Button>
           ))}
         </div>
-        <label className="estimate-custom" htmlFor="create-estimate">
+        <div className="duration-custom">
           <span>{t('picker.custom')}</span>
           <div>
-            <Input
-              id="create-estimate"
-              type="number"
-              min={1}
-              max={100000}
-              step={1}
-              placeholder="—"
-              value={value}
-              onChange={(event) => {
-                const next = event.target.value
-                if (!next || (/^\d+$/.test(next) && Number(next) >= 1 && Number(next) <= 100000))
-                  onChange(next)
-              }}
-            />
-            <span>{t('picker.minutes')}</span>
+            <SelectField
+              aria-label={t('picker.hour')}
+              value={String(hour)}
+              onValueChange={(h) => setDraft(Math.min(100000, Number(h) * 60 + minute))}
+            >
+              {Array.from({ length: 1667 }, (_, h) => (
+                <option value={String(h)} key={h}>
+                  {String(h)}
+                </option>
+              ))}
+            </SelectField>
+            <span>{t('picker.hours')}</span>
+            <SelectField
+              aria-label={t('picker.minute')}
+              value={String(minute)}
+              onValueChange={(m) => setDraft(hour * 60 + Number(m))}
+            >
+              {Array.from({ length: 60 }, (_, m) => (
+                <option value={String(m)} key={m} disabled={hour * 60 + m > 100000}>
+                  {String(m)}
+                </option>
+              ))}
+            </SelectField>
+            <span>{t('picker.minutesShort')}</span>
           </div>
-        </label>
+        </div>
         <footer className="capture-picker-footer">
           <Button
             variant="ghost"
@@ -109,7 +115,14 @@ export function CaptureEstimatePicker({
             <X size={13} />
             {t('picker.clearEstimate')}
           </Button>
-          <Button size="sm" onClick={() => setOpen(false)} disabled={!valid}>
+          <Button
+            size="sm"
+            disabled={draft < 1 || draft > 100000}
+            onClick={() => {
+              onChange(String(draft))
+              setOpen(false)
+            }}
+          >
             <Check size={13} />
             {t('picker.done')}
           </Button>

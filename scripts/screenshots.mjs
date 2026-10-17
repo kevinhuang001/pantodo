@@ -1,3 +1,4 @@
+import { setDateTimeField } from './date-fixture.mjs'
 import { setCaptureSchedule } from './capture-fixture.mjs'
 /** Actual app captures from an isolated sample workspace, including completed time-entry flows. */
 import { mkdir, rm } from 'node:fs/promises'
@@ -117,15 +118,15 @@ try {
   for (const [start, end, index] of sample) {
     await page.getByRole('button', { name: '补录时间', exact: true }).click()
     await choose(page.locator('#entry-task'), tasks[index].id)
-    await page.locator('#entry-start').fill(start)
-    await page.locator('#entry-end').fill(end)
+    await setDateTimeField(page, 'entry-start', start)
+    await setDateTimeField(page, 'entry-end', end)
     await page.locator('button[form="time-entry-form"]').click()
   }
   await shot('08-statistics')
   await page.getByRole('button', { name: '补录时间', exact: true }).click()
   await choose(page.locator('#entry-task'), tasks[1].id)
-  await page.locator('#entry-start').fill('2026-10-19T13:00')
-  await page.locator('#entry-end').fill('2026-10-19T14:30')
+  await setDateTimeField(page, 'entry-start', '2026-10-19T13:00')
+  await setDateTimeField(page, 'entry-end', '2026-10-19T14:30')
   await page.locator('#entry-note').fill('补录下午的设计评审，整理时间表交互。')
   await shot('09-manual-entry')
   await page.getByRole('dialog').getByRole('button', { name: '关闭', exact: true }).click()

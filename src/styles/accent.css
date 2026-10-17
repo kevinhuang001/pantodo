@@ -60,3 +60,65 @@
   --accent-hover: color-mix(in srgb, var(--accent) 82%, white);
   --text-on-accent: #17221b;
 }
+
+/* Neutral content over a wash of the selected accent; native material stays translucent. */
+:root[data-accent] {
+  --background: color-mix(in srgb, var(--accent) 4%, #fbfcfa);
+  --surface: color-mix(in srgb, var(--accent) 3%, #fff);
+  --surface-strong: color-mix(in srgb, var(--accent) 2%, #fff);
+  --surface-sunken: color-mix(in srgb, var(--accent) 7%, #f7f9f6);
+  --popover: color-mix(in srgb, var(--accent) 2%, #fff);
+  --border: color-mix(in srgb, var(--accent) 16%, #f3f5f1);
+  --border-strong: color-mix(in srgb, var(--accent) 26%, #e9ede6);
+  --hairline: color-mix(in srgb, var(--accent) 12%, transparent);
+  --sidebar-wash: color-mix(in srgb, var(--accent) 13%, #edf3e5);
+}
+:root[data-accent][data-theme='dark'] {
+  --background: color-mix(in srgb, var(--accent) 5%, #181d20);
+  --surface: color-mix(in srgb, var(--accent) 4%, #252a2c);
+  --surface-strong: color-mix(in srgb, var(--accent) 5%, #23292b);
+  --surface-sunken: color-mix(in srgb, var(--accent) 7%, #1e2527);
+  --popover: color-mix(in srgb, var(--accent) 5%, #252c2e);
+  --border: color-mix(in srgb, var(--accent) 16%, #23292b);
+  --border-strong: color-mix(in srgb, var(--accent) 26%, #30383a);
+  --sidebar-wash: color-mix(in srgb, var(--accent) 15%, #20292d);
+}
+:root[data-accent] .sidebar {
+  background: linear-gradient(
+    150deg,
+    color-mix(in srgb, var(--sidebar-wash) 66%, transparent),
+    color-mix(in srgb, var(--sidebar-wash) 54%, transparent)
+  );
+}
+:root[data-accent] .main {
+  background:
+    radial-gradient(
+      ellipse at 100% 0,
+      color-mix(in srgb, var(--accent) 6%, transparent),
+      transparent 65%
+    ),
+    var(--background);
+}
+:root[data-accent] .focus-screen {
+  background:
+    radial-gradient(
+      ellipse at 50% 38%,
+      color-mix(in srgb, var(--accent) 12%, transparent),
+      transparent 65%
+    ),
+    var(--background);
+}
+:root[data-accent] .settings-nav,
+:root[data-accent] .settings-content {
+  background: var(--surface-sunken);
+}
+
+:root[data-accent] [data-slot='button'][data-variant='default'] {
+  color: var(--text-on-accent);
+}
+:root[data-accent] .capture-card {
+  border-color: var(--border);
+}
+:root[data-accent] .task-check {
+  border-color: var(--border-strong);
+}

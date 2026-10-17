@@ -112,23 +112,19 @@ export function TimeEntryDialog({
             <label htmlFor="entry-start">{t('plan.start')}</label>
             <DateTimeField
               id="entry-start"
-              className="input"
 
               value={start}
-              required
-              onChange={(event) => setStart(event.target.value)}
+              onChange={(next) => setStart(next)}
             />
           </div>
           <div className="field">
             <label htmlFor="entry-end">{t('plan.end')}</label>
             <DateTimeField
               id="entry-end"
-              className="input"
 
               value={end}
-              required
               min={start}
-              onChange={(event) => setEnd(event.target.value)}
+              onChange={(next) => setEnd(next)}
             />
           </div>
         </div>

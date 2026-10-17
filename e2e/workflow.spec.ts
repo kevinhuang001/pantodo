@@ -1,3 +1,4 @@
+import { setDateTimeField } from '../scripts/date-fixture.mjs'
 import { setCaptureSchedule } from '../scripts/capture-fixture.mjs'
 import { choose } from './helpers'
 import { test, expect } from '@playwright/test'
@@ -12,8 +13,8 @@ async function stats(page: Page) {
 async function manual(page: Page, start: string, end: string, note: string, taskId = '') {
   await page.getByRole('button', { name: '补录时间', exact: true }).click()
   await choose(page, page.locator('#entry-task'), taskId)
-  await page.locator('#entry-start').fill(start)
-  await page.locator('#entry-end').fill(end)
+  await setDateTimeField(page, 'entry-start', start)
+  await setDateTimeField(page, 'entry-end', end)
   await page.locator('#entry-note').fill(note)
   await page.locator('button[form="time-entry-form"]').click()
   await expect(page.locator('#time-entry-form')).toHaveCount(0)
@@ -45,8 +46,8 @@ test('creates a planned Todo with an independent deadline marker and edits it fr
   await expect(line).toContainText('16:00')
   await line.click()
   await page.locator('#task-title').fill('准备实验报告（已调整）')
-  await page.locator('#task-start').fill('2026-10-19T12:00')
-  await page.locator('#task-end').fill('2026-10-19T13:00')
+  await setDateTimeField(page, 'task-start', '2026-10-19T12:00')
+  await setDateTimeField(page, 'task-end', '2026-10-19T13:00')
   await page.locator('button[form="pantodo-task-form"]').click()
   await expect(page.locator(`[data-todo-id="${todo.id}"]`)).toContainText('12:00')
 })
@@ -135,7 +136,7 @@ test('manual entries wholly replace overlaps, persist and remain editable', asyn
     state.timeEntries.find((entry) => !entry.deletedAt)?.id,
   )
   await page.getByRole('button', { name: '编辑时间记录', exact: true }).click()
-  await page.locator('#entry-end').fill('2026-10-18T11:30')
+  await setDateTimeField(page, 'entry-end', '2026-10-18T11:30')
   await page.locator('button[form="time-entry-form"]').click()
   await expect(page.getByTestId('stats-total')).toHaveText('1h')
   await page.goto('/')

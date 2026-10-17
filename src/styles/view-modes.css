@@ -2,15 +2,15 @@
 .task-gallery {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(min(235px, 100%), 1fr));
-  gap: 14px;
+  gap: 10px;
   align-items: start;
 }
 .task-gallery .task-row {
   display: grid;
   grid-template-columns: 22px minmax(0, 1fr) auto;
-  gap: 14px 8px;
-  padding: 18px;
-  min-height: 214px;
+  gap: 8px 6px;
+  padding: 13px;
+  min-height: 0;
   border: 1px solid var(--border);
   border-radius: 12px;
   background: var(--surface-strong);
@@ -39,9 +39,9 @@
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  min-height: 104px;
+  min-height: 0;
   padding: 0;
-  gap: 9px;
+  gap: 5px;
   overflow: hidden;
 }
 .task-gallery .task-title {
@@ -64,8 +64,8 @@
   display: flex;
   flex-wrap: wrap;
   gap: 5px;
-  margin-top: auto;
-  padding-top: 5px;
+  margin-top: 0;
+  padding-top: 2px;
 }
 .task-gallery .task-actions {
   grid-column: 3;
@@ -93,7 +93,7 @@
   gap: 7px 12px;
   justify-content: space-between;
   align-items: center;
-  padding-top: 12px;
+  padding-top: 8px;
   border-top: 1px solid var(--hairline);
   font-size: 10px;
 }
@@ -140,12 +140,11 @@
   cursor: grabbing;
 }
 .composed-panel .task-gallery {
-  grid-template-columns: repeat(auto-fill, minmax(min(220px, 100%), 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(180px, 100%), 1fr));
 }
 .composed-panel .task-gallery .task-row {
-  min-height: 195px;
+  min-height: 0;
 }
-.composed-panel .task-gallery .task-description,
 .composed-panel .task-gallery .task-timing {
   display: flex;
 }
@@ -266,4 +265,9 @@
   margin: 0;
   padding: 10px;
   border-top: 1px solid var(--hairline);
+}
+
+.task-gallery .task-meta:empty,
+.task-gallery .task-timing[data-empty='true'] {
+  display: none;
 }

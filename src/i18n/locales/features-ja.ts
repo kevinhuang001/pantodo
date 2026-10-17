@@ -60,6 +60,7 @@ export const featureJa = {
   'view.columnsHint': '列レイアウトで表示するパネルの列数。',
   'panel.layout.vertical': 'パネルを縦に並べる',
   'panel.layout.columns': 'パネルを列に並べる',
+  'picker.chooseDate': '日付を選択',
   'picker.time': '時刻',
   'picker.estimate': '見積もり',
   'picker.minutes': '分',

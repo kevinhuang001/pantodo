@@ -125,3 +125,99 @@ test('dragging a narrow panel over a wide panel keeps content at its original si
   await page.mouse.up()
   await expect(overlay).toHaveCount(0)
 })
+
+test('date and time controls only accept selection, including the Todo editor and manual records', async ({
+  page,
+}) => {
+  await page.getByRole('button', { name: '安排时间', exact: true }).click()
+  await expect(page.locator('.capture-schedule-picker input')).toHaveCount(0)
+  await page.locator('[data-endpoint=start] button').nth(1).click()
+  await expect(page.locator('.time-popover input')).toHaveCount(0)
+  const hours = page.getByRole('listbox', { name: '小时', exact: true })
+  await hours.getByRole('option', { name: '09', exact: true }).focus()
+  await page.keyboard.press('ArrowDown')
+  await expect(page.locator('.clock-preview output')).toHaveText('10:00')
+  await page.keyboard.type('22:35')
+  await expect(page.locator('.clock-preview output')).toHaveText('10:00')
+  await page.keyboard.press('Escape')
+  await page.keyboard.press('Escape')
+  await page.locator('.nav-row', { hasText: '全部任务' }).click()
+  await page.locator('.task-body').first().click()
+  await expect(page.locator('.datetime-field input')).toHaveCount(0)
+  await page.locator('#task-start').click()
+  await expect(page.locator('.date-popover')).toBeVisible()
+  await page.keyboard.press('Escape')
+  await page.keyboard.press('Escape')
+  await page.locator('.nav-row', { hasText: '时间统计' }).click()
+  await page.getByRole('button', { name: '补录时间', exact: true }).click()
+  await expect(page.locator('.datetime-field input')).toHaveCount(0)
+  await page.locator('[data-datetime-field=entry-start] [data-part=time]').click()
+  await expect(page.locator('.time-popover input')).toHaveCount(0)
+})
+
+test('accent colors tint both the content background and translucent navigation', async ({
+  page,
+}) => {
+  const colors = async () => ({
+    main: await page.locator('.main').evaluate((e) => getComputedStyle(e).backgroundColor),
+    sidebar: await page.locator('.sidebar').evaluate((e) => getComputedStyle(e).backgroundImage),
+  })
+  const sage = await colors()
+  await page.getByRole('button', { name: '设置', exact: true }).click()
+  await page.getByRole('button', { name: '海蓝', exact: true }).click()
+  const ocean = await colors()
+  expect(ocean.main).not.toBe(sage.main)
+  expect(ocean.sidebar).not.toBe(sage.sidebar)
+  await choose(page, page.getByRole('combobox', { name: '主题', exact: true }), 'dark')
+  const darkOcean = await colors()
+  await page.getByRole('button', { name: '琥珀', exact: true }).click()
+  const darkAmber = await colors()
+  expect(darkOcean.main).not.toBe(darkAmber.main)
+  expect(darkOcean.sidebar).not.toBe(darkAmber.sidebar)
+  expect(
+    await page.locator('.sidebar').evaluate((e) => getComputedStyle(e).backdropFilter),
+  ).toContain('blur')
+})
+
+test('panel gallery cards fit their content and do not reserve empty metadata or timing rows', async ({
+  page,
+}) => {
+  await page.evaluate(() => {
+    const w = JSON.parse(localStorage.getItem('pantodo.workspace.v2')!)
+    const short = {
+      ...w.tasks[0],
+      id: 'compact-short',
+      title: '短待办',
+      notes: '',
+      projectId: null,
+      startAt: null,
+      endAt: null,
+      dueAt: null,
+      estimateMinutes: null,
+      status: 'doing',
+    }
+    const long = {
+      ...short,
+      id: 'compact-long',
+      title: '内容较多的待办',
+      notes: '这里是一段较长的说明。'.repeat(10),
+    }
+    w.tasks.push(short, long)
+    w.taskTags[short.id] = []
+    w.taskTags[long.id] = []
+    const v = w.views.find((v: { id: string }) => v.id === 'view-workbench')
+    v.panels[0].presentation = 'gallery'
+    localStorage.setItem('pantodo.workspace.v2', JSON.stringify(w))
+  })
+  await page.goto('/')
+  await page.locator('.nav-row', { hasText: '我的工作台' }).click()
+  const short = page.locator('.task-gallery [data-task-id=compact-short]'),
+    long = page.locator('.task-gallery [data-task-id=compact-long]')
+  const shortBox = await short.boundingBox(),
+    longBox = await long.boundingBox()
+  expect(shortBox!.height).toBeLessThan(130)
+  expect(longBox!.height).toBeGreaterThan(shortBox!.height + 25)
+  await expect(short.locator('.task-timing')).toBeHidden()
+  await expect(short.locator('.task-meta')).toBeHidden()
+  await expect(short.getByRole('button', { name: '开始工作', exact: true })).toBeVisible()
+})

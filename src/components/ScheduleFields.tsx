@@ -21,22 +21,20 @@ export function ScheduleFields({
           <label htmlFor={prefix + '-start'}>{t('plan.start')}</label>
           <DateTimeField
             id={prefix + '-start'}
-            className="input"
 
             value={value.start}
-            onChange={(event) => onChange(changeSchedule(value, 'start', event.target.value))}
+            onChange={(next) => onChange(changeSchedule(value, 'start', next))}
           />
         </div>
         <div className="field">
           <label htmlFor={prefix + '-end'}>{t('plan.end')}</label>
           <DateTimeField
             id={prefix + '-end'}
-            className="input"
 
             value={value.end}
             min={value.start || undefined}
             fallback={value.start}
-            onChange={(event) => patch('end', event.target.value)}
+            onChange={(next) => patch('end', next)}
           />
         </div>
       </div>
@@ -45,10 +43,9 @@ export function ScheduleFields({
           <label htmlFor={prefix + '-due'}>{t('task.field.due')}</label>
           <DateTimeField
             id={prefix + '-due'}
-            className="input"
 
             value={value.due}
-            onChange={(event) => patch('due', event.target.value)}
+            onChange={(next) => patch('due', next)}
           />
         </div>
         <div className="field">

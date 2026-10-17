@@ -470,34 +470,6 @@ body,
 .emoji-custom input {
   min-width: 0;
 }
-.datetime-field {
-  position: relative;
-  display: flex;
-  align-items: center;
-  min-width: 0;
-}
-.datetime-field > input {
-  width: 100%;
-  padding-right: 68px;
-  font-size: 12px;
-}
-.datetime-field > button {
-  position: absolute;
-  right: 3px;
-  height: 30px;
-  width: 30px;
-}
-.datetime-field > button:nth-of-type(1) {
-  right: 34px;
-}
-.datetime-field > button:only-of-type {
-  right: 3px;
-}
-.date-popover {
-  width: auto;
-  padding: 0;
-}
-
 .product-dialog.settings-window {
   width: 720px;
   height: auto;

@@ -60,6 +60,7 @@ export const featureEn = {
   'view.columnsHint': 'Number of panel columns in the column layout.',
   'panel.layout.vertical': 'Stack panels vertically',
   'panel.layout.columns': 'Arrange panels in columns',
+  'picker.chooseDate': 'Choose date',
   'picker.time': 'Time',
   'picker.estimate': 'Estimate',
   'picker.minutes': 'min',

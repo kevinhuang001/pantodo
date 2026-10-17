@@ -156,18 +156,16 @@ export function Statistics() {
           <>
             <DateTimeField
               aria-label={t('stats.from')}
-              className="input"
               dateOnly
               value={from}
-              onChange={(e) => setFrom(e.target.value)}
+              onChange={(next) => setFrom(next)}
             />
             <span>—</span>
             <DateTimeField
               aria-label={t('stats.to')}
-              className="input"
               dateOnly
               value={to}
-              onChange={(e) => setTo(e.target.value)}
+              onChange={(next) => setTo(next)}
             />
           </>
         ) : null}

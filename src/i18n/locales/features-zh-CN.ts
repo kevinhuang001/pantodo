@@ -53,6 +53,7 @@ export const featureZh = {
   'view.columnsHint': '分栏排列时，每行显示的面板列数。',
   'panel.layout.vertical': '纵向排列面板',
   'panel.layout.columns': '分栏排列面板',
+  'picker.chooseDate': '选择日期',
   'picker.time': '时间',
   'picker.estimate': '预估时长',
   'picker.minutes': '分钟',
