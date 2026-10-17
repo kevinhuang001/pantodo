@@ -5,7 +5,16 @@ import { newId } from '@/domain/ids'
 import { applyTimeCommand, HEARTBEAT_GAP_MS } from '@/domain/time'
 import { setLocale, resolveLocale } from '@/i18n'
 import type { TimeCommand } from '@/domain/time'
-import type { Id, Project, Settings, Tag, Task, View, Workspace } from '@/domain/types'
+import {
+  isOpenTask,
+  type Id,
+  type Project,
+  type Settings,
+  type Tag,
+  type Task,
+  type View,
+  type Workspace,
+} from '@/domain/types'
 import type { Bridge } from './types'
 
 export const STORAGE_KEY = 'pantodo.workspace.v2'
@@ -91,12 +100,13 @@ export function createBrowserBridge(recoverGaps = true): Bridge {
         )
         const merged = mergeData(previous, current, data, choices).data
         const running = workspace.timer?.taskId
-        if (running && (!merged.tasks[running] || merged.tasks[running]?.task.deletedAt)) {
+        const active = running ? merged.tasks[running]?.task : undefined
+        if (running && (!active || !isOpenTask(active))) {
           Object.assign(
             workspace,
             applyTimeCommand(workspace, { kind: 'stop' }, new Date(), ownerId, recoverGaps),
           )
-          // Stopping a deleted running Todo must retain its last committed segment.
+          // Stopping a closed running Todo must retain its last committed segment.
           for (const entry of workspace.timeEntries) merged.timeEntries[entry.id] ??= entry
         }
         Object.assign(workspace, applyData(workspace, merged))

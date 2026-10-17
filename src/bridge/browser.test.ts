@@ -55,27 +55,33 @@ describe('sync persistence and local timer ownership', () => {
     expect(after.timer).toEqual(before.timer)
     expect(after.tasks.find((task) => task.id === w.tasks[1].id)?.title).toBe('Remote title')
   })
-  it('commits active work before applying remote deletion of the running Todo', async () => {
-    const w = createSeedWorkspace({ withDemoData: true })
-    memory.set(STORAGE_KEY, JSON.stringify(w))
-    const bridge = createBrowserBridge()
-    await bridge.load()
-    vi.useFakeTimers()
-    try {
-      vi.setSystemTime(new Date('2026-10-17T08:00:00Z'))
-      bridge.timeCommand({ kind: 'start', taskId: w.tasks[0].id })
-      const data = extractData(bridge.loadSync()),
-        remote = structuredClone(data)
-      remote.tasks[w.tasks[0].id] = null
-      vi.setSystemTime(new Date('2026-10-17T08:00:10Z'))
-      await bridge.applySync(remote, data)
-      const after = bridge.loadSync()
-      expect(after.timer).toBeNull()
-      expect(after.tasks.some((task) => task.id === w.tasks[0].id)).toBe(false)
-      expect(after.timeEntries).toHaveLength(1)
-      expect(after.timeEntries[0].endedAt).toBe('2026-10-17T08:00:10.000Z')
-    } finally {
-      vi.useRealTimers()
-    }
-  })
+  it.each(['delete', 'done', 'cancelled', 'archive'] as const)(
+    'commits active work before applying remote %s of the running Todo',
+    async (action) => {
+      const w = createSeedWorkspace({ withDemoData: true })
+      memory.set(STORAGE_KEY, JSON.stringify(w))
+      const bridge = createBrowserBridge()
+      await bridge.load()
+      vi.useFakeTimers()
+      try {
+        vi.setSystemTime(new Date('2026-10-17T08:00:00Z'))
+        bridge.timeCommand({ kind: 'start', taskId: w.tasks[0].id })
+        const data = extractData(bridge.loadSync()),
+          remote = structuredClone(data)
+        if (action === 'delete') remote.tasks[w.tasks[0].id] = null
+        else if (action === 'archive')
+          remote.tasks[w.tasks[0].id]!.task.archivedAt = '2026-10-17T08:00:10Z'
+        else remote.tasks[w.tasks[0].id]!.task.status = action
+        vi.setSystemTime(new Date('2026-10-17T08:00:10Z'))
+        await bridge.applySync(remote, data)
+        const after = bridge.loadSync()
+        expect(after.timer).toBeNull()
+        expect(after.tasks.some((task) => task.id === w.tasks[0].id)).toBe(action !== 'delete')
+        expect(after.timeEntries).toHaveLength(1)
+        expect(after.timeEntries[0].endedAt).toBe('2026-10-17T08:00:10.000Z')
+      } finally {
+        vi.useRealTimers()
+      }
+    },
+  )
 })
