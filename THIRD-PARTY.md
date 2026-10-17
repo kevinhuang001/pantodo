@@ -38,3 +38,7 @@ Panel sorting uses dnd kit (`@dnd-kit/core`, `@dnd-kit/sortable`, `@dnd-kit/util
 ## WebDAV transport
 
 The native client uses reqwest (MIT OR Apache-2.0), rustls (Apache-2.0 OR ISC OR MIT) and their dependency licenses as distributed by Cargo. Browser transport uses the Fetch API.
+
+## Apache ECharts
+
+Statistics use Apache ECharts 6.1.0 and zrender, distributed under Apache-2.0. Project: https://echarts.apache.org/. Components are imported individually and rendered as SVG. The package license and notice files are included in `docs/licenses/`.

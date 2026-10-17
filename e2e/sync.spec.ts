@@ -79,6 +79,7 @@ async function openSync(page: Page) {
 }
 async function configure(page: Page) {
   await openSync(page)
+  await page.getByRole('radio', { name: /WebDAV/ }).click()
   await page.locator('#dav-url').fill(url)
   await page.locator('#dav-user').fill('demo')
   await page.locator('#dav-password').fill('app-password')
@@ -113,8 +114,8 @@ test('web defaults to localStorage, persists reloads and makes no sync writes', 
   await expect(page.locator('.task-row')).toContainText('离线也要记下来')
   await openSync(page)
   await expect(page.locator('.storage-summary')).toContainText('localStorage')
-  await expect(page.locator('#dav-url')).toHaveValue('')
-  await expect(page.locator('#dav-auto')).not.toBeChecked()
+  await expect(page.locator('#dav-url,#dav-auto')).toHaveCount(0)
+  await expect(page.getByRole('radio', { name: /本地存储/ })).toBeChecked()
   expect(writes).toBe(0)
   expect(await page.evaluate(() => localStorage.getItem('pantodo.webdav.config'))).toBeNull()
 })
@@ -307,4 +308,29 @@ test('automatic sync waits for opt-in, avoids feedback loops, and catches up aft
         (value as { task: { title: string } })?.task.title === '离线编辑，联网同步',
     ),
   ).toBe(true)
+})
+
+test('local mode hides configuration, exports data and pauses saved WebDAV auto sync', async ({
+  page,
+}) => {
+  await page.goto('/?reset=1')
+  await configure(page)
+  await page.locator('#dav-auto').check()
+  await page.getByRole('button', { name: '保存配置', exact: true }).click()
+  await page.getByRole('radio', { name: /本地存储/ }).click()
+  await expect(page.locator('#dav-url')).toHaveCount(0)
+  const download = page.waitForEvent('download')
+  await page.getByRole('button', { name: '导出 JSON', exact: true }).click()
+  expect((await download).suggestedFilename()).toBe('pantodo-workspace.json')
+  await page.reload()
+  await openSync(page)
+  await expect(page.getByRole('radio', { name: /本地存储/ })).toBeChecked()
+  const count = writes
+  await closeSettings(page)
+  await capture(page, '本地模式不触发同步')
+  await page.waitForTimeout(2200)
+  expect(writes).toBe(count)
+  await openSync(page)
+  await page.getByRole('radio', { name: /WebDAV/ }).click()
+  await expect(page.locator('#dav-url')).toHaveValue(url)
 })

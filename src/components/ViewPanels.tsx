@@ -93,6 +93,7 @@ export function ViewPanels({
   lookup: TaskLookup
 }) {
   const [dragged, setDragged] = useState<{ id: string; width: number; height: number } | null>(null)
+  const panelMaxHeight = useAppStore((s) => s.settings.panelMaxHeight ?? 480)
   const updateView = useAppStore((s) => s.updateView)
   const [editing, setEditing] = useState<ViewPanel | null>(null),
     [error, setError] = useState(false)
@@ -142,21 +143,13 @@ export function ViewPanels({
             <Icon name="pencil" size={13} />
           </button>
         </header>
-        <div className="panel-meta">
-          <span>
-            <Icon name="sliders" size={11} />
-            {panel.filter.tagIds.length
-              ? panel.filter.tagIds.length + ' ' + t('task.field.tags')
-              : t('panel.all')}
-            {panel.filter.statuses.length
-              ? ' · ' +
-                panel.filter.statuses
-                  .map((s) => t(('task.status.' + s) as 'task.status.todo'))
-                  .join(' / ')
-              : ''}
-          </span>
-        </div>
-        <div className="panel-tasks" role="region" aria-label={panel.name} tabIndex={0}>
+        <div
+          className="panel-tasks"
+          style={{ '--panel-task-height': panelMaxHeight + 'px' } as CSSProperties}
+          role="region"
+          aria-label={panel.name}
+          tabIndex={0}
+        >
           <TaskList
             compact
             tasks={list}

@@ -127,6 +127,13 @@ export interface Settings {
   notificationsSilent: boolean
   /** Calendar presentation and draggable time-grid scale. */
   calendarMode?: CalendarMode
+  startupPage?: 'create' | 'today' | 'all' | 'timetable' | 'statistics'
+  defaultPlanMinutes?: number
+  panelMaxHeight?: number
+  autoFocus?: boolean
+  focusCountdown?: number
+  dailyFocusGoal?: number
+  statisticsPeriod?: 'week' | 'month' | 'year'
   calendarHourHeight?: number
 }
 

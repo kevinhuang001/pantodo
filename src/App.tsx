@@ -1,5 +1,5 @@
 import { startAutoSync } from '@/sync/store'
-import { useEffect, useMemo, useState } from 'react'
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
 
 import { useDebounced, useFilterContext, useNow } from '@/hooks'
 import { selectTasks, sortTasks } from '@/domain/filters'
@@ -16,7 +16,9 @@ import { EntityDialog } from './components/EntityDialog'
 import { TaskList } from './components/TaskList'
 import { Icon } from './components/Icon'
 import { ViewPanels } from './components/ViewPanels'
-import { Statistics } from './components/Statistics'
+const Statistics = lazy(() =>
+  import('./components/Statistics').then((module) => ({ default: module.Statistics })),
+)
 import { TimerBar, TimerLifecycle } from './components/TimerBar'
 import { FocusScreen } from './components/FocusScreen'
 import { InboxComposer } from './components/InboxComposer'
@@ -263,7 +265,9 @@ export function App() {
             {!ready ? (
               <p className="banner">…</p>
             ) : activeTab === 'statistics' ? (
-              <Statistics />
+              <Suspense fallback={<p className="banner">…</p>}>
+                <Statistics />
+              </Suspense>
             ) : activeTab === 'timetable' ? (
               <Timetable
                 now={now}

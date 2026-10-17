@@ -10,7 +10,7 @@ Today and All tasks show the full task summary, dates and work controls. Click a
 
 Create a view with a name and optional emoji, then add independently filtered panels. Panels can filter by project, tags, status, planned time, deadline range and text. Choose List or Gallery, change sorting and set the panel’s column span in its editor. Choose Vertical or Columns in the view controls, and change the column count in View settings.
 
-Panel tasks show only names and descriptions. Click or focus a task and press Enter to edit its full information. Each panel’s task region grows with its contents up to 480px or 65% of the window height, whichever is smaller; further tasks scroll inside it. The region is keyboard-focusable. Drag handles reorder panels with pointer, touch or keyboard; tasks themselves do not drag.
+Panel tasks show only names and descriptions. Click or focus a task and press Enter to edit its full information. Each panel’s task region grows with its contents up to the configurable height (480px by default) or 65% of the window height, whichever is smaller; further tasks scroll inside it. The region is keyboard-focusable. Drag handles reorder panels with pointer, touch or keyboard; tasks themselves do not drag.
 
 ## Timetable
 
@@ -32,7 +32,7 @@ Add or edit work entries manually when needed. A newly saved manual entry replac
 
 Desktop saves atomically to a local workspace file; browser mode uses localStorage. Export your workspace in Settings.
 
-To sync, open Settings → Sync and provide an existing WebDAV directory and credentials. The app writes `pantodo-workspace.json`; it does not create directories or follow redirects. Sync includes tasks, projects, tags, custom views and recorded time. Running timers, credentials, device appearance and built-in navigation remain local. Separate edits merge; conflicting edits and overlapping records require a choice. Permanent-deletion markers prevent older offline devices from restoring emptied Trash.
+Settings → Sync offers Local and WebDAV modes. Local mode shows the export action and makes no sync requests. WebDAV mode shows connection settings; switching back to Local pauses sync while retaining the server configuration. To configure WebDAV, provide an existing WebDAV directory and credentials. The app writes `pantodo-workspace.json`; it does not create directories or follow redirects. Sync includes tasks, projects, tags, custom views and recorded time. Running timers, credentials, device appearance and built-in navigation remain local. Separate edits merge; conflicting edits and overlapping records require a choice. Permanent-deletion markers prevent older offline devices from restoring emptied Trash.
 
 Automatic sync is opt-in and runs after edits, on focus/reconnect and every minute. Disconnecting retains the local workspace and remote file. Credentials are stored on this device in webview/browser storage and excluded from sync files and exports.
 
@@ -41,3 +41,9 @@ WebDAV needs GET/PUT and strong ETags; files are limited to 32 MB. Browser acces
 ## Appearance
 
 Settings includes light/dark/system themes, eight accent palettes, English/Simplified Chinese/Japanese and the first day of the week. macOS uses native frosted material; Windows uses Acrylic. Linux transparency and desktop blur depend on the compositor.
+
+## Preferences and reports
+
+General settings include startup page, default block duration and panel task-region height. Timer settings control automatic Focus and the countdown, including immediate entry. Statistics settings choose a daily focus goal and a default week/month/year period. Goals are indicators, not timer limits.
+
+ECharts reports include daily minutes and cumulative time, project/tag shares, weekday/hour focus distribution, task rankings, planned versus recorded minutes and average daily goal progress. Active days, longest session and days meeting the goal use the same date/project/tag filters as the work ledger. Heatmap records are clipped to the selected period and split at local hour boundaries, including overnight sessions. Tags receive full time per tag and may add up to more than the deduplicated total. Charts resize with the window and follow the accent/theme; statistics code loads when the page is opened.

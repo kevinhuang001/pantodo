@@ -86,8 +86,8 @@
 :root[data-accent] .sidebar {
   background: linear-gradient(
     150deg,
-    color-mix(in srgb, var(--sidebar-wash) 32%, transparent),
-    color-mix(in srgb, var(--sidebar-wash) 24%, transparent)
+    color-mix(in srgb, var(--sidebar-wash) 66%, transparent),
+    color-mix(in srgb, var(--sidebar-wash) 58%, transparent)
   );
 }
 :root[data-accent] .main {
@@ -128,12 +128,12 @@
   color: var(--accent-strong);
 }
 
-/* Let the desktop material show through without losing sidebar legibility. */
+/* Full native blur underneath a moderate tint; keep desktop text indistinct. */
 :root[data-accent][data-desktop='true'][data-platform='macos'] .sidebar {
   background: linear-gradient(
     150deg,
-    color-mix(in srgb, var(--accent) 12%, transparent),
-    color-mix(in srgb, var(--accent) 6%, transparent)
+    color-mix(in srgb, var(--sidebar-wash) 62%, transparent),
+    color-mix(in srgb, var(--sidebar-wash) 54%, transparent)
   );
   backdrop-filter: none;
   -webkit-backdrop-filter: none;

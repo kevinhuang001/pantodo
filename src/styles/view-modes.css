@@ -274,7 +274,7 @@
 
 /* Panels show a quiet text preview; the full Todo opens on click or Enter. */
 .panel-tasks {
-  max-height: min(480px, 65dvh);
+  max-height: min(var(--panel-task-height, 480px), 65dvh);
   min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
@@ -313,4 +313,76 @@
 .composed-panel .compact-task .task-description {
   font-size: 12px;
   max-width: 100%;
+}
+
+/* List uses quiet rows; Gallery uses a responsive collection of independent cards. */
+.panel-tasks {
+  container-type: inline-size;
+  padding: 3px 5px 3px 2px;
+}
+.panel-tasks .task-list:not(.task-gallery) {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+.panel-tasks .task-list:not(.task-gallery) .compact-task {
+  border: 0;
+  border-bottom: 1px solid var(--hairline);
+  border-radius: 0;
+  box-shadow: none;
+  background: transparent;
+  padding: 13px 10px;
+}
+.panel-tasks .task-list:not(.task-gallery) .compact-task:last-child {
+  border-bottom: 0;
+}
+.panel-tasks .task-list:not(.task-gallery) .compact-task:hover {
+  background: var(--accent-soft);
+  transform: none;
+  border-radius: 8px;
+}
+.panel-tasks .task-gallery {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  align-items: start;
+}
+.panel-tasks .task-gallery .compact-task {
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-strong);
+  box-shadow: 0 3px 12px #00000004;
+}
+.panel-tasks .task-gallery .compact-task:hover {
+  border-color: var(--accent);
+  box-shadow: 0 5px 16px #00000009;
+  transform: translateY(-1px);
+}
+.panel-tasks .compact-task .task-body {
+  gap: 7px;
+  width: 100%;
+}
+.panel-tasks .compact-task .task-title {
+  font-size: 13px;
+  line-height: 1.55;
+}
+.panel-tasks .compact-task .task-description {
+  font-size: 12px;
+  line-height: 1.65;
+  color: var(--text-muted);
+}
+.panel-tasks .group-empty {
+  margin: 0;
+  padding: 24px 14px;
+  font-size: 12px;
+  background: var(--surface-sunken);
+  border: 1px dashed var(--border);
+  border-radius: 10px;
+}
+@container (max-width: 340px) {
+  .panel-tasks .task-gallery {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }

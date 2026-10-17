@@ -840,13 +840,13 @@
 .tt-head-row,
 .tt-allday-row {
   display: grid;
-  grid-template-columns: 64px minmax(0, 1fr);
+  grid-template-columns: var(--tt-gutter-width, 60px) minmax(0, 1fr);
 }
 
 .tt-head-days,
 .tt-allday-cells {
   display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
+  grid-template-columns: repeat(var(--tt-days, 7), minmax(0, 1fr));
 }
 
 .tt-gutter {
@@ -922,7 +922,7 @@
 
 .tt-body {
   display: grid;
-  grid-template-columns: 64px minmax(0, 1fr);
+  grid-template-columns: var(--tt-gutter-width, 60px) minmax(0, 1fr);
 }
 
 .tt-hours {
@@ -944,7 +944,7 @@
 
 .tt-columns {
   display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
+  grid-template-columns: repeat(var(--tt-days, 7), minmax(0, 1fr));
 }
 
 .tt-column {

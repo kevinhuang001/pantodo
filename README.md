@@ -82,6 +82,24 @@ The desktop app saves your workspace on your computer. The browser version uses 
 
 Configure an existing server directory in **Settings → Sync**. Automatic sync is optional. You can also export your workspace from Settings.
 
+## Storage that fits your workflow
+
+Choose **Local** in Settings → Sync to keep everything on this device and export your workspace. Choose **WebDAV** to reveal server configuration and sync controls. Switching back to Local pauses sync and retains your saved connection for later.
+
+![Local storage and export](docs/images/sync-local.jpg)
+
+![WebDAV configuration appears only in WebDAV mode](docs/images/sync-webdav.jpg)
+
+## Understand your focus
+
+Interactive ECharts reports combine daily bars and a cumulative trend, project/tag shares, an hourly heatmap, task rankings, planned versus recorded time and goal progress. Hover for details and use chart legends to inspect a series. Statistics code loads only when you open the page.
+
+![Focus distribution, task rankings and goal progress](docs/images/statistics-detail.jpg)
+
+Settings now include the opening page, default block duration, panel height limit, automatic Focus/countdown, daily goal and default report period.
+
+![Workspace preferences](docs/images/preferences.jpg)
+
 ## For contributors
 
 Built with Tauri, Rust and React. To run the browser application with Node.js 22.12 or later:

@@ -170,6 +170,7 @@ try {
   await shot('13-settings')
   await page.locator('.settings-nav').getByRole('button', { name: '同步', exact: true }).click()
   await shot('27-webdav-settings')
+  await page.getByRole('radio', { name: /WebDAV/ }).click()
   await page.locator('#dav-url').fill('https://dav.example.com/pantodo/')
   await page.locator('#dav-user').fill('kevin')
   await page.locator('#dav-password').fill('demonstration-password')

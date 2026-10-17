@@ -62,3 +62,52 @@ export function placeDay(tasks: Task[], day: Date): CalendarPlacement[] {
   commit()
   return items
 }
+
+export interface TimelinePlacement extends CalendarPlacement {
+  deadline: boolean
+}
+/** Deadlines share overlap lanes with plans so neither can cover the other. */
+export function placeTimeline(tasks: Task[], day: Date, minimumMinutes = 24): TimelinePlacement[] {
+  const plans: TimelinePlacement[] = placeDay(tasks, day).map((item) => ({
+    ...item,
+    deadline: false,
+    end: Math.max(item.end, item.start + minimumMinutes),
+  }))
+  const due: TimelinePlacement[] = tasks
+    .filter(
+      (task) =>
+        !task.deletedAt &&
+        !task.archivedAt &&
+        task.status !== 'cancelled' &&
+        task.dueAt &&
+        startOfDay(new Date(task.dueAt)).getTime() === startOfDay(day).getTime(),
+    )
+    .map((task) => {
+      const date = new Date(task.dueAt!)
+      const start = date.getHours() * 60 + date.getMinutes()
+      return { task, deadline: true, start, end: start + minimumMinutes, lane: 0, lanes: 1 }
+    })
+  const items = [...plans, ...due].sort(
+    (a, b) => a.start - b.start || Number(a.deadline) - Number(b.deadline),
+  )
+  let cluster: TimelinePlacement[] = [],
+    laneEnds: number[] = [],
+    clusterEnd = -1
+  const commit = () => {
+    for (const item of cluster) item.lanes = laneEnds.length
+    cluster = []
+    laneEnds = []
+    clusterEnd = -1
+  }
+  for (const item of items) {
+    if (item.start >= clusterEnd) commit()
+    let lane = laneEnds.findIndex((end) => end <= item.start)
+    if (lane < 0) lane = laneEnds.length
+    item.lane = lane
+    laneEnds[lane] = item.end
+    cluster.push(item)
+    clusterEnd = Math.max(clusterEnd, item.end)
+  }
+  commit()
+  return items
+}

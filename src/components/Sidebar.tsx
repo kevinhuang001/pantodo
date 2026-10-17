@@ -349,7 +349,7 @@ export function Sidebar({
       </div>
 
       <div className="sidebar-footer">
-        {sync.config.url ? (
+        {sync.provider === 'webdav' && sync.config.url ? (
           <button
             type="button"
             className="sidebar-sync-status"

@@ -23,12 +23,12 @@ pub fn configure(window: &tauri::WebviewWindow) {
         let _: () = msg_send![wk_view, setValue: no forKey: key];
 
         // This is window-vibrancy's tagged NSVisualEffectView (the material used by Tauri).
-        // Keep its blur behind the window and reduce the material's own opaque tint.
+        // Keep its blur behind the window and retain its full blur instead of blending sharp desktop details through it.
         let material: *mut AnyObject = msg_send![content_view, viewWithTag: 91376254_isize];
         if !material.is_null() {
             let _: () = msg_send![material, setBlendingMode: 0_isize];
             let _: () = msg_send![material, setState: 1_isize];
-            let _: () = msg_send![material, setAlphaValue: 0.68_f64];
+            let _: () = msg_send![material, setAlphaValue: 1.0_f64];
         }
     });
 }

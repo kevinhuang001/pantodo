@@ -160,8 +160,8 @@ test('multiple tag filters deduplicate totals and each tag receives full time', 
   await page.locator('.stats-tag-picker').click()
   await expect(page.getByTestId('stats-total')).toHaveText('1h')
   await page.locator('.category-head').getByRole('button', { name: '按标签', exact: true }).click()
-  await expect(page.locator('.category-row', { hasText: '重要' })).toContainText('1h')
-  await expect(page.locator('.category-row', { hasText: '紧急' })).toContainText('1h')
+  await expect(page.locator('.chart-breakdown li', { hasText: '重要' })).toContainText('1h')
+  await expect(page.locator('.chart-breakdown li', { hasText: '紧急' })).toContainText('1h')
 })
 
 test('projects and saved views support emoji', async ({ page }) => {

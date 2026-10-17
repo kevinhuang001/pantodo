@@ -3,7 +3,7 @@ interface FocusState {
   active: boolean
   countdown: number | null
   enter: () => void
-  prepare: () => void
+  prepare: (seconds?: number) => void
   tick: () => void
   leave: () => void
 }
@@ -12,7 +12,8 @@ export const useFocusStore = create<FocusState>()((set) => ({
   active: false,
   countdown: null,
   enter: () => set({ active: true, countdown: null }),
-  prepare: () => set({ active: false, countdown: 3 }),
+  prepare: (seconds = 3) =>
+    set(seconds === 0 ? { active: true, countdown: null } : { active: false, countdown: seconds }),
   tick: () =>
     set((state) =>
       state.countdown === null

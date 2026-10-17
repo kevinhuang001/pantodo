@@ -14,6 +14,7 @@ import { checkStatus, davRequest, strongEtag, syncFileUrl, type WebDavConfig } f
 import type { MessageKey } from '@/i18n'
 
 export const SYNC_CONFIG_KEY = 'pantodo.webdav.config'
+export const SYNC_PROVIDER_KEY = 'pantodo.sync.provider'
 export const SYNC_BASE_KEY = 'pantodo.webdav.base'
 export const DEFAULT_CONFIG: WebDavConfig = { url: '', username: '', password: '', autoSync: false }
 interface SavedBase {
@@ -52,6 +53,8 @@ function readBase(config: WebDavConfig): SavedBase | null {
 }
 interface SyncState {
   config: WebDavConfig
+  provider: 'local' | 'webdav'
+  selectProvider: (provider: 'local' | 'webdav') => void
   busy: boolean
   status: 'idle' | 'testing' | 'connected' | 'syncing' | 'success' | 'conflict' | 'error'
   error: MessageKey | null
@@ -65,6 +68,23 @@ interface SyncState {
 const initialConfig = readConfig()
 export const useSyncStore = create<SyncState>()((set, get) => ({
   config: initialConfig,
+  provider: (() => {
+    try {
+      const saved = localStorage.getItem(SYNC_PROVIDER_KEY)
+      return saved === 'local' || saved === 'webdav'
+        ? saved
+        : initialConfig.url
+          ? 'webdav'
+          : 'local'
+    } catch {
+      return 'local'
+    }
+  })(),
+  selectProvider(provider) {
+    if (get().busy) return
+    localStorage.setItem(SYNC_PROVIDER_KEY, provider)
+    set({ provider, status: 'idle', error: null })
+  },
   busy: false,
   status: 'idle',
   error: null,
@@ -73,9 +93,11 @@ export const useSyncStore = create<SyncState>()((set, get) => ({
   save(config) {
     if (get().busy) return
     syncFileUrl(config.url)
+    localStorage.setItem(SYNC_PROVIDER_KEY, 'webdav')
     localStorage.setItem(SYNC_CONFIG_KEY, JSON.stringify(config))
     set({
       config,
+      provider: 'webdav',
       status: 'idle',
       error: null,
       conflicts: [],
@@ -84,9 +106,17 @@ export const useSyncStore = create<SyncState>()((set, get) => ({
   },
   disconnect() {
     if (get().busy) return
+    localStorage.setItem(SYNC_PROVIDER_KEY, 'local')
     localStorage.removeItem(SYNC_CONFIG_KEY)
     localStorage.removeItem(SYNC_BASE_KEY)
-    set({ config: DEFAULT_CONFIG, status: 'idle', error: null, conflicts: [], lastSyncAt: null })
+    set({
+      config: DEFAULT_CONFIG,
+      provider: 'local',
+      status: 'idle',
+      error: null,
+      conflicts: [],
+      lastSyncAt: null,
+    })
   },
   async test(config) {
     if (get().busy) return
@@ -106,7 +136,13 @@ export const useSyncStore = create<SyncState>()((set, get) => ({
     }
   },
   async sync(choice) {
-    if (get().busy || !get().config.url || !useAppStore.getState().ready) return
+    if (
+      get().provider !== 'webdav' ||
+      get().busy ||
+      !get().config.url ||
+      !useAppStore.getState().ready
+    )
+      return
     const config = get().config
     const reviewed = get().conflicts
     set({ busy: true, status: 'syncing', error: null })
@@ -193,6 +229,7 @@ export function startAutoSync(): () => void {
   const run = () => {
     const state = useSyncStore.getState()
     if (
+      state.provider === 'webdav' &&
       state.config.autoSync &&
       state.config.url &&
       !state.busy &&
@@ -224,7 +261,7 @@ export function startAutoSync(): () => void {
         schedule()
   })
   const unsubscribeSync = useSyncStore.subscribe((state, previous) => {
-    if (state.config !== previous.config) schedule()
+    if (state.config !== previous.config || state.provider !== previous.provider) schedule()
     if (previous.busy && !state.busy && state.status === 'success' && state.config.autoSync) {
       const base = readBase(state.config)?.data
       if (base && fingerprint(extractData(workspaceBridge.loadSync(), base)) !== fingerprint(base))

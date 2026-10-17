@@ -30,7 +30,10 @@ export function TaskDialog({ task, onClose }: { task: Task | null; onClose: () =
     start: local(task?.startAt),
     end: local(task?.endAt),
     due: local(task?.dueAt),
-    estimate: task?.estimateMinutes == null ? '' : String(task.estimateMinutes),
+    estimate:
+      task?.estimateMinutes == null
+        ? String(useAppStore.getState().settings.defaultPlanMinutes ?? 30)
+        : String(task.estimateMinutes),
   })
   const [error, setError] = useState('')
   const [saving, setSaving] = useState(false)

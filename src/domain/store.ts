@@ -168,11 +168,19 @@ export const useAppStore = create<AppState>()((set, get) => ({
     try {
       const workspace = await bridge.load()
       setLocale(resolveLocale(workspace.settings.localePreference))
+      const startup = workspace.settings.startupPage ?? 'create'
+      const preset = startup === 'today' ? 'today' : startup === 'all' ? 'all' : 'inbox'
       const activeViewId =
-        workspace.views.find((view) => view.builtin && view.preset === 'inbox')?.id ??
+        workspace.views.find((view) => view.builtin && view.preset === preset)?.id ??
         workspace.views[0]?.id ??
         null
-      set({ ...workspaceSlice(workspace), ready: true, activeViewId, error: null })
+      set({
+        ...workspaceSlice(workspace),
+        ready: true,
+        activeViewId,
+        activeTab: startup === 'timetable' || startup === 'statistics' ? startup : 'views',
+        error: null,
+      })
     } catch (error) {
       set({ error: error instanceof Error ? error.message : String(error), ready: true })
     }
@@ -322,7 +330,8 @@ export const useAppStore = create<AppState>()((set, get) => ({
 
   timeCommand(command) {
     set(bridge.timeCommand(command))
-    if (command.kind === 'start' && get().timer) useFocusStore.getState().prepare()
+    if (command.kind === 'start' && get().timer && get().settings.autoFocus !== false)
+      useFocusStore.getState().prepare(get().settings.focusCountdown ?? 3)
     if (!get().timer) useFocusStore.getState().leave()
     if (command.kind === 'pause' && useFocusStore.getState().countdown !== null)
       useFocusStore.getState().leave()

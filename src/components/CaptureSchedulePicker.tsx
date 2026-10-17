@@ -1,3 +1,4 @@
+import { useAppStore } from '@/domain/store'
 import { useState } from 'react'
 import { CalendarDays, Check, Flag, X, ArrowDownRight } from 'lucide-react'
 import {
@@ -22,6 +23,7 @@ export function CaptureSchedulePicker({
   onChange: (value: ScheduleValues) => void
   dueOnly?: boolean
 }) {
+  const defaultMinutes = useAppStore((s) => s.settings.defaultPlanMinutes ?? 30)
   const [open, setOpen] = useState(false)
   const [draft, setDraft] = useState(value)
   const date = (raw: string) => formatDateTime(fromLocalInputValue(raw), getLocale())
@@ -31,7 +33,7 @@ export function CaptureSchedulePicker({
     <Popover
       open={open}
       onOpenChange={(next) => {
-        if (next) setDraft(value)
+        if (next) setDraft({ ...value, estimate: value.estimate || String(defaultMinutes) })
         setOpen(next)
       }}
     >

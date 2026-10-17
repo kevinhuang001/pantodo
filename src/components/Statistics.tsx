@@ -1,9 +1,10 @@
+import { StatisticsCharts } from './StatisticsCharts'
 import { Popover, PopoverTrigger, PopoverContent } from './ui/popover'
 import { Checkbox } from './ui/checkbox'
 import { DateTimeField } from './DateTimeField'
 import { SelectField } from './SelectField'
 import { useMemo, useState } from 'react'
-import { addDays, startOfDay, startOfMonth, subDays } from 'date-fns'
+import { addDays, startOfDay, startOfMonth, startOfYear, subDays } from 'date-fns'
 import { buildStatistics, csvCell } from '@/domain/statistics'
 import { clippedSeconds } from '@/domain/time'
 import { formatDateTime, formatMinutes, toDateInputValue } from '@/domain/date'
@@ -35,7 +36,7 @@ export function Statistics() {
     views = useAppStore((s) => s.views),
     settings = useAppStore((s) => s.settings)
   const now = useNow(timer?.startedAt ? 1000 : 60000)
-  const [period, setPeriod] = useState('week'),
+  const [period, setPeriod] = useState<string>(settings.statisticsPeriod ?? 'week'),
     [projectId, setProjectId] = useState(''),
     [tagIds, setTagIds] = useState<string[]>([])
   const [from, setFrom] = useState(() => toDateInputValue(subDays(new Date(), 6).toISOString())),
@@ -49,9 +50,11 @@ export function Statistics() {
       ? new Date(from + 'T00:00')
       : period === 'today'
         ? today
-        : period === 'month'
-          ? startOfMonth(now)
-          : subDays(today, 6)
+        : period === 'year'
+          ? startOfYear(now)
+          : period === 'month'
+            ? startOfMonth(now)
+            : subDays(today, 6)
   const end = period === 'custom' ? addDays(new Date(to + 'T00:00'), 1) : addDays(today, 1)
   const valid =
     Number.isFinite(start.getTime()) &&
@@ -76,24 +79,6 @@ export function Statistics() {
   const projectById = new Map(projects.map((p) => [p.id, p])),
     tagById = new Map(tags.map((p) => [p.id, p])),
     taskById = new Map(tasks.map((p) => [p.id, p]))
-  const buckets = [...(category === 'project' ? stats.byProject : stats.byTag)].sort(
-    (a, b) => b[1] - a[1],
-  )
-  const colors = [
-    '#8fa879',
-    '#b7a46c',
-    '#8eabb0',
-    '#b5a3bf',
-    '#bc9678',
-    '#84a99a',
-    '#809bb7',
-    '#a6ab70',
-  ]
-  const max = Math.max(...stats.daily.map((item) => item.seconds), 3600)
-  const label = (id: string) =>
-    category === 'project'
-      ? (projectById.get(id)?.name ?? t('stats.noProject'))
-      : (tagById.get(id)?.name ?? t('stats.noTag'))
   const liveCount = stats.entries.filter((item) => item.id === 'live').length
   function exportCsv() {
     const rows = [
@@ -135,7 +120,7 @@ export function Statistics() {
     <div className="statistics">
       <div className="stats-controls">
         <div className="layout-pills" role="group" aria-label={t('stats.period')}>
-          {(['today', 'week', 'month', 'custom'] as const).map((key) => (
+          {(['today', 'week', 'month', 'year', 'custom'] as const).map((key) => (
             <button
               key={key}
               className={period === key ? 'active' : ''}
@@ -259,102 +244,14 @@ export function Statistics() {
           <small>{t('stats.daily')}</small>
         </section>
       </div>
-      <div className="stats-charts">
-        <section className="stats-chart">
-          <h3>{t('stats.daily')}</h3>
-          <svg
-            className="daily-chart"
-            viewBox="0 0 700 210"
-            role="img"
-            aria-label={t('stats.daily')}
-          >
-            {[0, 1, 2, 3].map((line) => (
-              <g key={line}>
-                <line
-                  x1="38"
-                  x2="690"
-                  y1={20 + line * 48}
-                  y2={20 + line * 48}
-                  stroke="var(--border)"
-                  strokeDasharray="3 5"
-                />
-                <text x="0" y={24 + line * 48}>
-                  {duration((max * (3 - line)) / 3)}
-                </text>
-              </g>
-            ))}
-            {stats.daily.map((item, index) => {
-              const step = 640 / stats.daily.length,
-                height = (item.seconds / max) * 144
-              return (
-                <g key={item.day.toISOString()}>
-                  <rect
-                    x={42 + index * step + step * 0.18}
-                    y={164 - height}
-                    width={Math.max(2, step * 0.64)}
-                    height={Math.max(item.seconds ? 2 : 0, height)}
-                    rx={Math.min(5, step * 0.2)}
-                    fill={index === stats.daily.length - 1 ? '#739063' : '#bfd0a8'}
-                    tabIndex={0}
-                  >
-                    <title>
-                      {item.day.toLocaleDateString(getLocale()) + ' · ' + duration(item.seconds)}
-                    </title>
-                  </rect>
-                  {index % Math.max(1, Math.ceil(stats.daily.length / 8)) === 0 ? (
-                    <text x={42 + index * step + step / 2} y="190" textAnchor="middle">
-                      {new Intl.DateTimeFormat(getLocale(), {
-                        month: 'numeric',
-                        day: 'numeric',
-                      }).format(item.day)}
-                    </text>
-                  ) : null}
-                </g>
-              )
-            })}
-          </svg>
-        </section>
-        <section className="stats-chart">
-          <div className="category-head">
-            <h3>{category === 'project' ? t('stats.projects') : t('stats.tags')}</h3>
-            <div className="layout-pills">
-              <button
-                className={category === 'project' ? 'active' : ''}
-                onClick={() => setCategory('project')}
-              >
-                {t('stats.projects')}
-              </button>
-              <button
-                className={category === 'tag' ? 'active' : ''}
-                onClick={() => setCategory('tag')}
-              >
-                {t('stats.tags')}
-              </button>
-            </div>
-          </div>
-          <div className="category-bars">
-            {buckets.map(([id, seconds], index) => (
-              <div key={id} className="category-row">
-                <span>
-                  <i style={{ background: colors[index % colors.length] }} />
-                  {label(id)}
-                </span>
-                <strong>{duration(seconds)}</strong>
-                <div className="category-track">
-                  <i
-                    style={{
-                      width: (seconds / Math.max(stats.total, 1)) * 100 + '%',
-                      background: colors[index % colors.length],
-                    }}
-                  />
-                </div>
-              </div>
-            ))}
-            {!buckets.length ? <p className="stats-empty">{t('stats.empty')}</p> : null}
-          </div>
-          {category === 'tag' ? <p className="field-hint">{t('stats.tagNote')}</p> : null}
-        </section>
-      </div>
+      <StatisticsCharts
+        stats={stats}
+        workspace={workspace}
+        start={filter.start}
+        end={filter.end}
+        category={category}
+        onCategory={setCategory}
+      />
       <section className="stats-ledger">
         <h3>{t('stats.estimate')}</h3>
         {stats.byTask.size ? (

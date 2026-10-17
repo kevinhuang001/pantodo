@@ -439,3 +439,122 @@
   outline: 2px solid var(--accent);
   outline-offset: 4px;
 }
+
+.settings-extra {
+  margin-top: 16px;
+}
+.sync-mode-picker {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.sync-mode-picker > button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-align: left;
+  min-width: 0;
+  padding: 16px 12px;
+  border: 1px solid var(--border);
+  border-radius: 13px;
+  background: var(--surface-strong);
+  cursor: pointer;
+}
+.sync-mode-picker > button[aria-checked='true'] {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+.provider-symbol {
+  display: grid;
+  place-items: center;
+  width: 35px;
+  height: 35px;
+  border-radius: 10px;
+  color: var(--accent);
+  background: var(--accent-soft);
+  flex-shrink: 0;
+}
+.sync-mode-picker strong {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+}
+.sync-mode-picker small {
+  display: block;
+  font-size: 10px;
+  line-height: 1.55;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+.provider-check {
+  margin-left: auto;
+  width: 16px;
+  flex-shrink: 0;
+  color: var(--accent);
+}
+.sync-local-card {
+  border: 1px solid var(--border);
+  background: var(--surface-strong);
+  border-radius: 14px;
+  overflow: hidden;
+}
+.sync-local-card .storage-summary {
+  border: 0;
+  background: transparent;
+  margin: 0;
+}
+.local-export {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px;
+  border-top: 1px solid var(--hairline);
+}
+.local-export > div {
+  flex: 1;
+}
+.local-export strong {
+  font-size: 12px;
+}
+.local-export p {
+  font-size: 11px;
+  color: var(--text-muted);
+  line-height: 1.6;
+  margin-top: 5px;
+}
+.local-export button {
+  font-size: 12px;
+}
+.sync-provider {
+  background: var(--surface-strong);
+  padding: 20px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+}
+.sync-provider .settings-section-heading {
+  margin-bottom: 6px;
+}
+.sync-form .field {
+  gap: 7px;
+}
+.sync-form input[data-slot='input'] {
+  background: var(--surface-sunken);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  min-height: 38px;
+}
+.sync-provider .sync-status-card {
+  margin: 18px -4px -4px;
+  border-radius: 11px;
+  background: var(--surface-sunken);
+}
+@media (max-width: 850px) {
+  .settings-panel {
+    padding: 20px 18px;
+  }
+  .sync-mode-picker {
+    grid-template-columns: 1fr;
+  }
+}

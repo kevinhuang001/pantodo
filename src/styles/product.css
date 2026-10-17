@@ -243,10 +243,6 @@ body,
 .composed-panel h3 {
   font-size: 14px;
 }
-.panel-meta {
-  padding-bottom: 12px;
-  margin-bottom: 10px;
-}
 .composed-panel .group-empty {
   padding: 18px 12px;
   border-radius: 8px;

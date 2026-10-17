@@ -1,7 +1,8 @@
 import { ACCENT_COLORS } from '@/domain/accent'
-import { SlidersHorizontal, Timer, Cloud, Database, Info, Download } from 'lucide-react'
+import { SlidersHorizontal, Timer, Cloud, BarChart3, Info } from 'lucide-react'
 import { SyncSettings } from './SyncSettings'
 import { SelectField } from './SelectField'
+import { Checkbox } from './ui/checkbox'
 import { Button } from './ui/button'
 import { useState } from 'react'
 
@@ -20,13 +21,13 @@ interface SettingsDialogProps {
   onClose: () => void
 }
 
-type Pane = 'general' | 'timer' | 'sync' | 'data' | 'about'
+type Pane = 'general' | 'timer' | 'sync' | 'statistics' | 'about'
 
 const PANE_ICONS = {
   general: SlidersHorizontal,
   timer: Timer,
   sync: Cloud,
-  data: Database,
+  statistics: BarChart3,
   about: Info,
 }
 
@@ -34,7 +35,7 @@ const PANES: { key: Pane; labelKey: MessageKey }[] = [
   { key: 'general', labelKey: 'settings.pane.general' },
   { key: 'timer', labelKey: 'settings.pane.timer' },
   { key: 'sync', labelKey: 'settings.pane.sync' },
-  { key: 'data', labelKey: 'settings.pane.data' },
+  { key: 'statistics', labelKey: 'settings.pane.statistics' },
   { key: 'about', labelKey: 'settings.pane.about' },
 ]
 
@@ -122,7 +123,7 @@ export function SettingsDialog({ onClose, initialPane }: SettingsDialogProps) {
               <h2>{t(('settings.pane.' + pane) as MessageKey)}</h2>
               <p>{t(('settings.' + pane + 'Hint') as MessageKey)}</p>
             </div>
-            {pane === 'sync' ? <SyncSettings /> : null}
+            {pane === 'sync' ? <SyncSettings onExport={exportJson} /> : null}
             {pane === 'general' ? (
               <div className="settings-card">
                 <div className="settings-row">
@@ -195,29 +196,130 @@ export function SettingsDialog({ onClose, initialPane }: SettingsDialogProps) {
               </div>
             ) : null}
 
-            {pane === 'timer' ? (
-              <div className="settings-card">
-                <p className="settings-timer-note">{t('work.autoStop')}</p>
+            {pane === 'general' ? (
+              <div className="settings-card settings-extra">
+                <div className="settings-row">
+                  <span className="settings-label">{t('settings.startupPage')}</span>
+                  <SelectField
+                    aria-label={t('settings.startupPage')}
+                    value={settings.startupPage ?? 'create'}
+                    onValueChange={(v) => patch({ startupPage: v as Settings['startupPage'] })}
+                  >
+                    {(['create', 'today', 'all', 'timetable', 'statistics'] as const).map(
+                      (key, i) => (
+                        <option key={key} value={key}>
+                          {t(
+                            (
+                              [
+                                'nav.inbox',
+                                'nav.today',
+                                'nav.all',
+                                'nav.tab.timetable',
+                                'nav.statistics',
+                              ] as const
+                            )[i]!,
+                          )}
+                        </option>
+                      ),
+                    )}
+                  </SelectField>
+                </div>
+                <div className="settings-row">
+                  <span className="settings-label">{t('settings.defaultPlan')}</span>
+                  <SelectField
+                    aria-label={t('settings.defaultPlan')}
+                    value={String(settings.defaultPlanMinutes ?? 30)}
+                    onValueChange={(v) => patch({ defaultPlanMinutes: Number(v) })}
+                  >
+                    {[15, 30, 45, 60, 90, 120].map((m) => (
+                      <option key={m} value={String(m)}>
+                        {m} {t('picker.minutesShort')}
+                      </option>
+                    ))}
+                  </SelectField>
+                </div>
+                <div className="settings-row">
+                  <span className="settings-label">{t('settings.panelHeight')}</span>
+                  <SelectField
+                    aria-label={t('settings.panelHeight')}
+                    value={String(settings.panelMaxHeight ?? 480)}
+                    onValueChange={(v) => patch({ panelMaxHeight: Number(v) })}
+                  >
+                    {[320, 400, 480, 600].map((h) => (
+                      <option key={h} value={String(h)}>
+                        {h} px
+                      </option>
+                    ))}
+                  </SelectField>
+                </div>
               </div>
             ) : null}
-
-            {pane === 'data' ? (
+            {pane === 'statistics' ? (
               <div className="settings-card">
                 <div className="settings-row">
                   <span className="settings-label">
-                    {t('settings.export')}
-                    <small>{t('settings.exportHint')}</small>
+                    {t('settings.dailyGoal')}
+                    <small>{t('settings.dailyGoalHint')}</small>
                   </span>
-                  <Button
-                    type="button"
-                    className="secondary"
-                    variant="outline"
-                    onClick={exportJson}
+                  <SelectField
+                    aria-label={t('settings.dailyGoal')}
+                    value={String(settings.dailyFocusGoal ?? 120)}
+                    onValueChange={(v) => patch({ dailyFocusGoal: Number(v) })}
                   >
-                    <Download size={15} />
-                    {t('settings.export')}
-                  </Button>
+                    {[30, 60, 90, 120, 180, 240, 360, 480].map((m) => (
+                      <option key={m} value={String(m)}>
+                        {m} {t('picker.minutesShort')}
+                      </option>
+                    ))}
+                  </SelectField>
                 </div>
+                <div className="settings-row">
+                  <span className="settings-label">{t('settings.statsPeriod')}</span>
+                  <SelectField
+                    aria-label={t('settings.statsPeriod')}
+                    value={settings.statisticsPeriod ?? 'week'}
+                    onValueChange={(v) =>
+                      patch({ statisticsPeriod: v as Settings['statisticsPeriod'] })
+                    }
+                  >
+                    {(['week', 'month', 'year'] as const).map((k) => (
+                      <option key={k} value={k}>
+                        {t(('stats.' + k) as 'stats.week')}
+                      </option>
+                    ))}
+                  </SelectField>
+                </div>
+              </div>
+            ) : null}
+            {pane === 'timer' ? (
+              <div className="settings-card">
+                <div className="settings-row">
+                  <span className="settings-label">
+                    {t('settings.autoFocus')}
+                    <small>{t('settings.autoFocusHint')}</small>
+                  </span>
+                  <Checkbox
+                    aria-label={t('settings.autoFocus')}
+                    checked={settings.autoFocus !== false}
+                    onCheckedChange={(v) => patch({ autoFocus: v === true })}
+                  />
+                </div>
+                <div className="settings-row">
+                  <span className="settings-label">{t('settings.countdown')}</span>
+                  <SelectField
+                    aria-label={t('settings.countdown')}
+                    disabled={settings.autoFocus === false}
+                    value={String(settings.focusCountdown ?? 3)}
+                    onValueChange={(v) => patch({ focusCountdown: Number(v) })}
+                  >
+                    {[0, 3, 5, 10].map((n) => (
+                      <option key={n} value={String(n)}>
+                        {n === 0 ? t('settings.immediate') : n + ' s'}
+                      </option>
+                    ))}
+                  </SelectField>
+                </div>
+                <p className="settings-timer-note">{t('work.autoStop')}</p>
               </div>
             ) : null}
 

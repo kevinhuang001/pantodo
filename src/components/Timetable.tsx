@@ -14,7 +14,7 @@ import {
   endOfMonth,
   startOfWeek,
 } from 'date-fns'
-import { intersectsDay, placeDay } from '@/domain/calendar'
+import { intersectsDay, placeTimeline } from '@/domain/calendar'
 import { colorFor } from '@/domain/filters'
 import { paletteFor } from '@/domain/palette'
 import { useAppStore } from '@/domain/store'
@@ -54,6 +54,20 @@ export function Timetable({
     scrollHours = useRef(7)
   const mode = settings.calendarMode ?? 'week'
   const [hourHeight, setHourHeight] = useState(settings.calendarHourHeight ?? 76)
+  const headRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    const node = scrollRef.current
+    if (!node) return
+    const sync = () =>
+      headRef.current?.style.setProperty(
+        '--tt-scrollbar',
+        node.offsetWidth - node.clientWidth + 'px',
+      )
+    const observer = new ResizeObserver(sync)
+    observer.observe(node)
+    sync()
+    return () => observer.disconnect()
+  }, [mode])
   const [dateOpen, setDateOpen] = useState(false)
   useEffect(() => setHourHeight(settings.calendarHourHeight ?? 76), [settings.calendarHourHeight])
   const palette = paletteFor(theme),
@@ -289,9 +303,15 @@ export function Timetable({
         </div>
       ) : (
         <>
-          <div className="tt-head-row">
+          <div className="tt-head-row" ref={headRef}>
             <div className="tt-gutter">
-              <small>{Intl.DateTimeFormat().resolvedOptions().timeZone.split('/').pop()}</small>
+              <small>
+                {
+                  new Intl.DateTimeFormat('en', { timeZoneName: 'shortOffset' })
+                    .formatToParts(now)
+                    .find((p) => p.type === 'timeZoneName')?.value
+                }
+              </small>
             </div>
             <div className="tt-head-days">
               {days.map((day) => (
@@ -329,95 +349,93 @@ export function Timetable({
               </div>
               <div className="tt-columns">
                 {days.map((day) => {
-                  const placements = placeDay(visible, day)
-                  const deadlines = visible
-                    .filter((task) => dueOn(task, day))
-                    .sort((a, b) => Date.parse(a.dueAt!) - Date.parse(b.dueAt!))
-                  const dueMinutes = [
-                    ...new Set(
-                      deadlines.map((task) => {
-                        const d = new Date(task.dueAt!)
-                        return d.getHours() * 60 + d.getMinutes()
-                      }),
-                    ),
-                  ]
+                  const placements = placeTimeline(
+                    visible,
+                    day,
+                    Math.max(20, (27 / hourHeight) * 60),
+                  )
                   return (
-                    <div className="tt-column" key={day.toISOString()}>
+                    <div className="tt-column" data-day={day.toISOString()} key={day.toISOString()}>
                       {HOURS.map((hour) => (
                         <div className="tt-slot" key={hour} style={{ height: hourHeight }} />
                       ))}
-                      {placements.map((item) => (
-                        <button
-                          type="button"
-                          className={
-                            'tt-block' +
-                            (item.task.status === 'done' ? ' completed' : '') +
-                            (item.end - item.start < 30 ? ' short' : '')
-                          }
-                          key={item.task.id}
-                          data-todo-id={item.task.id}
-                          onClick={() => onEdit(item.task)}
-                          title={
-                            item.task.title +
-                            ' · ' +
-                            clock(item.task.startAt!) +
-                            '–' +
-                            clock(item.task.endAt!)
-                          }
-                          style={{
-                            top: (item.start / 60) * hourHeight,
-                            height: Math.max(((item.end - item.start) / 60) * hourHeight, 17),
-                            left: `calc(${(item.lane / item.lanes) * 100}% + 2px)`,
-                            width: `calc(${100 / item.lanes}% - 5px)`,
-                            borderLeftColor: taskColor(item.task),
-                            background: `color-mix(in srgb, ${taskColor(item.task)} 19%, var(--surface-strong))`,
-                          }}
-                        >
-                          <span className="tt-block-title">{item.task.title}</span>
-                          <span className="tt-block-time">
-                            {clock(item.task.startAt!)}–{clock(item.task.endAt!)}
-                          </span>
-                        </button>
-                      ))}
-                      {dueMinutes.map((minute) => (
-                        <div
-                          className="tt-deadline"
-                          key={minute}
-                          style={{ top: (minute / 60) * hourHeight }}
-                        >
-                          <span className="deadline-dot" />
-                          <div className="deadline-labels">
-                            {deadlines
-                              .filter((task) => {
-                                const d = new Date(task.dueAt!)
-                                return d.getHours() * 60 + d.getMinutes() === minute
-                              })
-                              .map((task) => (
+                      {placements.map((item) => {
+                        const position = {
+                          top: (item.start / 60) * hourHeight,
+                          left: `calc(${(item.lane / item.lanes) * 100}% + 3px)`,
+                          width: `calc(${100 / item.lanes}% - 7px)`,
+                        }
+                        if (item.deadline)
+                          return (
+                            <div
+                              className="tt-deadline"
+                              key={'due-' + item.task.id}
+                              style={position}
+                            >
+                              <span className="deadline-dot" />
+                              <div className="deadline-labels">
                                 <button
                                   type="button"
                                   className={
-                                    task.status === 'done'
-                                      ? 'deadline-label completed'
-                                      : 'deadline-label'
+                                    'deadline-label' +
+                                    (item.task.status === 'done' ? ' completed' : '')
                                   }
-                                  key={task.id}
                                   title={
                                     t('calendar.deadline') +
                                     ' ' +
-                                    clock(task.dueAt!) +
+                                    clock(item.task.dueAt!) +
                                     ' · ' +
-                                    task.title
+                                    item.task.title
                                   }
-                                  onClick={() => onEdit(task)}
+                                  onClick={() => onEdit(item.task)}
                                 >
                                   <Flag size={11} aria-hidden="true" />
-                                  <time>{clock(task.dueAt!)}</time>
-                                  <span>{task.title}</span>
+                                  <time>{clock(item.task.dueAt!)}</time>
+                                  <span>{item.task.title}</span>
                                 </button>
-                              ))}
-                          </div>
-                        </div>
-                      ))}
+                              </div>
+                            </div>
+                          )
+                        const endMinutes = item.task.endAt ? new Date(item.task.endAt) : day
+                        const actualEnd = isSameDay(endMinutes, day)
+                          ? endMinutes.getHours() * 60 + endMinutes.getMinutes()
+                          : 1440
+                        const blockHeight = Math.max(
+                          ((actualEnd - item.start) / 60) * hourHeight,
+                          20,
+                        )
+                        return (
+                          <button
+                            type="button"
+                            key={item.task.id}
+                            data-todo-id={item.task.id}
+                            className={
+                              'tt-block' +
+                              (item.task.status === 'done' ? ' completed' : '') +
+                              (blockHeight < 50 ? ' short' : '')
+                            }
+                            onClick={() => onEdit(item.task)}
+                            title={
+                              item.task.title +
+                              ' · ' +
+                              clock(item.task.startAt!) +
+                              '–' +
+                              clock(item.task.endAt!)
+                            }
+                            style={{
+                              ...position,
+                              height: blockHeight,
+                              borderLeftColor: taskColor(item.task),
+                              background: `color-mix(in srgb, ${taskColor(item.task)} 22%, var(--surface-strong))`,
+                            }}
+                          >
+                            <span className="tt-block-title">{item.task.title}</span>
+                            <span className="tt-block-time">
+                              {clock(item.task.startAt!)}–{clock(item.task.endAt!)}
+                            </span>
+                          </button>
+                        )
+                      })}
                       {isSameDay(day, now) ? (
                         <div
                           className="tt-now"
