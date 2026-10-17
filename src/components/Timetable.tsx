@@ -1,4 +1,3 @@
-import { DateTimeField } from './DateTimeField'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
 import {
@@ -14,15 +13,17 @@ import {
 import { intersectsDay, placeDay } from '@/domain/calendar'
 import { colorFor } from '@/domain/filters'
 import { paletteFor } from '@/domain/palette'
-import { toDateInputValue } from '@/domain/date'
 import { useAppStore } from '@/domain/store'
-import type { CalendarMode, Task, TimetableZoom } from '@/domain/types'
+import type { CalendarMode, Task } from '@/domain/types'
 import { getLocale, t } from '@/i18n'
 import { Icon } from './Icon'
-import { Segmented } from './Menu'
+import { Button } from './ui/button'
+import { Slider } from './ui/slider'
+import { Calendar } from './ui/calendar'
+import { Popover, PopoverContent, PopoverTrigger } from './ui/popover'
+import { enUS, zhCN, ja } from 'date-fns/locale'
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i)
-const HEIGHTS: Record<TimetableZoom, number> = { compact: 44, standard: 76, large: 112 }
 function clock(iso: string) {
   return new Intl.DateTimeFormat(getLocale(), {
     hour: '2-digit',
@@ -40,7 +41,6 @@ export function Timetable({
   onEdit: (task: Task) => void
 }) {
   const tasks = useAppStore((s) => s.tasks),
-    projects = useAppStore((s) => s.projects),
     tags = useAppStore((s) => s.tags),
     taskTags = useAppStore((s) => s.taskTags),
     settings = useAppStore((s) => s.settings),
@@ -49,7 +49,9 @@ export function Timetable({
   const scrollRef = useRef<HTMLDivElement>(null),
     scrollHours = useRef(7)
   const mode = settings.calendarMode ?? 'week'
-  const hourHeight = settings.calendarHourHeight ?? HEIGHTS[settings.timetableZoom]
+  const [hourHeight, setHourHeight] = useState(settings.calendarHourHeight ?? 76)
+  const [dateOpen, setDateOpen] = useState(false)
+  useEffect(() => setHourHeight(settings.calendarHourHeight ?? 76), [settings.calendarHourHeight])
   const palette = paletteFor(theme),
     locale = getLocale()
   const visible = useMemo(
@@ -62,21 +64,14 @@ export function Timetable({
   const days =
     mode === 'month'
       ? Array.from({ length: 42 }, (_, i) => addDays(monthStart, i))
-      : mode === 'agenda'
-        ? Array.from({ length: 30 }, (_, i) => addDays(startOfDay(anchor), i))
-        : mode === 'day'
-          ? [startOfDay(anchor)]
-          : Array.from({ length: 7 }, (_, i) => addDays(week, i))
+      : mode === 'day'
+        ? [startOfDay(anchor)]
+        : Array.from({ length: 7 }, (_, i) => addDays(week, i))
   const gridDays = mode === 'day' ? 1 : 7
   const dueOn = (task: Task, day: Date) => !!task.dueAt && isSameDay(new Date(task.dueAt), day)
   const taskColor = (task: Task) => {
-    const project = projects.find((p) => p.id === task.projectId)
     const tag = tags.find((tag) => tag.id === (taskTags[task.id] ?? [])[0])
-    return project
-      ? colorFor(project, palette)
-      : tag
-        ? colorFor(tag, palette)
-        : (palette[0] ?? '#739063')
+    return tag ? colorFor(tag, palette) : 'var(--accent)'
   }
   const rangeLabel =
     mode === 'month'
@@ -87,16 +82,17 @@ export function Timetable({
             month: 'long',
             day: 'numeric',
           }).format(anchor)
-        : `${new Intl.DateTimeFormat(locale, { year: 'numeric', month: 'short', day: 'numeric' }).format(days[0]!)} – ${new Intl.DateTimeFormat(locale, { month: 'short', day: 'numeric' }).format(days[days.length - 1]!)}`
+        : new Intl.DateTimeFormat(locale, { month: 'short', day: 'numeric' }).formatRange(
+            days[0]!,
+            days[days.length - 1]!,
+          )
   const navigate = (delta: number) =>
     setAnchor(
       mode === 'month'
         ? addMonths(anchor, delta)
         : mode === 'day'
           ? addDays(anchor, delta)
-          : mode === 'agenda'
-            ? addDays(anchor, 30 * delta)
-            : addWeeks(anchor, delta),
+          : addWeeks(anchor, delta),
     )
   const chooseMode = (next: CalendarMode) => void updateSettings({ calendarMode: next })
   useEffect(() => {
@@ -124,75 +120,88 @@ export function Timetable({
       className={'timetable calendar-' + mode}
       style={{ '--tt-days': gridDays, '--hour-height': hourHeight + 'px' } as CSSProperties}
     >
-      <div className="tt-nav">
-        <button
-          className="icon-button"
+      <div className="calendar-controls">
+        <Button
           type="button"
-          aria-label={t('timetable.prev')}
-          onClick={() => navigate(-1)}
+          variant="outline"
+          size="sm"
+          className="calendar-today"
+          onClick={() => setAnchor(new Date())}
         >
-          <Icon name="chevronLeft" />
-        </button>
-        <button type="button" className="secondary" onClick={() => setAnchor(new Date())}>
           {t('timetable.today')}
-        </button>
-        <button
-          className="icon-button"
-          type="button"
-          aria-label={t('timetable.next')}
-          onClick={() => navigate(1)}
-        >
-          <Icon name="chevronRight" />
-        </button>
-        <span className="tt-range">{rangeLabel}</span>
-        <DateTimeField
-          className="calendar-jump"
-          dateOnly
-          aria-label={t('calendar.range')}
-          value={toDateInputValue(anchor.toISOString())}
-          onChange={(e) => {
-            if (e.target.value) setAnchor(new Date(e.target.value + 'T12:00'))
-          }}
-        />
-        <span className="toolbar-spacer" />
-        <Segmented
-          label={t('calendar.view')}
-          value={mode}
-          options={(['day', 'week', 'month', 'agenda'] as const).map((key) => ({
-            key,
-            label: t(('calendar.' + key) as 'calendar.day'),
-          }))}
-          onChange={(key) => chooseMode(key as CalendarMode)}
-        />
-      </div>
-      <div className="calendar-subbar">
-        <p>{t('calendar.legend')}</p>
-        <span className="toolbar-spacer" />
-        {mode === 'week' || mode === 'day' ? (
-          <>
-            <Segmented
-              label={t('timetable.zoom')}
-              value={String(hourHeight)}
-              options={(['compact', 'standard', 'large'] as const).map((key) => ({
-                key: String(HEIGHTS[key]),
-                label: t(('timetable.zoom.' + key) as 'timetable.zoom.compact'),
-              }))}
-              onChange={(key) => updateZoom(Number(key))}
+        </Button>
+        <div className="calendar-navigation">
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            aria-label={t('timetable.prev')}
+            onClick={() => navigate(-1)}
+          >
+            <Icon name="chevronLeft" size={14} />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            aria-label={t('timetable.next')}
+            onClick={() => navigate(1)}
+          >
+            <Icon name="chevronRight" size={14} />
+          </Button>
+        </div>
+        <Popover open={dateOpen} onOpenChange={setDateOpen}>
+          <PopoverTrigger asChild>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="calendar-range"
+              aria-label={t('calendar.range')}
+            >
+              {rangeLabel}
+              <Icon name="chevronDown" size={12} />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="date-popover" align="start">
+            <Calendar
+              mode="single"
+              selected={anchor}
+              defaultMonth={anchor}
+              locale={{ 'zh-CN': zhCN, en: enUS, ja }[locale]}
+              onSelect={(date) => {
+                if (date) {
+                  setAnchor(date)
+                  setDateOpen(false)
+                }
+              }}
             />
-            <label className="zoom-range">
-              <Icon name="search" size={13} />
-              <input
-                type="range"
-                aria-label={t('calendar.zoom')}
-                min={36}
-                max={144}
-                step={4}
-                value={hourHeight}
-                onChange={(e) => updateZoom(Number(e.target.value))}
-              />
-              <span>{Math.round((hourHeight / 76) * 100)}%</span>
-            </label>
-          </>
+          </PopoverContent>
+        </Popover>
+        <span className="toolbar-spacer" />
+        <div className="calendar-mode" role="group" aria-label={t('calendar.view')}>
+          {(['day', 'week', 'month'] as const).map((key) => (
+            <Button
+              key={key}
+              variant="ghost"
+              size="sm"
+              aria-pressed={mode === key}
+              onClick={() => chooseMode(key)}
+            >
+              {t(('calendar.' + key) as 'calendar.day')}
+            </Button>
+          ))}
+        </div>
+        {mode !== 'month' ? (
+          <div className="calendar-zoom" title={t('calendar.zoom')}>
+            <Icon name="search" size={13} />
+            <Slider
+              aria-label={t('calendar.zoom')}
+              min={36}
+              max={144}
+              step={4}
+              value={[hourHeight]}
+              onValueChange={([height]) => setHourHeight(height!)}
+              onValueCommit={([height]) => updateZoom(height!)}
+            />
+          </div>
         ) : null}
       </div>
       {error ? (
@@ -267,41 +276,6 @@ export function Timetable({
               )
             })}
           </div>
-        </div>
-      ) : mode === 'agenda' ? (
-        <div className="calendar-agenda">
-          {days
-            .filter((day) => eventsFor(day).length)
-            .map((day) => (
-              <section className="agenda-day" key={day.toISOString()}>
-                <header>
-                  <span>{new Intl.DateTimeFormat(locale, { weekday: 'short' }).format(day)}</span>
-                  <strong className={isSameDay(day, now) ? 'today' : ''}>{day.getDate()}</strong>
-                  <small>{new Intl.DateTimeFormat(locale, { month: 'short' }).format(day)}</small>
-                </header>
-                <div>
-                  {eventsFor(day).map((row) => (
-                    <button
-                      className={row.deadline ? 'agenda-event deadline-event' : 'agenda-event'}
-                      key={row.task.id + String(row.deadline)}
-                      onClick={() => onEdit(row.task)}
-                      style={{ '--event-color': taskColor(row.task) } as CSSProperties}
-                    >
-                      <span>
-                        {clock(row.at)}
-                        {!row.deadline ? ' – ' + clock(row.task.endAt!) : ''}
-                      </span>
-                      <i />
-                      <strong>{row.task.title}</strong>
-                      {row.deadline ? <small>{t('calendar.deadline')}</small> : null}
-                    </button>
-                  ))}
-                </div>
-              </section>
-            ))}
-          {!days.some((day) => eventsFor(day).length) ? (
-            <p className="stats-empty">{t('calendar.empty')}</p>
-          ) : null}
         </div>
       ) : (
         <>

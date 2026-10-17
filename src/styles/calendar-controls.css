@@ -1,0 +1,116 @@
+/* One quiet control row: dates, three calendar modes, and a draggable zoom slider. */
+.calendar-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 48px;
+  min-height: 48px;
+  padding: 0 20px;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--hairline);
+}
+.calendar-controls [data-slot='button'] {
+  min-height: 28px;
+  height: 28px;
+  font-size: 12px;
+  border-radius: 6px;
+  gap: 6px;
+}
+.calendar-today {
+  padding: 0 10px;
+}
+.calendar-navigation {
+  display: flex;
+  gap: 0;
+}
+.calendar-navigation [data-slot='button'] {
+  width: 25px;
+  padding: 0;
+}
+.calendar-range {
+  padding: 0 3px;
+  font-weight: 550;
+}
+.calendar-mode {
+  display: flex;
+  padding: 2px;
+  border-radius: 7px;
+  background: var(--surface-sunken);
+}
+.calendar-mode [data-slot='button'] {
+  min-width: 34px;
+  padding: 0 10px;
+  height: 26px;
+  min-height: 26px;
+  color: var(--text-muted);
+}
+.calendar-mode [aria-pressed='true'] {
+  background: var(--surface-strong);
+  box-shadow: 0 1px 3px #19382010;
+  color: var(--text);
+}
+.calendar-zoom {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100px;
+  flex-shrink: 0;
+  margin-left: 10px;
+  color: var(--text-muted);
+}
+.calendar-zoom [data-slot='slider'] {
+  width: 76px;
+  height: 26px;
+  flex-shrink: 0;
+}
+.calendar-zoom [data-slot='slider-track'] {
+  background: var(--border);
+  height: 3px;
+}
+.calendar-zoom [data-slot='slider-range'] {
+  background: var(--accent);
+}
+.calendar-zoom [data-slot='slider-thumb'] {
+  width: 12px;
+  height: 12px;
+  border: 1px solid var(--border-strong);
+  background: var(--surface-strong);
+  box-shadow: 0 1px 4px #19382020;
+}
+.tt-head-row {
+  min-height: 66px;
+}
+.tt-day-head {
+  padding: 8px 0;
+  gap: 3px;
+}
+.tt-weekday {
+  font-size: 10px;
+}
+.tt-date {
+  font-size: 21px;
+  width: 30px;
+  height: 30px;
+}
+.tt-gutter small {
+  font-size: 9px;
+  max-width: 56px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+@media (max-width: 1050px) {
+  .calendar-controls {
+    gap: 5px;
+    padding: 0 12px;
+  }
+  .calendar-zoom {
+    width: 82px;
+    margin-left: 5px;
+  }
+  .calendar-zoom [data-slot='slider'] {
+    width: 58px;
+  }
+  .calendar-range {
+    font-size: 11px !important;
+  }
+}

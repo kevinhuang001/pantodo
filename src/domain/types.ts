@@ -20,8 +20,6 @@ export interface Entity {
 export interface Project extends Entity {
   emoji?: string
   name: string
-  /** `null` means "assign a colour from the name hash". */
-  color: string | null
   sortOrder: number
   archivedAt: IsoDateTime | null
 }
@@ -47,11 +45,10 @@ export interface Task extends Entity {
   sortOrder: number
 }
 
-export type GroupField = 'tag' | 'project' | 'status' | 'none'
-export type GroupArrangement = 'vertical' | 'columns' | 'grid'
+export type ViewPresentation = 'list' | 'gallery' | 'board' | 'panels'
+export type PanelArrangement = 'vertical' | 'columns' | 'grid'
 export type AppTab = 'views' | 'timetable' | 'statistics'
-export type TimetableZoom = 'compact' | 'standard' | 'large'
-export type CalendarMode = 'day' | 'week' | 'month' | 'agenda'
+export type CalendarMode = 'day' | 'week' | 'month'
 export type TagMatchMode = 'any' | 'all'
 export type ViewSort = 'manual' | 'due' | 'created' | 'title'
 export type HasTime = 'any' | 'scheduled' | 'unscheduled'
@@ -72,26 +69,11 @@ export interface ViewFilter {
   projectMode?: 'any' | 'none'
 }
 
-/** A named bucket inside a view — this is what makes the Eisenhower matrix four tags. */
-export interface GroupRule {
-  tagIds: Id[]
-  tagMode: TagMatchMode
-  excludeTagIds: Id[]
-}
-
-export interface ViewGroup {
-  id: Id
-  label: string
-  color: string | null
-  rule: GroupRule
-  sortOrder: number
-}
-
 export interface ViewPanel {
+  presentation?: 'list' | 'gallery'
   id: Id
   name: string
   emoji: string
-  color: string | null
   filter: ViewFilter
   sort: ViewSort
   span: number
@@ -117,18 +99,17 @@ export interface TimerSession {
 }
 
 export interface View extends Entity {
+  presentation: ViewPresentation
   name: string
   emoji?: string
-  panels?: ViewPanel[]
+  panels: ViewPanel[]
   icon: string
   builtin: boolean
   preset: ViewPreset | null
   filter: ViewFilter
-  groupBy: GroupField
-  arrangement: GroupArrangement
+  arrangement: PanelArrangement
   gridColumns: number
   sort: ViewSort
-  groups: ViewGroup[]
   sortOrder: number
 }
 
@@ -143,12 +124,10 @@ export interface Settings {
   weekStartsOn: 0 | 1
   reminderLeadMinutes: number
   notificationsSilent: boolean
-  /** Row height of the timetable grid; "large" is the default so block text always fits. */
+  /** Calendar presentation and draggable time-grid scale. */
   calendarMode?: CalendarMode
   calendarHourHeight?: number
   defaultDurationMinutes?: number
-  timetableZoom: TimetableZoom
-  seedVersion: number
 }
 
 /** The whole workspace, as persisted and as handed to the UI in one shot. */

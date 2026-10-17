@@ -14,42 +14,18 @@ describe('defaultSettings', () => {
 })
 
 describe('createSeedWorkspace', () => {
-  it('seeds three built-in views, the Eisenhower example and a trash view', () => {
+  it('seeds four navigation views and an editable panel workbench', () => {
     const workspace = createSeedWorkspace()
-    const presets = workspace.views.map((view) => view.preset)
-    expect(presets).toEqual(['inbox', 'today', 'all', null, 'trash', null])
-  })
-
-  it('seeds the Eisenhower example as an ordinary 2x2 view over pinned tag groups', () => {
-    const workspace = createSeedWorkspace()
-    const quadrant = workspace.views.find((view) => view.groups.length === 4)
-
-    expect(quadrant).toBeDefined()
-    expect(quadrant?.builtin).toBe(true)
-    expect(quadrant?.groupBy).toBe('tag')
-    expect(quadrant?.arrangement).toBe('grid')
-    expect(quadrant?.gridColumns).toBe(2)
-    expect(quadrant?.groups).toHaveLength(4)
-    expect(quadrant?.groups.map((group) => group.sortOrder)).toEqual([0, 1, 2, 3])
-
-    const [important, urgent] = workspace.tags
-    expect(workspace.tags).toHaveLength(2)
-    expect(important?.name).toBe('重要')
-    expect(urgent?.name).toBe('紧急')
-
-    const rules = quadrant?.groups.map((group) => group.rule)
-    expect(rules?.[0]).toEqual({
-      tagIds: [important?.id, urgent?.id],
-      tagMode: 'all',
-      excludeTagIds: [],
-    })
-    expect(rules?.[1]?.excludeTagIds).toEqual([urgent?.id])
-    expect(rules?.[2]?.excludeTagIds).toEqual([important?.id])
-    expect(rules?.[3]).toEqual({
-      tagIds: [],
-      tagMode: 'all',
-      excludeTagIds: [important?.id, urgent?.id],
-    })
+    expect(workspace.views.map((view) => view.preset)).toEqual([
+      'inbox',
+      'today',
+      'all',
+      'trash',
+      null,
+    ])
+    const workbench = workspace.views.find((view) => view.presentation === 'panels')
+    expect(workbench?.builtin).toBe(false)
+    expect(workbench?.panels).toHaveLength(3)
   })
 
   it('starts empty apart from views and tags', () => {
@@ -76,8 +52,5 @@ describe('createSeedWorkspace', () => {
     const workspace = createSeedWorkspace({ t: (key) => `[${key}]` })
     expect(workspace.views[0]?.name).toBe('[nav.inbox]')
     expect(workspace.tags[0]?.name).toBe('[seed.tagImportant]')
-    expect(workspace.views.find((view) => view.groups.length === 4)?.groups[0]?.label).toBe(
-      '[quadrant.importantUrgent]',
-    )
   })
 })

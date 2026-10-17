@@ -9,10 +9,9 @@ import { validatePlan } from './calendar'
 import type { TimeCommand } from './time'
 import { nowIso } from './date'
 import { newId } from './ids'
+import { EMPTY_FILTER } from './types'
 import type {
   AppTab,
-  GroupArrangement,
-  GroupField,
   Id,
   Project,
   Settings,
@@ -21,9 +20,7 @@ import type {
   TaskStatus,
   TimeEntry,
   TimerSession,
-  ViewPanel,
   View,
-  ViewFilter,
   Workspace,
 } from './types'
 
@@ -43,13 +40,7 @@ export interface NewTaskInput {
 
 export interface NewViewInput {
   name: string
-  icon: string
   emoji?: string
-  panels?: ViewPanel[]
-  filter: ViewFilter
-  groupBy: GroupField
-  arrangement: GroupArrangement
-  gridColumns: number
 }
 
 interface Toast {
@@ -74,7 +65,7 @@ export interface AppState {
   activeViewId: Id | null
   search: string
   selectedTaskId: Id | null
-  /** Transient filtering from the sidebar; M5 turns this into first-class saved views. */
+  /** Transient project and tag filters selected in the sidebar. */
   tagFilterId: Id | null
   projectFilterId: Id | null
   toast: Toast | null
@@ -103,7 +94,7 @@ export interface AppState {
   reloadWorkspace: () => void
   suspendTimer: () => void
 
-  createProject: (name: string, color: string | null, emoji?: string) => Promise<void>
+  createProject: (name: string, emoji?: string) => Promise<void>
   updateProject: (id: Id, patch: Partial<Project>) => Promise<void>
   softDeleteProject: (id: Id) => Promise<void>
 
@@ -114,7 +105,6 @@ export interface AppState {
   updateView: (id: Id, patch: Partial<View>) => Promise<void>
   createView: (input: NewViewInput) => Promise<Id>
   softDeleteView: (id: Id) => Promise<void>
-  reorderGroups: (viewId: Id, from: number, to: number) => Promise<void>
 
   updateSettings: (patch: Partial<Settings>) => Promise<void>
 }
@@ -133,8 +123,6 @@ const emptyWorkspace: Workspace = {
     weekStartsOn: 1,
     reminderLeadMinutes: 20,
     notificationsSilent: true,
-    timetableZoom: 'large',
-    seedVersion: 0,
   },
 }
 
@@ -354,7 +342,7 @@ export const useAppStore = create<AppState>()((set, get) => ({
     if (get().timer?.ownerId === bridge.ownerId) set(bridge.timeCommand({ kind: 'stop' }))
   },
 
-  async createProject(name, color, emoji) {
+  async createProject(name, emoji) {
     const now = nowIso()
     const project: Project = {
       emoji: emoji ?? '📁',
@@ -363,7 +351,6 @@ export const useAppStore = create<AppState>()((set, get) => ({
       updatedAt: now,
       deletedAt: null,
       name: name.trim(),
-      color,
       sortOrder: get().projects.length,
       archivedAt: null,
     }
@@ -439,17 +426,16 @@ export const useAppStore = create<AppState>()((set, get) => ({
       updatedAt: now,
       deletedAt: null,
       name: input.name.trim(),
-      icon: input.icon,
+      icon: 'layers',
       emoji: input.emoji,
-      panels: input.panels,
+      panels: [],
+      presentation: 'list',
       builtin: false,
       preset: null,
-      filter: input.filter,
-      groupBy: input.groupBy,
-      arrangement: input.arrangement,
-      gridColumns: input.gridColumns,
+      filter: { ...EMPTY_FILTER },
+      arrangement: 'grid',
+      gridColumns: 2,
       sort: 'manual',
-      groups: [],
       sortOrder: views.reduce((max, candidate) => Math.max(max, candidate.sortOrder), 0) + 1,
     }
     set({
@@ -471,21 +457,6 @@ export const useAppStore = create<AppState>()((set, get) => ({
     const remaining = views.filter((view) => view.deletedAt === null && view.preset !== 'trash')
     const activeViewId = get().activeViewId === id ? (remaining[0]?.id ?? null) : get().activeViewId
     set({ views, activeViewId })
-    await bridge.upsertView(next)
-  },
-
-  async reorderGroups(viewId, from, to) {
-    const view = get().views.find((candidate) => candidate.id === viewId)
-    if (view === undefined) return
-    const groups = [...view.groups].sort((a, b) => a.sortOrder - b.sortOrder)
-    if (from < 0 || from >= groups.length || to < 0 || to >= groups.length || from === to) return
-    const [moved] = groups.splice(from, 1)
-    if (moved === undefined) return
-    groups.splice(to, 0, moved)
-    const next = withUpdated(view, {
-      groups: groups.map((group, index) => ({ ...group, sortOrder: index })),
-    })
-    set({ views: upsert(get().views, next) })
     await bridge.upsertView(next)
   },
 

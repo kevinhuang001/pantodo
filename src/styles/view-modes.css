@@ -1,0 +1,285 @@
+/* Presentations share the task actions and data, but use purpose-built content layouts. */
+.task-gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(235px, 100%), 1fr));
+  gap: 14px;
+  align-items: start;
+}
+.task-gallery .task-row {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr) auto;
+  gap: 14px 8px;
+  padding: 18px;
+  min-height: 214px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-strong);
+  align-items: start;
+  margin: 0;
+}
+.task-gallery .task-row:hover {
+  border-color: var(--border-strong);
+  background: var(--surface-strong);
+  box-shadow: 0 5px 18px #20382007;
+}
+.task-gallery .task-check {
+  grid-column: 1;
+  grid-row: 1;
+}
+.task-gallery .task-start {
+  grid-column: 2;
+  grid-row: 1;
+  justify-self: end;
+  width: 26px;
+  height: 26px;
+}
+.task-gallery .task-body {
+  grid-column: 1/-1;
+  grid-row: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-height: 104px;
+  padding: 0;
+  gap: 9px;
+  overflow: hidden;
+}
+.task-gallery .task-title {
+  font-size: 15px;
+  line-height: 1.55;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.task-gallery .task-description {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  white-space: normal;
+  font-size: 12px;
+  line-height: 1.7;
+  max-height: 62px;
+  overflow: hidden;
+}
+.task-gallery .task-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: auto;
+  padding-top: 5px;
+}
+.task-gallery .task-actions {
+  grid-column: 3;
+  grid-row: 1;
+  display: flex;
+  flex-direction: row;
+  width: auto;
+  opacity: 0.55;
+  gap: 2px;
+}
+.task-gallery .task-actions .icon-button {
+  width: 24px;
+  height: 26px;
+}
+.task-gallery .task-row:hover .task-actions,
+.task-gallery .task-row:focus-within .task-actions {
+  opacity: 1;
+}
+.task-gallery .task-timing {
+  display: flex;
+  grid-column: 1/-1;
+  grid-row: 3;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 7px 12px;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 12px;
+  border-top: 1px solid var(--hairline);
+  font-size: 10px;
+}
+.task-gallery .task-unscheduled {
+  display: none;
+}
+.task-status-board {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(226px, 1fr));
+  gap: 16px;
+  align-items: start;
+  min-width: 0;
+  overflow-x: auto;
+  padding-bottom: 16px;
+}
+.status-column {
+  background: var(--surface-sunken);
+  padding: 12px;
+  border-radius: 12px;
+  min-width: 0;
+}
+.status-column > header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 3px 15px;
+}
+.status-column > header h2 {
+  flex: 1;
+  font-size: 12px;
+  font-weight: 600;
+}
+.status-column > header > span:last-child {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+.status-indicator {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--text-faint);
+}
+.status-doing .status-indicator {
+  background: var(--accent);
+}
+.status-done .status-indicator {
+  background: var(--success-dot);
+}
+.status-cancelled .status-indicator {
+  background: var(--danger);
+}
+.status-column .task-gallery {
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+.status-column .task-gallery .task-row {
+  min-height: 190px;
+  padding: 14px;
+}
+.status-column .group-empty {
+  margin: 0;
+  padding: 22px 10px;
+  font-size: 12px;
+  text-align: center;
+  color: var(--text-muted);
+}
+.panel-board-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+.panel-board-toolbar .segmented {
+  padding: 2px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+}
+.panel-board-toolbar .segmented-item {
+  padding: 4px 8px;
+  font-size: 11px;
+}
+.panel-board-toolbar > .secondary {
+  margin-left: auto;
+  min-height: 32px;
+  height: 32px;
+  font-size: 12px;
+}
+.composed-panel[data-dragging='true'] {
+  opacity: 0.75;
+  box-shadow: 0 15px 40px #19382028;
+  outline: 2px solid var(--accent);
+}
+.composed-panel .panel-move {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  touch-action: none;
+  cursor: grab;
+  color: var(--text-muted);
+}
+.composed-panel .panel-move:hover {
+  color: var(--text);
+  background: var(--surface-sunken);
+}
+.composed-panel .panel-move:active {
+  cursor: grabbing;
+}
+.composed-panel .task-gallery {
+  grid-template-columns: repeat(auto-fill, minmax(min(220px, 100%), 1fr));
+}
+.composed-panel .task-gallery .task-row {
+  min-height: 195px;
+}
+.composed-panel .task-gallery .task-description,
+.composed-panel .task-gallery .task-timing {
+  display: flex;
+}
+.composed-panel .task-gallery .task-actions {
+  opacity: 0.6;
+}
+@media (max-width: 1200px) {
+  .view-presentation [data-slot='button'] {
+    width: 30px;
+    padding: 0;
+  }
+  .view-presentation button > span {
+    display: none;
+  }
+  .toolbar h1 {
+    max-width: 170px;
+  }
+}
+@media (max-width: 900px) {
+  .view-task-count {
+    display: none;
+  }
+  .toolbar h1 {
+    max-width: 140px;
+  }
+}
+/* Keep the focus exit below native window controls in the shared title row. */
+:root:not([data-platform='macos']) .focus-header {
+  padding-top: 56px;
+}
+/* Card action buttons keep their width inside independently configured panels. */
+.composed-panel .task-gallery .task-row .task-actions,
+.composed-panel .task-gallery .task-row:hover .task-actions,
+.composed-panel .task-gallery .task-row:focus-within .task-actions {
+  width: auto;
+  flex-direction: row;
+  overflow: visible;
+}
+.panel-board-toolbar {
+  justify-content: flex-start;
+}
+/* Lists read as rows in one surface; galleries remain independent cards. */
+.task-list:not(.task-gallery) {
+  gap: 0;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-strong);
+  overflow: hidden;
+}
+.task-list:not(.task-gallery) > .task-row {
+  min-height: 64px;
+  margin: 0;
+  padding: 12px 16px;
+  border: 0;
+  border-bottom: 1px solid var(--hairline);
+  border-radius: 0;
+  box-shadow: none;
+  background: transparent;
+}
+.task-list:not(.task-gallery) > .task-row:last-child {
+  border-bottom: 0;
+}
+.task-list:not(.task-gallery) > .task-row:hover {
+  background: var(--surface-sunken);
+}
+.composed-panel .task-list:not(.task-gallery) {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+.composed-panel .task-list:not(.task-gallery) > .task-row {
+  padding: 12px 0;
+}

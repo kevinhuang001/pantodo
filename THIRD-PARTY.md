@@ -39,3 +39,5 @@ into `src/styles/tokens.css` and a dark palette was added (Glassmark is light-on
 ## shadcn/ui and Radix
 
 The components in `src/components/ui` originate from the shadcn/ui new-york-v4 registry (https://ui.shadcn.com), MIT licensed, copyright shadcn. Imports, translations and theme tokens are adapted for Pantodo. Radix UI primitives, Tailwind CSS, class-variance-authority, clsx and tailwind-merge are MIT licensed; Lucide icons are ISC licensed; React DayPicker is MIT licensed.
+
+Panel sorting uses dnd kit (`@dnd-kit/core`, `@dnd-kit/sortable`, `@dnd-kit/utilities`), MIT licensed, copyright Clauderic Demers.

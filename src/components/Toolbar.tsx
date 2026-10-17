@@ -1,10 +1,17 @@
-import { Icon } from './Icon'
-import { SelectField } from './SelectField'
-import { ARRANGEMENT_LABEL_KEYS, viewDisplayName } from '@/domain/display'
+import { List, LayoutGrid, Columns3, PanelsTopLeft } from 'lucide-react'
+import { beginWindowDrag } from '@/window'
+import { viewDisplayName } from '@/domain/display'
 import { useAppStore } from '@/domain/store'
-import type { AppTab, GroupArrangement, View } from '@/domain/types'
-import { getLocale, t } from '@/i18n'
-import { Segmented } from './Menu'
+import type { AppTab, View, ViewPresentation } from '@/domain/types'
+import { t } from '@/i18n'
+import { Icon } from './Icon'
+import { Button } from './ui/button'
+const MODES = [
+  { key: 'list', icon: List },
+  { key: 'gallery', icon: LayoutGrid },
+  { key: 'board', icon: Columns3 },
+  { key: 'panels', icon: PanelsTopLeft },
+] as const
 export function Toolbar({
   tab,
   view,
@@ -15,10 +22,9 @@ export function Toolbar({
   tab: AppTab
   view: View | null
   total: number
-  onEditView: () => void
   doneCount: number
+  onEditView: () => void
 }) {
-  const updateView = useAppStore((state) => state.updateView)
   const title =
     tab === 'statistics'
       ? t('nav.statistics')
@@ -27,17 +33,20 @@ export function Toolbar({
         : view
           ? viewDisplayName(view, t)
           : t('views.section')
-  const grouped =
-    tab === 'views' &&
-    view &&
-    (view.panels !== undefined || view.groups.length > 0 || view.groupBy !== 'none')
+  const showModes = tab === 'views' && view && view.preset !== 'inbox'
+  const presentation = view ? view.presentation : 'list'
+  const change = (mode: ViewPresentation) => {
+    if (!view) return
+    void useAppStore
+      .getState()
+      .updateView(view.id, {
+        presentation: mode,
+      })
+      .catch(() => useAppStore.getState().notify('work.failed'))
+  }
   return (
-    <header className="toolbar">
+    <header className="toolbar" onMouseDown={beginWindowDrag}>
       <div className="toolbar-title">
-        <span className="toolbar-breadcrumb">
-          {t('ui.workspace')}
-          <span>/</span>
-        </span>
         <h1>
           {tab === 'views' && view?.emoji ? (
             <span className="title-emoji" aria-hidden="true">
@@ -46,54 +55,45 @@ export function Toolbar({
           ) : null}
           {title}
         </h1>
-        {tab === 'views' && view?.preset !== 'inbox' ? (
-          <span className="count">
-            {total} · {doneCount}
+        {showModes ? (
+          <span className="view-task-count">
+            {total - doneCount} / {total}
           </span>
         ) : null}
       </div>
       <span className="toolbar-spacer" />
-      <div className="toolbar-actions">
-        <span className="toolbar-date">
-          {new Intl.DateTimeFormat(getLocale(), {
-            month: 'short',
-            day: 'numeric',
-            weekday: 'short',
-          }).format(new Date())}
-        </span>
-        {tab === 'views' && view?.preset === null ? (
-          <button className="icon-button" aria-label={t('view.settings')} onClick={onEditView}>
-            <Icon name="sliders" size={16} />
-          </button>
-        ) : null}
-        {grouped && view ? (
-          <>
-            <Segmented
-              label={t('toolbar.arrangement')}
-              value={view.arrangement}
-              options={(['vertical', 'columns', 'grid'] as const).map((key) => ({
-                key,
-                label: t(ARRANGEMENT_LABEL_KEYS[key]),
-              }))}
-              onChange={(key) => void updateView(view.id, { arrangement: key as GroupArrangement })}
-            />
-            {view.arrangement !== 'vertical' ? (
-              <SelectField
-                className="compact-select"
-                aria-label={t('view.field.columns')}
-                value={view.gridColumns}
-                onValueChange={(e) => void updateView(view.id, { gridColumns: Number(e) })}
+      {showModes ? (
+        <div className="view-presentation" role="group" aria-label={t('view.presentation')}>
+          {MODES.filter((mode) => mode.key !== 'panels' || view.preset === null).map(
+            ({ key, icon: ModeIcon }) => (
+              <Button
+                key={key}
+                type="button"
+                variant="ghost"
+                size="sm"
+                aria-label={t(('view.' + key) as 'view.list')}
+                aria-pressed={presentation === key}
+                onClick={() => change(key)}
+                title={t(('view.' + key) as 'view.list')}
               >
-                {[1, 2, 3, 4].map((n) => (
-                  <option value={n} key={n}>
-                    {n} ×
-                  </option>
-                ))}
-              </SelectField>
-            ) : null}
-          </>
-        ) : null}
-      </div>
+                <ModeIcon size={14} />
+                <span>{t(('view.' + key) as 'view.list')}</span>
+              </Button>
+            ),
+          )}
+        </div>
+      ) : null}
+      {tab === 'views' && view?.preset === null ? (
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          className="view-settings"
+          aria-label={t('view.settings')}
+          onClick={onEditView}
+        >
+          <Icon name="sliders" size={15} />
+        </Button>
+      ) : null}
     </header>
   )
 }

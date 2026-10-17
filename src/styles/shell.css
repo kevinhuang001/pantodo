@@ -1,11 +1,4 @@
-/* App shell: frosted two-column window over a wallpaper scene. */
-
-.scene {
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  background: var(--wallpaper);
-}
+/* Two-column desktop workspace. */
 
 #app {
   display: flex;

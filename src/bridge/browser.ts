@@ -1,8 +1,7 @@
-import { createSeedWorkspace, defaultSettings, SEED_VERSION } from '@/domain/presets'
+import { createSeedWorkspace } from '@/domain/presets'
 import { newId } from '@/domain/ids'
 import { applyTimeCommand, HEARTBEAT_GAP_MS } from '@/domain/time'
-import { workbenchPanels } from '@/domain/views'
-import { t, setLocale, resolveLocale } from '@/i18n'
+import { setLocale, resolveLocale } from '@/i18n'
 import type { TimeCommand } from '@/domain/time'
 import type { Id, Project, Settings, Tag, Task, View, Workspace } from '@/domain/types'
 import type { Bridge } from './types'
@@ -20,60 +19,6 @@ function writeStorage(workspace: Workspace): void {
   if (typeof localStorage !== 'undefined')
     localStorage.setItem(STORAGE_KEY, JSON.stringify(workspace))
 }
-function normalize(stored: Workspace): Workspace {
-  // One-time import of the previous fixture's schedule fields; the live model has no schedule entity.
-  const old = stored as Workspace & {
-    scheduleBlocks?: { taskId: string; startAt: string; endAt: string; deletedAt: string | null }[]
-  }
-  const tasks = stored.tasks.map((task) => {
-    const block = old.scheduleBlocks?.find((item) => item.taskId === task.id && !item.deletedAt)
-    return {
-      ...task,
-      startAt: task.startAt ?? block?.startAt ?? null,
-      endAt: task.endAt ?? block?.endAt ?? null,
-    }
-  })
-  const views = [...stored.views]
-  if ((stored.settings.seedVersion ?? 0) < SEED_VERSION && !views.some((view) => view.panels)) {
-    const stamp = new Date().toISOString()
-    views.push({
-      id: newId(),
-      createdAt: stamp,
-      updatedAt: stamp,
-      deletedAt: null,
-      name: t('panels.title'),
-      emoji: '🪴',
-      icon: 'layers',
-      builtin: false,
-      preset: null,
-      filter: {
-        tagIds: [],
-        tagMode: 'any',
-        projectIds: [],
-        statuses: [],
-        hasTime: 'any',
-        text: '',
-      },
-      groupBy: 'none',
-      arrangement: 'grid',
-      gridColumns: 2,
-      sort: 'manual',
-      groups: [],
-      panels: workbenchPanels(),
-      sortOrder: 3,
-    })
-  }
-  return {
-    projects: stored.projects,
-    tags: stored.tags,
-    tasks,
-    taskTags: stored.taskTags,
-    views,
-    settings: { ...defaultSettings(), ...stored.settings, seedVersion: SEED_VERSION },
-    timeEntries: stored.timeEntries ?? [],
-    timer: stored.timer ?? null,
-  }
-}
 export function createBrowserBridge(recoverGaps = true): Bridge {
   const ownerId = newId()
   let cache: Workspace | null = null
@@ -87,7 +32,7 @@ export function createBrowserBridge(recoverGaps = true): Bridge {
     if (!initialized) setLocale(resolveLocale(stored?.settings.localePreference ?? 'system'))
     if (!initialized || stored)
       cache = stored
-        ? normalize(stored)
+        ? stored
         : (cache ??
           createSeedWorkspace({
             withDemoData:

@@ -75,7 +75,9 @@ export function TaskRow({ task, lookup }: { task: Task; lookup: TaskLookup }) {
         <span className="task-meta">
           {project === null ? null : (
             <span className="chip">
-              <span className="dot" style={{ background: colorFor(project, lookup.palette) }} />
+              <span className="project-emoji" aria-hidden="true">
+                {project.emoji || '📁'}
+              </span>
               {project.name}
             </span>
           )}
@@ -180,16 +182,21 @@ export function TaskList({
   tasks,
   lookup,
   emptyKey,
+  presentation = 'list',
 }: {
   tasks: Task[]
   lookup: TaskLookup
+  presentation?: 'list' | 'gallery'
   emptyKey?: MessageKey
 }) {
   if (tasks.length === 0) {
     return emptyKey === undefined ? null : <p className="group-empty">{t(emptyKey)}</p>
   }
   return (
-    <div className="task-list">
+    <div
+      className={presentation === 'gallery' ? 'task-list task-gallery' : 'task-list'}
+      data-presentation={presentation}
+    >
       {tasks.map((task) => (
         <TaskRow key={task.id} task={task} lookup={lookup} />
       ))}

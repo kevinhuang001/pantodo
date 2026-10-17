@@ -1,7 +1,8 @@
+import { TaskBoard } from './components/TaskBoard'
 import { useEffect, useMemo, useState } from 'react'
 
 import { useDebounced, useFilterContext, useNow } from '@/hooks'
-import { groupTasks, selectTasks, sortTasks } from '@/domain/filters'
+import { selectTasks, sortTasks } from '@/domain/filters'
 import { paletteFor } from '@/domain/palette'
 import { useAppStore } from '@/domain/store'
 import { applyTheme, resolveTheme, systemPrefersDark } from '@/domain/theme'
@@ -13,7 +14,7 @@ import { WindowChrome } from './components/WindowChrome'
 import { ConfirmDialog } from './components/ConfirmDialog'
 import { EmptyState } from './components/EmptyState'
 import { EntityDialog } from './components/EntityDialog'
-import { GroupBoard } from './components/GroupBoard'
+import { TaskList } from './components/TaskList'
 import { Icon } from './components/Icon'
 import { PanelBoard } from './components/PanelBoard'
 import { Statistics } from './components/Statistics'
@@ -125,13 +126,6 @@ export function App() {
     return sortTasks(list, activeView, context)
   }, [activeView, tasks, context, debouncedSearch, tagFilterId, projectFilterId, taskTags])
 
-  const groups = useMemo(() => {
-    if (activeView === null) return []
-    const visibleProjects = projects.filter((project) => project.deletedAt === null)
-    const visibleTags = tags.filter((tag) => tag.deletedAt === null)
-    return groupTasks(filtered, activeView, context, visibleTags, visibleProjects, palette)
-  }, [activeView, filtered, context, tags, projects, palette])
-
   const doneCount = filtered.filter((task) => task.status === 'done').length
 
   const lookup = useMemo<TaskLookup>(() => {
@@ -225,7 +219,6 @@ export function App() {
   return (
     <>
       <TimerLifecycle />
-      <div className="scene" />
       <div id="app">
         <WindowChrome />
         <Sidebar
@@ -280,14 +273,16 @@ export function App() {
               <InboxComposer />
             ) : activeView === null ? null : (
               <>
-                {activeView.panels !== undefined ? (
+                {activeView.presentation === 'board' ? (
+                  <TaskBoard tasks={filtered} lookup={lookup} />
+                ) : activeView.presentation === 'panels' ? (
                   <PanelBoard
                     view={activeView}
                     tasks={filtered}
                     context={context}
                     lookup={lookup}
                   />
-                ) : filtered.length === 0 && activeView.groups.length === 0 ? (
+                ) : filtered.length === 0 ? (
                   <EmptyState
                     icon={isTrash ? 'trash' : isInbox ? 'inbox' : 'calendarCheck'}
                     titleKey={emptyTitle}
@@ -302,13 +297,11 @@ export function App() {
                     }
                   />
                 ) : (
-                  <GroupBoard
-                    groups={groups}
+                  <TaskList
+                    tasks={filtered}
                     lookup={lookup}
-                    view={activeView}
-                    onReorderGroups={(from, to) => {
-                      void useAppStore.getState().reorderGroups(activeView.id, from, to)
-                    }}
+                    presentation={activeView.presentation === 'gallery' ? 'gallery' : 'list'}
+                    emptyKey={isTrash ? 'empty.trashTitle' : 'empty.viewTitle'}
                   />
                 )}
 

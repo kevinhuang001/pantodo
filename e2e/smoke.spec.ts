@@ -53,7 +53,7 @@ test('captures a task from the inbox composer', async ({ page }) => {
   await page.locator('#pantodo-inbox-input').fill('e2e 收件箱捕获')
   await page.locator('#pantodo-inbox-input').press('Enter')
 
-  await expect(page.locator('.scattered-note', { hasText: 'e2e 收件箱捕获' })).toHaveCount(1)
+  await expect(page.locator('#pantodo-inbox-input')).toHaveValue('')
   await page.locator('.nav-row', { hasText: '全部任务' }).click()
   await expect(page.locator('.task-row', { hasText: 'e2e 收件箱捕获' })).toBeVisible()
   await page.locator('.nav-row', { hasText: '创建' }).click()
@@ -87,15 +87,13 @@ test('edits a task through the dialog', async ({ page }) => {
   await expect(page.locator('.task-row', { hasText: '改过了' })).toBeVisible()
 })
 
-test('separates the decorative create desk from saved composed views', async ({ page }) => {
-  await expect(page.locator('.nav-row', { hasText: '四象限' })).toHaveCount(0)
+test('keeps creation focused and opens saved composed views', async ({ page }) => {
   await page.locator('.nav-row', { hasText: '创建' }).click()
-  await expect(page.locator('.desk-notes')).toHaveAttribute('aria-hidden', 'true')
-  expect(
-    await page
-      .locator('.desk-notes')
-      .evaluate((element) => getComputedStyle(element).pointerEvents),
-  ).toBe('none')
+  await expect(
+    page.locator(
+      '.capture-subtitle,.capture-hint,.desk-footer,.desk-notes,.capture-center > .little-label',
+    ),
+  ).toHaveCount(0)
   await page.locator('.nav-row', { hasText: '我的工作台' }).click()
   await expect(page.locator('.composed-panel')).toHaveCount(3)
   await expect(page.locator('.preview-badge')).toHaveCount(0)
@@ -193,11 +191,13 @@ test('the timetable is a left-hand row with a zoomable week grid', async ({ page
   const body = page.locator('.timetable .tt-body')
   const large = await body.evaluate((element) => element.style.height)
 
-  await page.getByRole('group', { name: '缩放' }).getByRole('button', { name: '紧凑' }).click()
-  await expect.poll(async () => body.evaluate((element) => element.style.height)).not.toBe(large)
-
-  await page.getByRole('group', { name: '缩放' }).getByRole('button', { name: '宽松' }).click()
-  await expect.poll(async () => body.evaluate((element) => element.style.height)).toBe('2688px')
+  const zoom = page.getByRole('slider', { name: '时间表缩放' })
+  await zoom.focus()
+  await zoom.press('Home')
+  await expect.poll(async () => body.evaluate((element) => element.style.height)).toBe('864px')
+  await zoom.press('End')
+  await expect.poll(async () => body.evaluate((element) => element.style.height)).toBe('3456px')
+  expect(large).not.toBe('864px')
 })
 
 test('creates a custom view that joins the views list', async ({ page }) => {
@@ -206,15 +206,14 @@ test('creates a custom view that joins the views list', async ({ page }) => {
 
   await page.locator('#view-name').fill('e2e 自定义视图')
   await page.locator('button[form="pantodo-view-form"]').click()
-  await page.getByRole('button', { name: '视图设置', exact: true }).click()
-  await choose(page, page.locator('#view-mode'), 'groups')
-  await choose(page, page.locator('#view-group'), 'tag')
-  await choose(page, page.locator('#view-arrangement'), 'columns')
-  await page.locator('button[form="pantodo-view-form"]').click()
+  await page
+    .getByRole('group', { name: '展示方式' })
+    .getByRole('button', { name: '画廊', exact: true })
+    .click()
 
   await expect(page.locator('.toolbar h1')).toContainText('e2e 自定义视图')
   await expect(page.locator('.nav-row', { hasText: 'e2e 自定义视图' })).toHaveCount(1)
-  await expect(page.locator('.group-board[data-arrangement="columns"]')).toBeVisible()
+  await expect(page.locator('.task-gallery').first()).toBeVisible()
 })
 
 test('persists captured tasks across a reload', async ({ page }) => {

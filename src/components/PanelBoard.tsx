@@ -1,21 +1,85 @@
+import { useState, type CSSProperties, type ReactNode } from 'react'
+import {
+  DndContext,
+  PointerSensor,
+  KeyboardSensor,
+  TouchSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core'
+import {
+  SortableContext,
+  arrayMove,
+  rectSortingStrategy,
+  sortableKeyboardCoordinates,
+  useSortable,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
+import { useAppStore } from '@/domain/store'
+import { matchesFilter, sortTasks, type FilterContext } from '@/domain/filters'
+import { newPanel, quadrantPanels } from '@/domain/views'
+import { ARRANGEMENT_LABEL_KEYS } from '@/domain/display'
+import type { PanelArrangement, Task, View, ViewPanel, ViewSort } from '@/domain/types'
+import { t } from '@/i18n'
 import { Button } from './ui/button'
 import { SelectField } from './SelectField'
 import { Input } from './ui/input'
-import { useState } from 'react'
-import type { CSSProperties } from 'react'
-import { useAppStore } from '@/domain/store'
-import { matchesFilter, sortTasks } from '@/domain/filters'
-import type { FilterContext } from '@/domain/filters'
-import { newPanel } from '@/domain/views'
-import type { Task, View, ViewPanel, ViewSort } from '@/domain/types'
-import { t } from '@/i18n'
 import { FilterFields } from './FilterFields'
 import { EmojiPicker } from './EmojiPicker'
 import { Modal } from './Modal'
 import { Icon } from './Icon'
-import { TaskList } from './TaskList'
-import type { TaskLookup } from './TaskList'
+import { Segmented } from './Menu'
+import { TaskList, type TaskLookup } from './TaskList'
 
+function SortablePanel({
+  panel,
+  columns,
+  children,
+}: {
+  panel: ViewPanel
+  columns: number
+  children: (handle: ReactNode) => ReactNode
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    setActivatorNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: panel.id })
+  const style = {
+    '--panel-span': Math.min(panel.span, columns),
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 2 : undefined,
+  } as CSSProperties
+  return (
+    <section
+      ref={setNodeRef}
+      style={style}
+      data-panel-id={panel.id}
+      data-dragging={isDragging}
+      className="composed-panel"
+    >
+      {children(
+        <button
+          ref={setActivatorNodeRef}
+          type="button"
+          className="panel-move"
+          {...attributes}
+          {...listeners}
+          aria-label={t('panel.drag') + ' · ' + panel.name}
+          title={t('panel.dragHint')}
+        >
+          <Icon name="grip" size={16} />
+        </button>,
+      )}
+    </section>
+  )
+}
 export function PanelBoard({
   view,
   tasks,
@@ -29,145 +93,185 @@ export function PanelBoard({
 }) {
   const updateView = useAppStore((s) => s.updateView)
   const [editing, setEditing] = useState<ViewPanel | null>(null),
-    [dragged, setDragged] = useState<number | null>(null),
     [error, setError] = useState(false)
-  const panels = view.panels ?? []
-  const columns = view.arrangement === 'vertical' ? 1 : Math.max(1, view.gridColumns)
-  const save = (next: ViewPanel[]) => {
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 180, tolerance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  )
+  const [templateOpen, setTemplateOpen] = useState(false)
+  const panels = view.panels ?? [],
+    columns = view.arrangement === 'vertical' ? 1 : Math.max(1, view.gridColumns)
+  const patch = (value: Partial<View>) => {
     setError(false)
-    void updateView(view.id, { panels: next }).catch(() => setError(true))
+    void updateView(view.id, value).catch(() => setError(true))
   }
   const move = (from: number, to: number) => {
-    if (from === to || from < 0 || to < 0 || from >= panels.length || to >= panels.length) return
-    const next = [...panels]
-    const item = next.splice(from, 1)[0]!
-    next.splice(to, 0, item)
-    save(next)
+    if (from !== to && from >= 0 && to >= 0 && from < panels.length && to < panels.length)
+      patch({ panels: arrayMove(panels, from, to) })
   }
   return (
     <>
       <div className="panel-board-toolbar">
-        <p className="field-hint">{t('panel.hint')}</p>
+        <Segmented
+          label={t('toolbar.arrangement')}
+          value={view.arrangement}
+          options={(['vertical', 'columns', 'grid'] as const).map((key) => ({
+            key,
+            label: t(ARRANGEMENT_LABEL_KEYS[key]),
+          }))}
+          onChange={(value) => patch({ arrangement: value as PanelArrangement })}
+        />
+        {view.arrangement !== 'vertical' ? (
+          <SelectField
+            className="compact-select"
+            aria-label={t('view.field.columns')}
+            value={view.gridColumns}
+            onValueChange={(value) => patch({ gridColumns: Number(value) })}
+          >
+            {[1, 2, 3, 4].map((n) => (
+              <option key={n} value={n}>
+                {n} ×
+              </option>
+            ))}
+          </SelectField>
+        ) : null}
+        <Button variant="ghost" onClick={() => setTemplateOpen(true)}>
+          {t('panel.template')}
+        </Button>
         <Button className="secondary" variant="outline" onClick={() => setEditing(newPanel())}>
           <Icon name="plus" size={14} />
           {t('panel.add')}
         </Button>
       </div>
       {error ? (
-        <p className="form-error" role="alert">
+        <p role="alert" className="form-error">
           {t('work.failed')}
         </p>
       ) : null}
-      <div className="composed-panels" style={{ '--panel-columns': columns } as CSSProperties}>
-        {panels.map((panel, index) => {
-          const list = sortTasks(
-            tasks.filter((task) => matchesFilter(task, panel.filter, context)),
-            { ...view, sort: panel.sort },
-            context,
-          )
-          return (
-            <section
-              key={panel.id}
-              data-panel-id={panel.id}
-              className={
-                'preview-panel composed-panel' + (dragged === index ? ' panel-dragging' : '')
-              }
-              style={{ '--panel-span': Math.min(panel.span, columns) } as CSSProperties}
-              onDragOver={(event) => {
-                if (dragged !== null) event.preventDefault()
-              }}
-              onDrop={(event) => {
-                event.preventDefault()
-                if (dragged !== null) move(dragged, index)
-                setDragged(null)
-              }}
-            >
-              <header>
-                <span
-                  className="panel-move"
-                  draggable
-                  onDragStart={(event) => {
-                    event.dataTransfer.effectAllowed = 'move'
-                    event.dataTransfer.setData('text/plain', panel.id)
-                    setDragged(index)
-                  }}
-                  onDragEnd={() => setDragged(null)}
-                  title={t('panel.drag')}
-                >
-                  <Icon name="grip" size={14} />
-                </span>
-                <span className="panel-emoji" aria-hidden="true">
-                  {panel.emoji}
-                </span>
-                <h3>{panel.name}</h3>
-                <span className="panel-count">{list.length}</span>
-                <button
-                  className="icon-button"
-                  aria-label={t('panel.edit')}
-                  onClick={() => setEditing(panel)}
-                >
-                  <Icon name="pencil" size={13} />
-                </button>
-              </header>
-              <div className="panel-meta">
-                <span>
-                  <Icon name="sliders" size={11} />
-                  {panel.filter.tagIds.length
-                    ? panel.filter.tagIds.length + ' ' + t('task.field.tags')
-                    : t('panel.all')}
-                  {panel.filter.statuses.length
-                    ? ' · ' +
-                      panel.filter.statuses
-                        .map((s) => t(('task.status.' + s) as 'task.status.todo'))
-                        .join(' / ')
-                    : ''}
-                </span>
-                <div className="panel-reorder">
-                  <button
-                    type="button"
-                    className="icon-button"
-                    disabled={index === 0}
-                    aria-label={t('panel.moveBefore')}
-                    onClick={() => move(index, index - 1)}
-                  >
-                    <Icon name="chevronLeft" size={12} />
-                  </button>
-                  <button
-                    type="button"
-                    className="icon-button"
-                    disabled={index === panels.length - 1}
-                    aria-label={t('panel.moveAfter')}
-                    onClick={() => move(index, index + 1)}
-                  >
-                    <Icon name="chevronRight" size={12} />
-                  </button>
-                  <SelectField
-                    className="compact-select"
-                    aria-label={t('panel.width')}
-                    value={Math.min(panel.span, columns)}
-                    onValueChange={(e) =>
-                      save(panels.map((p) => (p.id === panel.id ? { ...p, span: Number(e) } : p)))
-                    }
-                  >
-                    {Array.from({ length: columns }, (_, i) => (
-                      <option key={i + 1} value={i + 1}>
-                        {i + 1} / {columns}
-                      </option>
-                    ))}
-                  </SelectField>
-                </div>
-              </div>
-              <TaskList tasks={list} lookup={lookup} emptyKey="group.empty" />
-            </section>
-          )
-        })}
-      </div>
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        accessibility={{ screenReaderInstructions: { draggable: t('panel.dragHint') } }}
+        onDragEnd={({ active, over }) => {
+          if (over)
+            move(
+              panels.findIndex((p) => p.id === active.id),
+              panels.findIndex((p) => p.id === over.id),
+            )
+        }}
+      >
+        <SortableContext items={panels.map((panel) => panel.id)} strategy={rectSortingStrategy}>
+          <div className="composed-panels" style={{ '--panel-columns': columns } as CSSProperties}>
+            {panels.map((panel, index) => {
+              const list = sortTasks(
+                tasks.filter((task) => matchesFilter(task, panel.filter, context)),
+                { ...view, sort: panel.sort },
+                context,
+              )
+              return (
+                <SortablePanel key={panel.id} panel={panel} columns={columns}>
+                  {(handle) => (
+                    <>
+                      <header>
+                        {handle}
+                        <span className="panel-emoji" aria-hidden="true">
+                          {panel.emoji}
+                        </span>
+                        <h3>{panel.name}</h3>
+                        <span className="panel-count">{list.length}</span>
+                        <button
+                          className="icon-button"
+                          aria-label={t('panel.edit')}
+                          onClick={() => setEditing(panel)}
+                        >
+                          <Icon name="pencil" size={13} />
+                        </button>
+                      </header>
+                      <div className="panel-meta">
+                        <span>
+                          <Icon name="sliders" size={11} />
+                          {panel.filter.tagIds.length
+                            ? panel.filter.tagIds.length + ' ' + t('task.field.tags')
+                            : t('panel.all')}
+                          {panel.filter.statuses.length
+                            ? ' · ' +
+                              panel.filter.statuses
+                                .map((s) => t(('task.status.' + s) as 'task.status.todo'))
+                                .join(' / ')
+                            : ''}
+                        </span>
+                        <div className="panel-reorder">
+                          <button
+                            type="button"
+                            className="icon-button"
+                            disabled={index === 0}
+                            aria-label={t('panel.moveBefore')}
+                            onClick={() => move(index, index - 1)}
+                          >
+                            <Icon name="chevronLeft" size={12} />
+                          </button>
+                          <button
+                            type="button"
+                            className="icon-button"
+                            disabled={index === panels.length - 1}
+                            aria-label={t('panel.moveAfter')}
+                            onClick={() => move(index, index + 1)}
+                          >
+                            <Icon name="chevronRight" size={12} />
+                          </button>
+                          <SelectField
+                            className="compact-select"
+                            aria-label={t('panel.width')}
+                            value={Math.min(panel.span, columns)}
+                            onValueChange={(value) =>
+                              patch({
+                                panels: panels.map((p) =>
+                                  p.id === panel.id ? { ...p, span: Number(value) } : p,
+                                ),
+                              })
+                            }
+                          >
+                            {Array.from({ length: columns }, (_, i) => (
+                              <option key={i + 1} value={i + 1}>
+                                {i + 1} / {columns}
+                              </option>
+                            ))}
+                          </SelectField>
+                        </div>
+                      </div>
+                      <TaskList
+                        tasks={list}
+                        lookup={lookup}
+                        presentation={panel.presentation ?? 'list'}
+                        emptyKey="group.empty"
+                      />
+                    </>
+                  )}
+                </SortablePanel>
+              )
+            })}
+          </div>
+        </SortableContext>
+      </DndContext>
       {!panels.length ? <p className="stats-empty">{t('panel.empty')}</p> : null}
+      {templateOpen ? (
+        <QuadrantDialog
+          onClose={() => setTemplateOpen(false)}
+          onSave={async (important, urgent) => {
+            const current = useAppStore.getState().views.find((v) => v.id === view.id)?.panels ?? []
+            await updateView(view.id, {
+              panels: [...current, ...quadrantPanels(important, urgent)],
+            })
+            setTemplateOpen(false)
+          }}
+        />
+      ) : null}
       {editing ? (
         <PanelDialog
           key={editing.id}
           panel={editing}
-          isNew={!panels.some((panel) => panel.id === editing.id)}
+          isNew={!panels.some((p) => p.id === editing.id)}
           onClose={() => setEditing(null)}
           onSave={async (panel) => {
             const current = useAppStore.getState().views.find((v) => v.id === view.id)?.panels ?? []
@@ -179,7 +283,7 @@ export function PanelBoard({
             setEditing(null)
           }}
           onDelete={() => {
-            save(panels.filter((p) => p.id !== editing.id))
+            patch({ panels: panels.filter((p) => p.id !== editing.id) })
             setEditing(null)
           }}
         />
@@ -255,6 +359,19 @@ function PanelDialog({
         </div>
         <EmojiPicker value={value.emoji} onChange={(emoji) => setValue({ ...value, emoji })} />
         <div className="field">
+          <label htmlFor="panel-presentation">{t('panel.cards')}</label>
+          <SelectField
+            id="panel-presentation"
+            value={value.presentation ?? 'list'}
+            onValueChange={(presentation) =>
+              setValue({ ...value, presentation: presentation as 'list' | 'gallery' })
+            }
+          >
+            <option value="list">{t('view.list')}</option>
+            <option value="gallery">{t('view.gallery')}</option>
+          </SelectField>
+        </div>
+        <div className="field">
           <label htmlFor="panel-sort">{t('panel.sort')}</label>
           <SelectField
             className="select"
@@ -276,6 +393,81 @@ function PanelDialog({
         />
         {error ? (
           <p className="form-error" role="alert">
+            {t('work.failed')}
+          </p>
+        ) : null}
+      </form>
+    </Modal>
+  )
+}
+
+function QuadrantDialog({
+  onClose,
+  onSave,
+}: {
+  onClose: () => void
+  onSave: (important: string, urgent: string) => Promise<void>
+}) {
+  const tags = useAppStore((s) => s.tags).filter((tag) => !tag.deletedAt)
+  const [important, setImportant] = useState(tags[0]?.id ?? ''),
+    [urgent, setUrgent] = useState(tags[1]?.id ?? '')
+  const [saving, setSaving] = useState(false),
+    [error, setError] = useState(false)
+  return (
+    <Modal
+      title={t('panel.template.quadrant')}
+      onClose={onClose}
+      footer={
+        <>
+          <Button variant="outline" onClick={onClose}>
+            {t('dialog.cancel')}
+          </Button>
+          <Button
+            form="quadrant-form"
+            type="submit"
+            disabled={saving || !important || !urgent || important === urgent}
+          >
+            {t('dialog.create')}
+          </Button>
+        </>
+      }
+    >
+      <form
+        id="quadrant-form"
+        className="stack"
+        onSubmit={(e) => {
+          e.preventDefault()
+          if (!important || !urgent || important === urgent || saving) return
+          setSaving(true)
+          setError(false)
+          void onSave(important, urgent)
+            .catch(() => setError(true))
+            .finally(() => setSaving(false))
+        }}
+      >
+        {(['important', 'urgent'] as const).map((key) => (
+          <div className="field" key={key}>
+            <label htmlFor={'quadrant-' + key}>
+              {t(key === 'important' ? 'panel.important' : 'panel.urgent')}
+            </label>
+            <SelectField
+              id={'quadrant-' + key}
+              value={key === 'important' ? important : urgent}
+              onValueChange={key === 'important' ? setImportant : setUrgent}
+            >
+              {tags.map((tag) => (
+                <option value={tag.id} key={tag.id}>
+                  {tag.name}
+                </option>
+              ))}
+            </SelectField>
+          </div>
+        ))}
+        {important === urgent || tags.length < 2 ? (
+          <p className="form-error">{t('panel.invalidTags')}</p>
+        ) : null}
+        {error ? (
+          <p role="alert" className="form-error">
             {t('work.failed')}
           </p>
         ) : null}

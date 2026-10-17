@@ -5,10 +5,8 @@ import { nowIso } from './date'
 import { newId } from './ids'
 import { workbenchPanels } from './views'
 import { TAG_PALETTE } from './palette'
-import type { Settings, Tag, Task, View, ViewGroup, Workspace } from './types'
+import type { Settings, Tag, Task, View, Workspace } from './types'
 import { EMPTY_FILTER } from './types'
-
-export const SEED_VERSION = 2
 
 function envelope(): { id: string; createdAt: string; updatedAt: string; deletedAt: null } {
   return { id: newId(), createdAt: nowIso(), updatedAt: nowIso(), deletedAt: null }
@@ -24,17 +22,7 @@ export function defaultSettings(): Settings {
     defaultDurationMinutes: 30,
     reminderLeadMinutes: 20,
     notificationsSilent: true,
-    timetableZoom: 'large',
-    seedVersion: SEED_VERSION,
   }
-}
-
-function makeGroup(
-  label: string,
-  rule: { tagIds: string[]; tagMode: 'any' | 'all'; excludeTagIds: string[] },
-  sortOrder: number,
-): ViewGroup {
-  return { ...envelope(), label, color: null, rule, sortOrder }
 }
 
 function makeView(partial: Partial<View> & { name: string; icon: string }): View {
@@ -42,22 +30,18 @@ function makeView(partial: Partial<View> & { name: string; icon: string }): View
     builtin: false,
     preset: null,
     filter: { ...EMPTY_FILTER },
-    groupBy: 'none',
     arrangement: 'vertical',
     gridColumns: 2,
     sort: 'manual',
-    groups: [],
+    presentation: 'list',
+    panels: [],
     sortOrder: 0,
     ...partial,
     ...envelope(),
   }
 }
 
-/**
- * The workspace created on first launch: four built-in views plus the Eisenhower example, whose four
- * cells are pinned tag rules rather than a hard-coded feature. Labels are seeded in the language that
- * was active at first run.
- */
+/** First-launch workspace with built-in navigation and an editable panel workbench. */
 export function createSeedWorkspace(
   options: {
     t?: TFunction
@@ -81,44 +65,10 @@ export function createSeedWorkspace(
     sortOrder: 1,
   }
 
-  const quadrant = makeView({
-    name: t('nav.quadrant'),
-    icon: 'grid',
-    builtin: true,
-    preset: null,
-    groupBy: 'tag',
-    arrangement: 'grid',
-    gridColumns: 2,
-    sortOrder: 4,
-    groups: [
-      makeGroup(
-        t('quadrant.importantUrgent'),
-        { tagIds: [importantTag.id, urgentTag.id], tagMode: 'all', excludeTagIds: [] },
-        0,
-      ),
-      makeGroup(
-        t('quadrant.importantOnly'),
-        { tagIds: [importantTag.id], tagMode: 'all', excludeTagIds: [urgentTag.id] },
-        1,
-      ),
-      makeGroup(
-        t('quadrant.urgentOnly'),
-        { tagIds: [urgentTag.id], tagMode: 'all', excludeTagIds: [importantTag.id] },
-        2,
-      ),
-      makeGroup(
-        t('quadrant.neither'),
-        { tagIds: [], tagMode: 'all', excludeTagIds: [importantTag.id, urgentTag.id] },
-        3,
-      ),
-    ],
-  })
-
   const views: View[] = [
     makeView({ name: t('nav.inbox'), icon: 'inbox', builtin: true, preset: 'inbox', sortOrder: 0 }),
     makeView({ name: t('nav.today'), icon: 'sun', builtin: true, preset: 'today', sortOrder: 1 }),
     makeView({ name: t('nav.all'), icon: 'list', builtin: true, preset: 'all', sortOrder: 2 }),
-    quadrant,
     makeView({ name: t('nav.trash'), icon: 'trash', builtin: true, preset: 'trash', sortOrder: 5 }),
   ]
 
@@ -127,6 +77,7 @@ export function createSeedWorkspace(
       name: t('panels.title'),
       emoji: '🪴',
       icon: 'layers',
+      presentation: 'panels',
       panels: workbenchPanels(),
       arrangement: 'grid',
       sortOrder: 3,
@@ -155,7 +106,7 @@ function withDemoData(workspace: Workspace, t: TFunction, now: Date): Workspace 
   const project: Workspace['projects'][number] = {
     ...envelope(),
     name: t('seed.projectProduct'),
-    color: TAG_PALETTE[7]!,
+    emoji: '📁',
     sortOrder: 0,
     archivedAt: null,
   }

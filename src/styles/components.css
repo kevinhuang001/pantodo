@@ -312,63 +312,7 @@
   opacity: 1;
 }
 
-/* --------------------------------------------------- groups and layouts */
-
-.group-board {
-  display: grid;
-  gap: var(--space-4);
-  align-items: start;
-}
-
-.group-board[data-arrangement='vertical'],
-.group-board[data-arrangement='columns'] {
-  grid-template-columns: repeat(var(--cols, 1), minmax(0, 1fr));
-}
-
-.group-board[data-arrangement='grid'] {
-  grid-template-columns: repeat(var(--cols, 2), minmax(0, 1fr));
-}
-
-.group {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  overflow: hidden;
-  padding: var(--space-3);
-  background: var(--surface-sunken);
-  border: 1px solid var(--hairline);
-  border-radius: var(--radius-xl);
-}
-
-.group-head {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-1) var(--space-1) var(--space-2);
-}
-
-.group-head .drag-handle {
-  color: var(--text-faint);
-  cursor: grab;
-}
-
-.group-head h2 {
-  flex: 1;
-  overflow: hidden;
-  font-size: var(--text-sm);
-  font-weight: var(--weight-semibold);
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.group-head .count {
-  font-size: var(--text-2xs);
-  color: var(--text-muted);
-}
-
-.group .task-list {
-  margin-top: 0;
-}
+/* Empty panel state. */
 
 .group-empty {
   padding: var(--space-3);
@@ -645,13 +589,6 @@
   background: var(--surface-sunken);
 }
 
-.group-head .dot {
-  flex-shrink: 0;
-  width: 9px;
-  height: 9px;
-  border-radius: var(--radius-pill);
-}
-
 /* ------------------------------------------------------- sidebar row detail */
 
 .nav-row-wrap {
@@ -685,11 +622,6 @@
 .chip.overdue {
   color: var(--danger);
   border-color: var(--danger);
-}
-
-.group.dragging {
-  opacity: 0.6;
-  outline: 2px dashed var(--focus);
 }
 
 /* ------------------------------------------------------- settings window */
@@ -905,18 +837,6 @@
   min-height: 0;
 }
 
-.tt-nav {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-}
-
-.tt-range {
-  font-size: var(--text-md);
-  font-weight: var(--weight-semibold);
-  letter-spacing: var(--tracking-tight);
-}
-
 .tt-head-row,
 .tt-allday-row {
   display: grid;
@@ -1078,37 +998,6 @@
 .tt-block-title {
   overflow: hidden;
   font-size: var(--text-xs);
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-/* -------------------------------------------------------- sidebar agenda */
-
-.agenda-row {
-  display: grid;
-  grid-template-columns: auto auto minmax(0, 1fr);
-  gap: var(--space-2);
-  align-items: baseline;
-  padding: 5px 10px;
-  font-size: var(--text-xs);
-  border-radius: var(--radius-sm);
-}
-
-.agenda-row:hover {
-  background: var(--surface-hover);
-}
-
-.agenda-day {
-  color: var(--text-muted);
-}
-
-.agenda-time {
-  font-variant-numeric: tabular-nums;
-  color: var(--accent);
-}
-
-.agenda-title {
-  overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }

@@ -1,10 +1,11 @@
 /** Actual app captures from an isolated sample workspace, including completed time-entry flows. */
-import { mkdir } from 'node:fs/promises'
+import { mkdir, rm } from 'node:fs/promises'
 import path from 'node:path'
 import { chromium } from '@playwright/test'
 import { createServer } from 'vite'
 
 const out = path.resolve('artifacts/screenshots')
+await rm(out, { recursive: true, force: true })
 await mkdir(out, { recursive: true })
 const server = await createServer({ server: { host: '127.0.0.1', port: 1420 } })
 await server.listen()
@@ -107,6 +108,18 @@ try {
   await page.getByRole('dialog').getByRole('button', { name: '关闭', exact: true }).click()
   await nav('我的工作台')
   await shot('10-workbench')
+  const modes = page.getByRole('group', { name: '展示方式', exact: true })
+  await modes.getByRole('button', { name: '画廊', exact: true }).click()
+  await shot('18-gallery')
+  await modes.getByRole('button', { name: '看板', exact: true }).click()
+  await shot('19-board')
+  await modes.getByRole('button', { name: '面板', exact: true }).click()
+  await page.getByRole('button', { name: '视图设置', exact: true }).click()
+  await shot('20-view-editor')
+  await page.keyboard.press('Escape')
+  await page.getByRole('button', { name: '新建视图', exact: true }).click()
+  await shot('21-view-create')
+  await page.keyboard.press('Escape')
   await page.getByRole('button', { name: '添加面板', exact: true }).click()
   await page.locator('#panel-name').fill('论文与深度工作')
   await page.locator('.emoji-trigger').click()

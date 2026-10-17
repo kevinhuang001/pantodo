@@ -1,3 +1,4 @@
+import { beginWindowDrag } from '@/window'
 import { Input } from './ui/input'
 import { useMemo } from 'react'
 
@@ -48,10 +49,7 @@ function isOpenTask(task: Task): boolean {
   )
 }
 
-/**
- * One flat list of views — the seeded ones and the user's own sit together, because the Eisenhower
- * example is not special. The timetable is simply another row here rather than a mode switch.
- */
+/** Navigation, saved views and project/tag filters. */
 export function Sidebar({
   now,
   theme,
@@ -157,12 +155,12 @@ export function Sidebar({
   return (
     <aside className="sidebar" aria-label={t('a11y.sidebar')}>
       <div className="sidebar-top">
-        <div className="sidebar-topline">
+        <div className="sidebar-topline" onMouseDown={beginWindowDrag}>
           <span className="workspace-dot" />
           <span>{t('ui.personal')}</span>
           <span className="workspace-shortcut">⌘ K</span>
         </div>
-        <div className="identity">
+        <div className="identity" onMouseDown={beginWindowDrag}>
           <span className="mark">
             <span className="brand-face">
               <i />
@@ -285,7 +283,7 @@ export function Sidebar({
                         {project.emoji}
                       </span>
                     ) : (
-                      <span className="dot" style={{ background: colorFor(project, palette) }} />
+                      <Icon name="folder" size={15} />
                     )}
                     <span className="nav-label">{project.name}</span>
                     <span className="count">{projectCounts.get(project.id) ?? 0}</span>

@@ -1,15 +1,14 @@
+import { quadrantPanels } from './views'
 import { describe, expect, it } from 'vitest'
 
-import { dueState, groupTasks, matchesFilter, selectTasks, sortTasks } from './filters'
+import { dueState, matchesFilter, selectTasks, sortTasks } from './filters'
 import type { FilterContext } from './filters'
 import { EMPTY_FILTER } from './types'
-import type { Project, Tag, Task, View, ViewFilter, ViewPreset } from './types'
+import type { Task, View, ViewFilter, ViewPreset } from './types'
 
 const NOW = new Date(2026, 2, 5, 9, 0, 0)
 const at = (hour: number, minute = 0, day = 5): string =>
   new Date(2026, 2, day, hour, minute, 0).toISOString()
-
-const PALETTE = ['#111111', '#222222', '#333333', '#444444'] as const
 
 function makeTask(id: string, partial: Partial<Task> = {}): Task {
   return {
@@ -47,11 +46,11 @@ function makeView(
     builtin: preset !== null,
     preset,
     filter: { ...EMPTY_FILTER, ...filter },
-    groupBy: 'none',
     arrangement: 'vertical',
     gridColumns: 2,
     sort: 'manual',
-    groups: [],
+    presentation: 'list',
+    panels: [],
     sortOrder: 0,
     ...extra,
   }
@@ -182,139 +181,21 @@ describe('selectTasks with built-in presets', () => {
   })
 })
 
-describe('groupTasks', () => {
-  const tags: Tag[] = [
-    {
-      id: 'important',
-      name: '重要',
-      color: null,
-      sortOrder: 0,
-      createdAt: at(7),
-      updatedAt: at(7),
-      deletedAt: null,
-    },
-    {
-      id: 'urgent',
-      name: '紧急',
-      color: null,
-      sortOrder: 1,
-      createdAt: at(7),
-      updatedAt: at(7),
-      deletedAt: null,
-    },
-  ]
-  const projects: Project[] = [
-    {
-      id: 'p1',
-      name: '产品',
-      color: null,
-      sortOrder: 0,
-      archivedAt: null,
-      createdAt: at(7),
-      updatedAt: at(7),
-      deletedAt: null,
-    },
-  ]
-  const taskTags = {
-    both: ['important', 'urgent'],
-    importantOnly: ['important'],
-    urgentOnly: ['urgent'],
-    neither: [],
-  }
-  const ctx = context(taskTags)
-  const tasks = ['both', 'importantOnly', 'urgentOnly', 'neither'].map((id) =>
-    makeTask(id, { projectId: id === 'both' ? 'p1' : null }),
-  )
-
-  it('honours pinned groups, which is how the Eisenhower matrix is expressed', () => {
-    const view = makeView(
-      null,
-      {},
-      {
-        groupBy: 'tag',
-        groups: [
-          {
-            id: 'g1',
-            label: '重要且紧急',
-            color: null,
-            sortOrder: 0,
-            rule: { tagIds: ['important', 'urgent'], tagMode: 'all', excludeTagIds: [] },
-          },
-          {
-            id: 'g2',
-            label: '重要不紧急',
-            color: null,
-            sortOrder: 1,
-            rule: { tagIds: ['important'], tagMode: 'all', excludeTagIds: ['urgent'] },
-          },
-          {
-            id: 'g3',
-            label: '紧急不重要',
-            color: null,
-            sortOrder: 2,
-            rule: { tagIds: ['urgent'], tagMode: 'all', excludeTagIds: ['important'] },
-          },
-          {
-            id: 'g4',
-            label: '都不',
-            color: null,
-            sortOrder: 3,
-            rule: { tagIds: [], tagMode: 'all', excludeTagIds: ['important', 'urgent'] },
-          },
-        ],
-      },
-    )
-
-    const groups = groupTasks(tasks, view, ctx, tags, projects, PALETTE)
-    expect(groups.map((group) => group.tasks.map((task) => task.id))).toEqual([
-      ['both'],
-      ['importantOnly'],
-      ['urgentOnly'],
-      ['neither'],
-    ])
-  })
-
-  it('adds an "other" bucket for tasks no pinned group claims', () => {
-    const view = makeView(
-      null,
-      {},
-      {
-        groups: [
-          {
-            id: 'g1',
-            label: '紧急',
-            color: null,
-            sortOrder: 0,
-            rule: { tagIds: ['urgent'], tagMode: 'all', excludeTagIds: [] },
-          },
-        ],
-      },
-    )
-    const groups = groupTasks(tasks, view, ctx, tags, projects, PALETTE)
-    expect(groups).toHaveLength(2)
-    expect(groups[1]?.labelKey).toBe('group.uncategorized')
-    expect(groups[1]?.tasks.map((task) => task.id)).toEqual(['importantOnly', 'neither'])
-  })
-
-  it('derives tag buckets and an untagged bucket when no groups are pinned', () => {
-    const view = makeView(null, {}, { groupBy: 'tag' })
-    const groups = groupTasks(tasks, view, ctx, tags, projects, PALETTE)
-    expect(groups.map((group) => group.key)).toEqual(['tag:important', 'tag:urgent', 'tag:none'])
-    expect(groups[2]?.tasks.map((task) => task.id)).toEqual(['neither'])
-  })
-
-  it('derives project buckets plus a "no project" bucket', () => {
-    const view = makeView(null, {}, { groupBy: 'project' })
-    const groups = groupTasks(tasks, view, ctx, tags, projects, PALETTE)
-    expect(groups.map((group) => group.key)).toEqual(['project:p1', 'project:none'])
-    expect(groups[0]?.tasks.map((task) => task.id)).toEqual(['both'])
-  })
-
-  it('returns a single flat group for the default list layout', () => {
-    const groups = groupTasks(tasks, makeView('all'), ctx, tags, projects, PALETTE)
-    expect(groups).toHaveLength(1)
-    expect(groups[0]?.key).toBe('all')
-    expect(groups[0]?.tasks).toHaveLength(4)
+describe('quadrant panel filters', () => {
+  it('partitions tasks by two independent tags without changing Todo data', () => {
+    const tasks = ['both', 'importantOnly', 'urgentOnly', 'neither'].map((id) => makeTask(id))
+    const ctx = context({
+      both: ['important', 'urgent'],
+      importantOnly: ['important'],
+      urgentOnly: ['urgent'],
+      neither: [],
+    })
+    const panels = quadrantPanels('important', 'urgent')
+    expect(
+      panels.map((panel) =>
+        tasks.filter((task) => matchesFilter(task, panel.filter, ctx)).map((task) => task.id),
+      ),
+    ).toEqual([['both'], ['importantOnly'], ['urgentOnly'], ['neither']])
   })
 })
 

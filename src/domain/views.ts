@@ -8,7 +8,6 @@ export function newPanel(name = t('panel.new')): ViewPanel {
     id: newId(),
     name,
     emoji: '📌',
-    color: null,
     span: 1,
     sort: 'manual',
     filter: { ...EMPTY_FILTER, tagIds: [], projectIds: [], statuses: ['todo', 'doing'] },

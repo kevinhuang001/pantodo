@@ -1,9 +1,9 @@
 /* Desktop shell: a single window, transparent sidebar over native material. */
-body {
+html,
+body,
+#root,
+#app {
   background: transparent;
-}
-.scene {
-  display: none;
 }
 #app {
   position: relative;
@@ -15,12 +15,12 @@ body {
 }
 .sidebar {
   width: var(--sidebar-width);
-  background: linear-gradient(150deg, #f4f8ee70, #e2ebd83d);
+  background: linear-gradient(150deg, #f4f8ee2e, #e2ebd814);
   border-radius: 14px 0 0 14px;
-  padding-top: 32px;
+  padding-top: 44px;
 }
 :root[data-theme='dark'] .sidebar {
-  background: linear-gradient(150deg, #26352b80, #1c2b214d);
+  background: linear-gradient(150deg, #26352b42, #1c2b2124);
 }
 .sidebar-top {
   gap: 18px;
@@ -30,34 +30,38 @@ body {
   position: relative;
   background: var(--background);
   border-radius: 0 14px 14px 0;
-  padding-top: 32px;
+  padding-top: 0;
 }
+/* One compact title row; controls sit alongside content rather than above a second header. */
 .window-chrome {
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 32px;
-  z-index: 30;
+  inset: 0 0 auto;
+  height: 44px;
+  z-index: 40;
   display: flex;
   align-items: center;
+  pointer-events: none;
 }
 .window-drag {
   position: absolute;
-  inset: 0;
+  inset: 0 auto 0 0;
+  width: var(--sidebar-width);
   user-select: none;
+  pointer-events: auto;
 }
 .window-controls {
+  position: relative;
+  z-index: 2;
   display: flex;
   margin-left: auto;
-  height: 32px;
-  z-index: 1;
+  height: 44px;
+  pointer-events: auto;
 }
 .window-control {
   display: grid;
   place-items: center;
-  width: 44px;
-  height: 32px;
+  width: 40px;
+  height: 44px;
   color: var(--text-muted);
 }
 .window-control:hover {
@@ -66,26 +70,27 @@ body {
 }
 .window-control.close:hover {
   background: #d84949;
-  color: white;
+  color: #fff;
 }
 .is-mac .window-controls {
   gap: 8px;
-  margin: 0 0 0 18px;
+  margin: 0 0 0 20px;
   height: auto;
 }
 .is-mac .window-control {
-  width: 12px;
-  height: 12px;
+  width: 13px;
+  height: 13px;
   border-radius: 50%;
+  border: 1px solid #00000016;
   color: #382f2d;
-  border: 1px solid #00000012;
 }
 .is-mac .window-control svg {
   opacity: 0;
   width: 9px;
   height: 9px;
 }
-.is-mac .window-controls:hover svg {
+.is-mac .window-controls:hover svg,
+.is-mac .window-control:focus-visible svg {
   opacity: 1;
 }
 .is-mac .window-control.close {
@@ -97,18 +102,124 @@ body {
 .is-mac .window-control.maximize {
   background: #28c840;
 }
+.window-resize {
+  position: absolute;
+  z-index: 80;
+}
+.edge-North {
+  top: 0;
+  left: 14px;
+  right: 14px;
+  height: 5px;
+  cursor: n-resize;
+}
+.edge-South {
+  bottom: 0;
+  left: 14px;
+  right: 14px;
+  height: 5px;
+  cursor: s-resize;
+}
+.edge-East {
+  right: 0;
+  top: 14px;
+  bottom: 14px;
+  width: 5px;
+  cursor: e-resize;
+}
+.edge-West {
+  left: 0;
+  top: 14px;
+  bottom: 14px;
+  width: 5px;
+  cursor: w-resize;
+}
+.edge-NorthEast,
+.edge-NorthWest,
+.edge-SouthEast,
+.edge-SouthWest {
+  width: 14px;
+  height: 14px;
+}
+.edge-NorthEast {
+  top: 0;
+  right: 0;
+  cursor: ne-resize;
+}
+.edge-NorthWest {
+  top: 0;
+  left: 0;
+  cursor: nw-resize;
+}
+.edge-SouthEast {
+  bottom: 0;
+  right: 0;
+  cursor: se-resize;
+}
+.edge-SouthWest {
+  bottom: 0;
+  left: 0;
+  cursor: sw-resize;
+}
+[data-maximized='true'] #app {
+  border-radius: 0;
+  clip-path: none;
+}
+[data-maximized='true'] .sidebar,
+[data-maximized='true'] .main {
+  border-radius: 0;
+}
 .toolbar {
-  min-height: 58px;
-  padding: 0 24px;
+  min-height: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  gap: 10px;
+  padding: 0 20px;
+  user-select: none;
+}
+:root:not([data-platform='macos']) .toolbar {
+  padding-right: 132px;
+}
+.toolbar-title {
+  gap: 8px;
 }
 .toolbar h1 {
-  font-size: 16px;
+  font-size: 13px;
+  line-height: 1.2;
+  max-width: 240px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .toolbar-breadcrumb {
   display: none;
 }
-.toolbar-date {
-  font-size: 12px;
+.view-task-count {
+  font-size: 10px;
+  color: var(--text-faint);
+  white-space: nowrap;
+}
+.view-presentation {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+.view-presentation [data-slot='button'] {
+  height: 28px;
+  min-height: 28px;
+  padding: 0 8px;
+  gap: 5px;
+  color: var(--text-muted);
+  font-size: 11px;
+  border-radius: 6px;
+}
+.view-presentation [aria-pressed='true'] {
+  background: var(--surface-sunken);
+  color: var(--text);
+}
+.view-settings {
+  width: 28px;
+  height: 28px;
 }
 .reader {
   padding: 20px 24px 28px;
@@ -119,9 +230,6 @@ body {
 }
 .panel-board-toolbar .field-hint {
   display: none;
-}
-.panel-board-toolbar > button {
-  margin-left: auto;
 }
 .composed-panel {
   border-radius: 12px;
@@ -464,7 +572,7 @@ body {
 /* Focus remains inside the right pane and preserves navigation and window controls. */
 .focus-screen {
   position: absolute;
-  inset: 32px 0 0;
+  inset: 0;
   z-index: 20;
 }
 .focus-content {
@@ -542,4 +650,10 @@ body {
 
 .product-dialog.settings-window .settings-body {
   grid-template-columns: 156px minmax(0, 1fr);
+}
+
+/* The native material blurs the desktop; keep its webview overlay clear. */
+:root[data-desktop='true'] .sidebar {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }

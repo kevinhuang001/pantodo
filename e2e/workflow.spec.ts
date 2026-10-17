@@ -37,7 +37,6 @@ test('creates a planned Todo with an independent deadline marker and edits it fr
   const todo = (await read(page)).tasks.find((task) => task.title === '准备实验报告')!
   expect(todo.startAt).toBe('2026-10-19T02:00:00.000Z')
   expect(todo.endAt).toBe('2026-10-19T03:30:00.000Z')
-  expect('scheduleBlocks' in (await read(page))).toBe(false)
   await page.locator('.nav-row', { hasText: '时间表' }).click()
   await expect(page.locator(`[data-todo-id="${todo.id}"]`)).toHaveCount(1)
   const line = page.locator('.deadline-label', { hasText: '准备实验报告' })
@@ -61,20 +60,22 @@ test('a deadline-only Todo appears as a thin marker without a plan block', async
   await expect(page.locator(`[data-todo-id="${task.id}"]`)).toHaveCount(0)
 })
 
-test('calendar supports day, week, month, agenda and continuous zoom', async ({ page }) => {
+test('calendar supports day, week, month and drag-only zoom', async ({ page }) => {
   await page.locator('.nav-row', { hasText: '时间表' }).click()
   const mode = page.getByRole('group', { name: '时间表视图', exact: true })
   await expect(page.locator('.tt-column')).toHaveCount(7)
   await mode.getByRole('button', { name: '日', exact: true }).click()
   await expect(page.locator('.tt-column')).toHaveCount(1)
-  await page.getByRole('slider', { name: '时间表缩放' }).fill('144')
+  const zoom = page.getByRole('slider', { name: '时间表缩放' })
+  await zoom.focus()
+  await zoom.press('End')
   await expect(page.locator('.tt-body')).toHaveAttribute('style', /3456px/)
   await mode.getByRole('button', { name: '月', exact: true }).click()
   await expect(page.locator('.month-day')).toHaveCount(42)
   await expect(page.locator('.month-event.deadline-event').first()).toBeVisible()
-  await mode.getByRole('button', { name: '日程', exact: true }).click()
-  await expect(page.locator('.agenda-day').first()).toBeVisible()
-  await expect(page.locator('.agenda-event[draggable]')).toHaveCount(0)
+  await expect(mode.getByRole('button')).toHaveCount(3)
+  await expect(page.locator('.calendar-subbar,.calendar-agenda')).toHaveCount(0)
+  expect((await page.locator('.calendar-controls').boundingBox())!.height).toBeLessThanOrEqual(48)
 })
 
 test('pause excludes break time, stop saves records and completed Todos stop timers', async ({
@@ -208,9 +209,12 @@ test('Eisenhower is created as four editable filtered panels', async ({ page }) 
   await page.getByRole('button', { name: '新建视图', exact: true }).click()
   await page.locator('#view-name').fill('我的四象限')
   await page.locator('button[form="pantodo-view-form"]').click()
-  await page.getByRole('button', { name: '视图设置', exact: true }).click()
-  await choose(page, page.locator('#view-template'), 'quadrant')
-  await page.locator('button[form="pantodo-view-form"]').click()
+  await page
+    .getByRole('group', { name: '展示方式' })
+    .getByRole('button', { name: '面板', exact: true })
+    .click()
+  await page.getByRole('button', { name: '从模板开始', exact: true }).click()
+  await page.locator('button[form="quadrant-form"]').click()
   await expect(page.locator('.composed-panel')).toHaveCount(4)
   await expect(page.locator('.composed-panel').first().locator('.task-title')).toContainText(
     '设计评审',

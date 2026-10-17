@@ -29,7 +29,9 @@ export function EntityDialog({ kind, entity, onClose }: EntityDialogProps) {
   const palette = paletteFor(settings.theme === 'dark' ? 'dark' : 'light')
   const [emoji, setEmoji] = useState(entity && 'emoji' in entity ? (entity.emoji ?? '📁') : '📁')
   const [name, setName] = useState(entity?.name ?? '')
-  const [color, setColor] = useState<string | null>(entity?.color ?? null)
+  const [color, setColor] = useState<string | null>(
+    entity && 'color' in entity ? entity.color : null,
+  )
 
   const [error, setError] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -50,8 +52,8 @@ export function EntityDialog({ kind, entity, onClose }: EntityDialogProps) {
     setError(false)
     try {
       if (kind === 'project') {
-        if (entity === null) await createProject(trimmed, color, emoji)
-        else await updateProject(entity.id, { name: trimmed, color, emoji })
+        if (entity === null) await createProject(trimmed, emoji)
+        else await updateProject(entity.id, { name: trimmed, emoji })
       } else if (entity === null) {
         await createTag(trimmed, color)
       } else {
@@ -116,29 +118,31 @@ export function EntityDialog({ kind, entity, onClose }: EntityDialogProps) {
           />
         </div>
         {kind === 'project' ? <EmojiPicker value={emoji} onChange={setEmoji} /> : null}
-        <div className="field">
-          <label>{t('task.field.color')}</label>
-          <div className="swatches">
-            <button
-              type="button"
-              className={color === null ? 'swatch auto selected' : 'swatch auto'}
-              aria-label={t('task.field.none')}
-              onClick={() => setColor(null)}
-            >
-              A
-            </button>
-            {palette.map((value) => (
+        {kind === 'tag' ? (
+          <div className="field">
+            <label>{t('task.field.color')}</label>
+            <div className="swatches">
               <button
-                key={value}
                 type="button"
-                className={color === value ? 'swatch selected' : 'swatch'}
-                style={{ background: value }}
-                aria-label={value}
-                onClick={() => setColor(value)}
-              />
-            ))}
+                className={color === null ? 'swatch auto selected' : 'swatch auto'}
+                aria-label={t('task.field.none')}
+                onClick={() => setColor(null)}
+              >
+                A
+              </button>
+              {palette.map((value) => (
+                <button
+                  key={value}
+                  type="button"
+                  className={color === value ? 'swatch selected' : 'swatch'}
+                  style={{ background: value }}
+                  aria-label={value}
+                  onClick={() => setColor(value)}
+                />
+              ))}
+            </div>
           </div>
-        </div>
+        ) : null}
         {error ? (
           <p className="form-error" role="alert">
             {t('work.failed')}

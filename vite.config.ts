@@ -14,6 +14,14 @@ export default defineConfig({
   server: {
     port: 1420,
     strictPort: true,
+    watch: {
+      ignored: [
+        '**/playwright-report/**',
+        '**/test-results/**',
+        '**/artifacts/**',
+        '**/src-tauri/target/**',
+      ],
+    },
   },
   build: {
     outDir: 'dist',
