@@ -111,14 +111,33 @@ test('capture selectors open on demand and calculate a cross-midnight end', asyn
 
 test('capture estimate offers quick durations and a custom value', async ({ page }) => {
   await page.getByRole('button', { name: '安排时间', exact: true }).click()
-  const trigger = page.getByRole('button', { name: '持续时间', exact: true })
+  const trigger = page.getByRole('button', { name: '计划时长', exact: true })
   await trigger.click()
   await page.getByRole('button', { name: '45分', exact: true }).click()
   await expect(trigger).toContainText('45分')
   await trigger.click()
-  await expect(
-    page.locator('.duration-custom').getByRole('combobox', { name: '小时', exact: true }),
-  ).toHaveText('0')
+  await expect(page.locator('.capture-estimate-picker input')).toHaveCount(0)
   await selectDuration(page, '95')
   await expect(trigger).toContainText('1小时35分')
+})
+
+test('custom block duration opens on demand, validates input and cancels without changes', async ({
+  page,
+}) => {
+  await page.getByRole('button', { name: '安排时间', exact: true }).click()
+  const duration = page.getByRole('button', { name: '计划时长', exact: true })
+  await duration.click()
+  await expect(page.locator('.duration-custom-dialog')).toHaveCount(0)
+  await page.getByRole('button', { name: '自定义', exact: true }).click()
+  const custom = page.locator('.duration-custom-dialog')
+  await custom.getByRole('spinbutton', { name: '小时', exact: true }).fill('0')
+  await custom.getByRole('spinbutton', { name: '分钟数', exact: true }).fill('0')
+  await expect(custom.getByRole('button', { name: '完成', exact: true })).toBeDisabled()
+  await custom.getByRole('button', { name: '取消', exact: true }).click()
+  await expect(duration).toContainText('30分')
+  await page.getByRole('button', { name: '自定义', exact: true }).click()
+  await custom.getByRole('spinbutton', { name: '小时', exact: true }).fill('1')
+  await custom.getByRole('spinbutton', { name: '分钟数', exact: true }).fill('25')
+  await page.keyboard.press('Enter')
+  await expect(duration).toContainText('1小时25分')
 })

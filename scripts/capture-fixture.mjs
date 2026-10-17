@@ -17,7 +17,7 @@ export async function setCaptureSchedule(page, values, close = true) {
         ? String((Date.parse(values.end) - Date.parse(values.start)) / 60000)
         : values.estimate
     if (minutes) {
-      await picker.getByRole('button', { name: '持续时间', exact: true }).click()
+      await picker.getByRole('button', { name: '计划时长', exact: true }).click()
       await selectDuration(page, minutes)
     }
     if (!close && !values.due) return

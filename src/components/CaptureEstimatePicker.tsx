@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Check, Timer } from 'lucide-react'
 import { t } from '@/i18n'
 import { Button } from './ui/button'
-import { SelectField } from './SelectField'
+import { Input } from './ui/input'
 import { Popover, PopoverTrigger, PopoverContent } from './ui/popover'
 
 const PRESETS = [15, 30, 45, 60, 90, 120]
@@ -18,16 +18,33 @@ export function CaptureEstimatePicker({
   value: string
   onChange: (value: string) => void
 }) {
-  const [open, setOpen] = useState(false),
-    [draft, setDraft] = useState(30)
-  const hour = Math.floor(draft / 60),
-    minute = draft % 60
+  const [open, setOpen] = useState(false)
+  const [custom, setCustom] = useState(false)
+  const [hours, setHours] = useState('0')
+  const [minutes, setMinutes] = useState('30')
+  const selected = Number(value) || 30
+  const total = Number(hours) * 60 + Number(minutes)
+  const valid =
+    hours !== '' &&
+    minutes !== '' &&
+    Number.isInteger(Number(hours)) &&
+    Number.isInteger(Number(minutes)) &&
+    Number(hours) >= 0 &&
+    Number(minutes) >= 0 &&
+    Number(minutes) < 60 &&
+    total >= 1 &&
+    total <= 100000
+  const apply = (next: number) => {
+    onChange(String(next))
+    setCustom(false)
+    setOpen(false)
+  }
   return (
     <Popover
       open={open}
-      onOpenChange={(open) => {
-        if (open) setDraft(Number(value) || 30)
-        setOpen(open)
+      onOpenChange={(next) => {
+        setOpen(next)
+        if (!next) setCustom(false)
       }}
     >
       <PopoverTrigger asChild>
@@ -39,7 +56,7 @@ export function CaptureEstimatePicker({
           aria-label={t('plan.duration')}
         >
           <Timer size={15} />
-          <span>{value ? duration(Number(value)) : t('plan.duration')}</span>
+          <span>{value ? duration(selected) : t('plan.duration')}</span>
         </Button>
       </PopoverTrigger>
       <PopoverContent
@@ -55,66 +72,93 @@ export function CaptureEstimatePicker({
           </span>
           <strong>{t('plan.duration')}</strong>
         </header>
-        <output className="duration-preview" aria-live="polite">
-          {duration(draft) || '0' + t('picker.minutesShort')}
-        </output>
+        <output className="duration-preview">{duration(selected)}</output>
         <div className="estimate-presets" role="group" aria-label={t('plan.duration')}>
-          {PRESETS.map((minutes) => (
+          {PRESETS.map((next) => (
             <Button
-              key={minutes}
+              key={next}
               variant="ghost"
-              aria-pressed={draft === minutes}
-              onClick={() => {
-                onChange(String(minutes))
-                setOpen(false)
-              }}
+              aria-pressed={selected === next}
+              onClick={() => apply(next)}
             >
-              {duration(minutes)}
+              {duration(next)}
             </Button>
           ))}
-        </div>
-        <div className="duration-custom">
-          <span>{t('picker.custom')}</span>
-          <div>
-            <SelectField
-              aria-label={t('picker.hour')}
-              value={String(hour)}
-              onValueChange={(h) => setDraft(Math.min(100000, Number(h) * 60 + minute))}
-            >
-              {Array.from({ length: 1667 }, (_, h) => (
-                <option value={String(h)} key={h}>
-                  {String(h)}
-                </option>
-              ))}
-            </SelectField>
-            <span>{t('picker.hours')}</span>
-            <SelectField
-              aria-label={t('picker.minute')}
-              value={String(minute)}
-              onValueChange={(m) => setDraft(hour * 60 + Number(m))}
-            >
-              {Array.from({ length: 60 }, (_, m) => (
-                <option value={String(m)} key={m} disabled={hour * 60 + m > 100000}>
-                  {String(m)}
-                </option>
-              ))}
-            </SelectField>
-            <span>{t('picker.minutesShort')}</span>
-          </div>
-        </div>
-        <footer className="capture-picker-footer">
-          <Button
-            size="sm"
-            disabled={draft < 1 || draft > 100000}
-            onClick={() => {
-              onChange(String(draft))
-              setOpen(false)
+          <Popover
+            open={custom}
+            onOpenChange={(next) => {
+              if (next) {
+                setHours(String(Math.floor(selected / 60)))
+                setMinutes(String(selected % 60))
+              }
+              setCustom(next)
             }}
           >
-            <Check size={13} />
-            {t('picker.done')}
-          </Button>
-        </footer>
+            <PopoverTrigger asChild>
+              <Button
+                className="duration-custom-button"
+                variant="ghost"
+                aria-pressed={!PRESETS.includes(selected)}
+              >
+                {t('picker.custom')}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent
+              className="duration-custom-dialog"
+              side="right"
+              align="center"
+              collisionPadding={12}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') {
+                  event.preventDefault()
+                  if (valid) apply(total)
+                }
+              }}
+            >
+              <strong>
+                {t('picker.custom')} · {t('plan.duration')}
+              </strong>
+              <div className="duration-inputs">
+                <label>
+                  <span>{t('picker.hour')}</span>
+                  <Input
+                    type="number"
+                    inputMode="numeric"
+                    min={0}
+                    max={1666}
+                    step={1}
+                    value={hours}
+                    onChange={(event) => setHours(event.target.value)}
+                    aria-label={t('picker.hour')}
+                  />
+                </label>
+                <span>:</span>
+                <label>
+                  <span>{t('picker.minute')}</span>
+                  <Input
+                    type="number"
+                    inputMode="numeric"
+                    min={0}
+                    max={59}
+                    step={1}
+                    value={minutes}
+                    onChange={(event) => setMinutes(event.target.value)}
+                    aria-label={t('picker.minute')}
+                  />
+                </label>
+              </div>
+              <footer>
+                <Button variant="ghost" size="sm" onClick={() => setCustom(false)}>
+                  {t('dialog.cancel')}
+                </Button>
+                <Button size="sm" disabled={!valid} onClick={() => apply(total)}>
+                  <Check size={13} />
+                  {t('picker.done')}
+                </Button>
+              </footer>
+            </PopoverContent>
+          </Popover>
+        </div>
       </PopoverContent>
     </Popover>
   )

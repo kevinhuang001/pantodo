@@ -1,3 +1,5 @@
+#[cfg(all(feature = "desktop", target_os = "macos"))]
+mod macos_material;
 #[cfg(feature = "webdav")]
 pub mod webdav;
 pub mod workspace;
@@ -116,6 +118,11 @@ mod desktop {
                 webdav_request
             ])
             .setup(|app| {
+                #[cfg(target_os = "macos")]
+                if let Some(window) = app.get_webview_window("main") {
+                    super::macos_material::configure(&window);
+                }
+
                 #[cfg(target_os = "windows")]
                 if let Some(window) = app.get_webview_window("main") {
                     configure_corners(&window);

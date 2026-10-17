@@ -58,7 +58,7 @@ export function DateTimeField({
             aria-label={(label || t('plan.title')) + ' · ' + t('picker.time')}
           >
             <Clock3 size={13} />
-            {value ? value.slice(11) : '—'}
+            {value ? value.slice(11) : t('picker.chooseTime')}
           </Button>
         </TimePickerPopover>
       ) : null}

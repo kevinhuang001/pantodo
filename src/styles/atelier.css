@@ -191,8 +191,8 @@
 .primary-navigation .nav-row-wrap:first-child .nav-row > .icon {
   padding: 3px;
   box-sizing: content-box;
-  background: #72965f;
-  color: #fff;
+  background: var(--accent);
+  color: var(--text-on-accent);
   border-radius: 7px;
   width: 13px;
   height: 13px;

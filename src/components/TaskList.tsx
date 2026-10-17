@@ -32,11 +32,43 @@ function checkLabel(status: Task['status']): string {
   return status === 'done' ? t('task.action.reopen') : t('task.action.complete')
 }
 
-export function TaskRow({ task, lookup }: { task: Task; lookup: TaskLookup }) {
+export function TaskRow({
+  task,
+  lookup,
+  compact = false,
+}: {
+  task: Task
+  lookup: TaskLookup
+  compact?: boolean
+}) {
   const project = task.projectId === null ? null : (lookup.projectsById.get(task.projectId) ?? null)
   const tags = lookup.tagsOfTask(task.id)
   const state = task.dueAt === null ? null : dueState(task, lookup.now)
   const locale = getLocale()
+
+  if (compact)
+    return (
+      <div
+        className={'task-row compact-task' + (task.status === 'done' ? ' done' : '')}
+        data-task-id={task.id}
+      >
+        <div
+          className="task-body"
+          role="button"
+          tabIndex={0}
+          onClick={() => lookup.onSelect(task)}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+              event.preventDefault()
+              lookup.onSelect(task)
+            }
+          }}
+        >
+          <span className="task-title">{task.title}</span>
+          {task.notes ? <span className="task-description">{task.notes}</span> : null}
+        </div>
+      </div>
+    )
 
   return (
     <div
@@ -202,10 +234,12 @@ export function TaskList({
   lookup,
   emptyKey,
   presentation = 'list',
+  compact = false,
 }: {
   tasks: Task[]
   lookup: TaskLookup
   presentation?: 'list' | 'gallery'
+  compact?: boolean
   emptyKey?: MessageKey
 }) {
   if (tasks.length === 0) {
@@ -217,7 +251,7 @@ export function TaskList({
       data-presentation={presentation}
     >
       {tasks.map((task) => (
-        <TaskRow key={task.id} task={task} lookup={lookup} />
+        <TaskRow key={task.id} task={task} lookup={lookup} compact={compact} />
       ))}
     </div>
   )

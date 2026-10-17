@@ -47,7 +47,7 @@ test('creates a planned Todo with an independent deadline marker and edits it fr
   await line.click()
   await page.locator('#task-title').fill('准备实验报告（已调整）')
   await setDateTimeField(page, 'task-start', '2026-10-19T12:00')
-  await page.getByRole('button', { name: '持续时间', exact: true }).click()
+  await page.getByRole('button', { name: '计划时长', exact: true }).click()
   await selectDuration(page, '60')
   await page.locator('button[form="pantodo-task-form"]').click()
   await expect(page.locator(`[data-todo-id="${todo.id}"]`)).toContainText('12:00')

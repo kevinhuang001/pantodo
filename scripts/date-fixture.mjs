@@ -33,15 +33,16 @@ export async function setDateTimeField(page, id, value) {
   }
 }
 export async function selectDuration(page, minutes) {
-  const picker = page.locator('.capture-estimate-picker'),
-    h = String(Math.floor(Number(minutes) / 60)),
-    m = String(Number(minutes) % 60)
-  for (const [name, value] of [
-    ['小时', h],
-    ['分钟数', m],
-  ]) {
-    await picker.getByRole('combobox', { name, exact: true }).click()
-    await page.locator(`[role="option"][data-value="${value}"]`).click()
-  }
+  await page
+    .locator('.capture-estimate-picker')
+    .getByRole('button', { name: '自定义', exact: true })
+    .click()
+  const picker = page.locator('.duration-custom-dialog')
+  await picker
+    .getByRole('spinbutton', { name: '小时', exact: true })
+    .fill(String(Math.floor(Number(minutes) / 60)))
+  await picker
+    .getByRole('spinbutton', { name: '分钟数', exact: true })
+    .fill(String(Number(minutes) % 60))
   await picker.getByRole('button', { name: '完成', exact: true }).click()
 }

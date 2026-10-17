@@ -8,7 +8,7 @@ import { buildStatistics, csvCell } from '@/domain/statistics'
 import { clippedSeconds } from '@/domain/time'
 import { formatDateTime, formatMinutes, toDateInputValue } from '@/domain/date'
 import { useAppStore } from '@/domain/store'
-import type { TimeEntry } from '@/domain/types'
+import type { Task, TimeEntry } from '@/domain/types'
 import { useNow } from '@/hooks'
 import { getLocale, t } from '@/i18n'
 import { Icon } from './Icon'
@@ -19,6 +19,11 @@ function duration(seconds: number) {
   return seconds > 0 && seconds < 60
     ? Math.round(seconds) + 's'
     : formatMinutes(Math.round(seconds / 60))
+}
+function plannedDuration(task: Task | undefined) {
+  return task?.startAt && task.endAt
+    ? formatMinutes(Math.round((Date.parse(task.endAt) - Date.parse(task.startAt)) / 60000))
+    : '—'
 }
 export function Statistics() {
   const projects = useAppStore((s) => s.projects),
@@ -358,7 +363,7 @@ export function Statistics() {
               <thead>
                 <tr>
                   <th>Todo</th>
-                  <th>{t('task.field.estimate')}</th>
+                  <th>{t('plan.duration')}</th>
                   <th>{t('stats.actual')}</th>
                 </tr>
               </thead>
@@ -370,11 +375,7 @@ export function Statistics() {
                       <td>
                         {taskById.get(id)?.title ?? (id ? t('work.deleted') : t('work.free'))}
                       </td>
-                      <td>
-                        {taskById.get(id)?.estimateMinutes
-                          ? formatMinutes(taskById.get(id)!.estimateMinutes!)
-                          : '—'}
-                      </td>
+                      <td>{plannedDuration(taskById.get(id))}</td>
                       <td>{duration(seconds)}</td>
                     </tr>
                   ))}

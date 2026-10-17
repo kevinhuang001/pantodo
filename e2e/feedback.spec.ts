@@ -218,6 +218,56 @@ test('panel gallery cards fit their content and do not reserve empty metadata or
   expect(shortBox!.height).toBeLessThan(130)
   expect(longBox!.height).toBeGreaterThan(shortBox!.height + 25)
   await expect(short.locator('.task-timing')).toBeHidden()
-  await expect(short.locator('.task-status')).toContainText('进行中')
-  await expect(short.getByRole('button', { name: '开始工作', exact: true })).toBeVisible()
+  await expect(short.locator('.task-status,.task-start,.task-check,.task-actions')).toHaveCount(0)
+  await short.locator('.task-body').click()
+  await expect(page.getByRole('dialog')).toBeVisible()
+})
+
+test('panel task previews scroll within a capped region and keep the editor accessible', async ({
+  page,
+}) => {
+  await page.evaluate(() => {
+    const w = JSON.parse(localStorage.getItem('pantodo.workspace.v2')!)
+    const template = w.tasks[0]
+    for (let i = 0; i < 25; i++)
+      w.tasks.push({
+        ...template,
+        id: 'scroll-' + i,
+        title: '滚动任务 ' + i,
+        notes: '完整任务说明 ' + i,
+        status: 'doing',
+      })
+    const v = w.views.find((v: { id: string }) => v.id === 'view-workbench')
+    v.panels[0].filter.statuses = ['doing']
+    localStorage.setItem('pantodo.workspace.v2', JSON.stringify(w))
+  })
+  await page.goto('/')
+  await page.locator('.nav-row', { hasText: '我的工作台' }).click()
+  const region = page.locator('.panel-tasks').first()
+  expect(await region.evaluate((e) => e.scrollHeight > e.clientHeight)).toBe(true)
+  expect((await region.boundingBox())!.height).toBeLessThanOrEqual(480)
+  await expect(
+    region.locator('.task-meta,.task-timing,.task-check,.task-actions,.task-start'),
+  ).toHaveCount(0)
+  const last = region.locator('.task-body').last()
+  await last.scrollIntoViewIfNeeded()
+  await last.focus()
+  await page.keyboard.press('Enter')
+  await expect(page.getByRole('dialog')).toBeVisible()
+})
+
+test('sidebar has one search focus frame and Create follows the selected accent', async ({
+  page,
+}) => {
+  await expect(page.locator('.sidebar-topline,.identity-text > span')).toHaveCount(0)
+  const input = page.locator('#pantodo-search')
+  await input.focus()
+  await expect(input).toHaveCSS('outline-style', 'none')
+  await expect(input).toHaveCSS('box-shadow', 'none')
+  await expect(page.locator('.search')).toHaveCSS('outline-style', 'solid')
+  const icon = page.locator('.primary-navigation .nav-row').first().locator('svg')
+  const sage = await icon.evaluate((e) => getComputedStyle(e).backgroundColor)
+  await page.getByRole('button', { name: '设置', exact: true }).click()
+  await page.getByRole('button', { name: '海蓝', exact: true }).click()
+  expect(await icon.evaluate((e) => getComputedStyle(e).backgroundColor)).not.toBe(sage)
 })

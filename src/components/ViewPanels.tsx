@@ -156,12 +156,15 @@ export function ViewPanels({
               : ''}
           </span>
         </div>
-        <TaskList
-          tasks={list}
-          lookup={lookup}
-          presentation={panel.presentation ?? 'list'}
-          emptyKey="group.empty"
-        />
+        <div className="panel-tasks" role="region" aria-label={panel.name} tabIndex={0}>
+          <TaskList
+            compact
+            tasks={list}
+            lookup={lookup}
+            presentation={panel.presentation ?? 'list'}
+            emptyKey="group.empty"
+          />
+        </div>
       </>
     )
   }

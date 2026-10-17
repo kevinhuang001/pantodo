@@ -271,3 +271,46 @@
 .task-gallery .task-timing[data-empty='true'] {
   display: none;
 }
+
+/* Panels show a quiet text preview; the full Todo opens on click or Enter. */
+.panel-tasks {
+  max-height: min(480px, 65dvh);
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+  padding-right: 5px;
+}
+.panel-tasks:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: 8px;
+}
+.panel-tasks .task-list {
+  margin-top: 0;
+}
+.composed-panel .task-row.compact-task,
+.composed-panel .task-gallery .task-row.compact-task {
+  display: block;
+  min-height: 0;
+  padding: 12px 14px;
+}
+.compact-task .task-body {
+  display: flex;
+  gap: 5px;
+  cursor: pointer;
+}
+.compact-task .task-body:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+  border-radius: 4px;
+}
+.composed-panel .compact-task .task-title {
+  font-size: 13px;
+}
+.composed-panel .compact-task .task-description {
+  font-size: 12px;
+  max-width: 100%;
+}

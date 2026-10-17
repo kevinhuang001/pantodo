@@ -156,11 +156,6 @@ export function Sidebar({
   return (
     <aside className="sidebar" aria-label={t('a11y.sidebar')}>
       <div className="sidebar-top">
-        <div className="sidebar-topline" onMouseDown={beginWindowDrag}>
-          <span className="workspace-dot" />
-          <span>{t('ui.personal')}</span>
-          <span className="workspace-shortcut">⌘ K</span>
-        </div>
         <div className="identity" onMouseDown={beginWindowDrag}>
           <span className="mark">
             <span className="brand-face">
@@ -171,7 +166,6 @@ export function Sidebar({
           </span>
           <span className="identity-text">
             <strong>{t('app.name')}</strong>
-            <span>{t('app.tagline')}</span>
           </span>
           <span className="identity-actions">
             <button

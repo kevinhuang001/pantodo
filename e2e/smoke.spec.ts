@@ -82,7 +82,7 @@ test('edits a task through the dialog', async ({ page }) => {
   await row.locator('button[aria-label="编辑"]').click()
   await expect(page.locator('[role="dialog"].dialog')).toBeVisible()
   await page.locator('#task-title').fill(`${title}：改过了`)
-  await page.getByRole('button', { name: '持续时间', exact: true }).click()
+  await page.getByRole('button', { name: '计划时长', exact: true }).click()
   await selectDuration(page, '90')
   await page.locator('button[form="pantodo-task-form"]').click()
 
