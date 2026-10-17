@@ -160,7 +160,9 @@ export function Statistics() {
           </>
         ) : null}
         <SelectField
-          className="select"
+          className="secondary stats-project-picker"
+          contentClassName="stats-project-menu"
+          icon={<Icon name="folder" size={14} />}
           aria-label={t('task.field.project')}
           value={projectId}
           onValueChange={(e) => setProjectId(e)}

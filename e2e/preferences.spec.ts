@@ -30,13 +30,40 @@ test('list and gallery have distinct panel layouts without filter summaries', as
   const panel = page.locator('.composed-panel').nth(1)
   await expect(panel.locator('.panel-meta')).toHaveCount(0)
   await expect(panel.locator('.task-list')).toHaveCSS('display', 'flex')
+  const row = panel.locator('.compact-task').first()
+  expect(await row.evaluate((e) => getComputedStyle(e).backgroundColor)).not.toBe(
+    'rgba(0, 0, 0, 0)',
+  )
+  await expect(row).toHaveCSS('border-radius', '10px')
   await panel.getByRole('button', { name: '画廊', exact: true }).click()
   await expect(panel.locator('.task-gallery')).toHaveCSS('display', 'grid')
   const columns = await panel
     .locator('.task-gallery')
     .evaluate((e) => getComputedStyle(e).gridTemplateColumns)
   expect(columns.split(' ').length).toBe(2)
+  await page.setViewportSize({ width: 2400, height: 900 })
+  await expect
+    .poll(
+      async () =>
+        (
+          await panel
+            .locator('.task-gallery')
+            .evaluate((e) => getComputedStyle(e).gridTemplateColumns)
+        ).split(' ').length,
+    )
+    .toBeGreaterThanOrEqual(3)
   await page.setViewportSize({ width: 800, height: 650 })
+  await panel.evaluate((e) => (e.style.maxWidth = '320px'))
+  await expect
+    .poll(
+      async () =>
+        (
+          await panel
+            .locator('.task-gallery')
+            .evaluate((e) => getComputedStyle(e).gridTemplateColumns)
+        ).split(' ').length,
+    )
+    .toBe(1)
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
 })
 test('ECharts render six reports and respond to theme and panel resizing', async ({ page }) => {
@@ -92,4 +119,22 @@ test('day and week use matching date columns and deadlines never cover planned b
     Math.min(block!.x + block!.width, deadline!.x + deadline!.width) -
       Math.max(block!.x, deadline!.x),
   ).toBeLessThanOrEqual(0)
+})
+
+test('statistics project filter opens a themed application menu and filters results', async ({
+  page,
+}) => {
+  await page.locator('.nav-row', { hasText: '时间统计' }).click()
+  const trigger = page.locator('.stats-project-picker')
+  await expect(trigger).toHaveAttribute('data-slot', 'select-trigger')
+  await trigger.click()
+  const menu = page.locator('.stats-project-menu')
+  await expect(menu).toBeVisible()
+  const option = menu.getByRole('option').nth(1)
+  const value = await option.getAttribute('data-value')
+  await option.click()
+  await expect(trigger).toHaveAttribute('data-value', value!)
+  await trigger.click()
+  await menu.getByRole('option').first().click()
+  await expect(trigger).toHaveAttribute('data-value', '')
 })

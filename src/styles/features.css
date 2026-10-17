@@ -857,3 +857,43 @@
   font-weight: 550;
   color: var(--text);
 }
+
+/* Statistics filters use the same themed popovers as the rest of the application. */
+.stats-filters > .stats-project-picker,
+.stats-filters > .stats-tag-picker {
+  width: auto;
+  max-width: min(100%, 280px);
+  min-height: 36px;
+  height: auto;
+  padding: 8px 12px;
+  gap: 9px;
+  font-size: 12px;
+  background: var(--surface-strong);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text);
+  box-shadow: none;
+}
+.stats-project-picker [data-slot='select-value'] {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.stats-project-picker[data-state='open'] {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+.stats-project-menu {
+  min-width: max(220px, var(--radix-select-trigger-width));
+  padding: 5px;
+}
+.stats-project-menu [data-slot='select-item'] {
+  min-height: 38px;
+  padding-left: 10px;
+  border-radius: 7px;
+  font-size: 12px;
+}
+.stats-project-menu [data-state='checked'] {
+  color: var(--accent);
+  background: var(--accent-soft);
+}

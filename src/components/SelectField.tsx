@@ -30,6 +30,8 @@ export function SelectField({
   className,
   id,
   disabled,
+  icon,
+  contentClassName,
   ...props
 }: {
   children: ReactNode
@@ -38,6 +40,8 @@ export function SelectField({
   className?: string
   id?: string
   disabled?: boolean
+  icon?: ReactNode
+  contentClassName?: string
   'aria-label'?: string
 }) {
   return (
@@ -47,9 +51,15 @@ export function SelectField({
       disabled={disabled}
     >
       <SelectTrigger id={id} data-value={String(value)} className={className} {...props}>
+        {icon}
         <SelectValue />
       </SelectTrigger>
-      <SelectContent position="popper" sideOffset={6} className="product-select-content">
+      <SelectContent
+        position="popper"
+        sideOffset={6}
+        align="start"
+        className={['product-select-content', contentClassName].filter(Boolean).join(' ')}
+      >
         {options(children).map((option) => (
           <SelectItem
             key={option.value}
