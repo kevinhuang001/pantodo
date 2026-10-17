@@ -77,10 +77,6 @@ const en: Record<keyof typeof zhCN, string> = {
 
   'group.empty': 'Nothing here',
 
-  'quadrant.importantUrgent': 'Important & urgent',
-  'quadrant.importantOnly': 'Important, not urgent',
-  'quadrant.urgentOnly': 'Urgent, not important',
-  'quadrant.neither': 'Neither urgent nor important',
   'seed.tagImportant': 'Important',
   'seed.tagUrgent': 'Urgent',
   'seed.projectProduct': 'Product',

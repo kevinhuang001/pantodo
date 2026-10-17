@@ -18,7 +18,7 @@ import {
 import { CSS } from '@dnd-kit/utilities'
 import { useAppStore } from '@/domain/store'
 import { matchesFilter, sortTasks, type FilterContext } from '@/domain/filters'
-import { newPanel, quadrantPanels } from '@/domain/views'
+import { newPanel } from '@/domain/views'
 import type { Task, View, ViewPanel, ViewSort } from '@/domain/types'
 import { t } from '@/i18n'
 import { Button } from './ui/button'
@@ -98,7 +98,6 @@ export function ViewPanels({
     useSensor(TouchSensor, { activationConstraint: { delay: 180, tolerance: 5 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   )
-  const [templateOpen, setTemplateOpen] = useState(false)
   const panels = view.panels ?? [],
     columns = view.arrangement === 'vertical' ? 1 : Math.max(1, view.columnCount)
   const patch = (value: Partial<View>) => {
@@ -112,9 +111,6 @@ export function ViewPanels({
   return (
     <>
       <div className="panel-toolbar">
-        <Button variant="ghost" onClick={() => setTemplateOpen(true)}>
-          {t('panel.template')}
-        </Button>
         <Button className="secondary" variant="outline" onClick={() => setEditing(newPanel())}>
           <Icon name="plus" size={14} />
           {t('panel.add')}
@@ -203,18 +199,6 @@ export function ViewPanels({
         </SortableContext>
       </DndContext>
       {!panels.length ? <p className="stats-empty">{t('panel.empty')}</p> : null}
-      {templateOpen ? (
-        <QuadrantDialog
-          onClose={() => setTemplateOpen(false)}
-          onSave={async (important, urgent) => {
-            const current = useAppStore.getState().views.find((v) => v.id === view.id)?.panels ?? []
-            await updateView(view.id, {
-              panels: [...current, ...quadrantPanels(important, urgent)],
-            })
-            setTemplateOpen(false)
-          }}
-        />
-      ) : null}
       {editing ? (
         <PanelDialog
           key={editing.id}
@@ -360,81 +344,6 @@ function PanelDialog({
         />
         {error ? (
           <p className="form-error" role="alert">
-            {t('work.failed')}
-          </p>
-        ) : null}
-      </form>
-    </Modal>
-  )
-}
-
-function QuadrantDialog({
-  onClose,
-  onSave,
-}: {
-  onClose: () => void
-  onSave: (important: string, urgent: string) => Promise<void>
-}) {
-  const tags = useAppStore((s) => s.tags).filter((tag) => !tag.deletedAt)
-  const [important, setImportant] = useState(tags[0]?.id ?? ''),
-    [urgent, setUrgent] = useState(tags[1]?.id ?? '')
-  const [saving, setSaving] = useState(false),
-    [error, setError] = useState(false)
-  return (
-    <Modal
-      title={t('panel.template.quadrant')}
-      onClose={onClose}
-      footer={
-        <>
-          <Button variant="outline" onClick={onClose}>
-            {t('dialog.cancel')}
-          </Button>
-          <Button
-            form="quadrant-form"
-            type="submit"
-            disabled={saving || !important || !urgent || important === urgent}
-          >
-            {t('dialog.create')}
-          </Button>
-        </>
-      }
-    >
-      <form
-        id="quadrant-form"
-        className="stack"
-        onSubmit={(e) => {
-          e.preventDefault()
-          if (!important || !urgent || important === urgent || saving) return
-          setSaving(true)
-          setError(false)
-          void onSave(important, urgent)
-            .catch(() => setError(true))
-            .finally(() => setSaving(false))
-        }}
-      >
-        {(['important', 'urgent'] as const).map((key) => (
-          <div className="field" key={key}>
-            <label htmlFor={'quadrant-' + key}>
-              {t(key === 'important' ? 'panel.important' : 'panel.urgent')}
-            </label>
-            <SelectField
-              id={'quadrant-' + key}
-              value={key === 'important' ? important : urgent}
-              onValueChange={key === 'important' ? setImportant : setUrgent}
-            >
-              {tags.map((tag) => (
-                <option value={tag.id} key={tag.id}>
-                  {tag.name}
-                </option>
-              ))}
-            </SelectField>
-          </div>
-        ))}
-        {important === urgent || tags.length < 2 ? (
-          <p className="form-error">{t('panel.invalidTags')}</p>
-        ) : null}
-        {error ? (
-          <p role="alert" className="form-error">
             {t('work.failed')}
           </p>
         ) : null}

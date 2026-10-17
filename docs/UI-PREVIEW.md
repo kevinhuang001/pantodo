@@ -9,7 +9,7 @@ Capture and inspect the current application in an isolated sample workspace.
 3. **Calendar** — day/week/month, date navigation, continuous time-grid zoom, plan blocks and independent deadline lines. Click to edit; Todos do not drag.
 4. **Work timer** — a persistent bar across pages with pause/resume/stop. Planned time is separate from actual work.
 5. **Statistics** — date/project/tag filters, daily bars, category breakdown, per-Todo estimates/actuals, manual entry and correction, CSV and a ledger.
-6. **Views** — custom views composed of independently filtered panels; each panel uses list/gallery content. Vertical/column arrangements, column count in View settings, spans in panel settings, pointer/touch/keyboard sorting and an editable Eisenhower template.
+6. **Views** — custom views composed of independently filtered panels; each panel uses list/gallery content. Vertical/column arrangements, column count in View settings, spans in panel settings, and pointer/touch/keyboard sorting.
 7. **Focus** — starting a task counts down 3 seconds, then fills the right pane; the sidebar remains available and no OS fullscreen is requested.
 8. **Settings** — icon navigation and grouped cards for theme/language, week start, default plan duration, optional WebDAV sync and JSON export.
 

@@ -76,10 +76,6 @@ const zhCN = {
 
   'group.empty': '暂无任务',
 
-  'quadrant.importantUrgent': '重要且紧急',
-  'quadrant.importantOnly': '重要不紧急',
-  'quadrant.urgentOnly': '紧急不重要',
-  'quadrant.neither': '都不紧急也不重要',
   'seed.tagImportant': '重要',
   'seed.tagUrgent': '紧急',
   'seed.projectProduct': '产品',

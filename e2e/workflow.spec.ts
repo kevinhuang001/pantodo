@@ -195,9 +195,12 @@ test('panel filters, width and order persist without Todo dragging', async ({ pa
   await page.locator('.composed-panel').first().locator('.panel-move').focus()
   await page.keyboard.press('Space')
   await expect(page.locator('.composed-panel').first()).toHaveAttribute('data-dragging', 'true')
-  // dnd-kit attaches its keyboard listener in a zero-delay timer after activation.
+  // dnd-kit attaches its keyboard listener in a zero-delay timer after activation; let React
+  // commit the drag state before advancing the fake clock so the listener is registered.
+  await page.waitForTimeout(50)
   await page.clock.runFor(100)
   await page.keyboard.press('ArrowRight')
+  await page.waitForTimeout(50)
   await page.clock.runFor(100)
   await page.keyboard.press('Space')
   await expect
@@ -210,18 +213,6 @@ test('panel filters, width and order persist without Todo dragging', async ({ pa
   await expect(page.locator('.composed-panel', { hasText: '紧急待办' })).toHaveCSS(
     '--panel-span',
     '2',
-  )
-})
-
-test('Eisenhower is created as four editable filtered panels', async ({ page }) => {
-  await page.getByRole('button', { name: '新建视图', exact: true }).click()
-  await page.locator('#view-name').fill('我的四象限')
-  await page.locator('button[form="pantodo-view-form"]').click()
-  await page.getByRole('button', { name: '从模板开始', exact: true }).click()
-  await page.locator('button[form="quadrant-form"]').click()
-  await expect(page.locator('.composed-panel')).toHaveCount(4)
-  await expect(page.locator('.composed-panel').first().locator('.task-title')).toContainText(
-    '设计评审',
   )
 })
 

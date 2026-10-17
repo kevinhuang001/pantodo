@@ -18,9 +18,9 @@ The compact 44px title row switches between vertical and column panel arrangemen
 
 Each panel stores name, emoji, list/gallery presentation, filter, sort and column span. Filters support included/excluded tags, any/all matching, status, project or unassigned project, planned/unplanned time, deadline bounds and title/notes text. Overall view, search and sidebar filters apply first. A Todo may appear in several panels.
 
-Add panels directly or append an Eisenhower template built from two distinct tags. Column count is edited only in View settings; panel spans are edited in the panel dialog. Pointer, touch and keyboard sorting operate only on panel handles and persist order. Small windows collapse to one column without changing saved spans.
+Add panels directly. Column count is edited only in View settings; panel spans are edited in the panel dialog. Pointer, touch and keyboard sorting operate only on panel handles and persist order. Small windows collapse to one column without changing saved spans.
 
-Capture metadata uses three compact triggers. The date popover has separate start/end/deadline targets, a calendar, in-app hour/minute menus and an estimate. Moving the start keeps the planned duration; clearing either planned endpoint clears the pair. Project/tag pickers support search and keyboard navigation, display selected values, and provide colored multi-select tags. View and calendar-mode controls have localized hover/focus tooltips.
+Capture metadata uses four compact triggers. The schedule popover has separate start/end/deadline targets, a calendar, and in-app hour/minute menus in five-minute steps; the estimate popover offers quick durations and a custom value. Moving the start keeps the planned duration; clearing either planned endpoint clears the pair. Project/tag pickers support search and keyboard navigation, display selected values, and provide colored multi-select tags. View and calendar-mode controls have localized hover/focus tooltips.
 
 Forms use shadcn/ui with Radix primitives. Selects, emoji choices, date calendars and menus render inside the application and support keyboard navigation.
 
@@ -68,4 +68,4 @@ Automatic sync is opt-in, debounced after data changes, polls each minute and ch
 
 ## Verification
 
-Unit tests cover Todo filters, quadrant panel rules, plans, calendar clipping/lanes, timers, overlap corrections, statistics and atomic persistence. Playwright covers the actual forms, view presentations, pointer panel dragging, pointer zoom persistence, calendar modes, work/focus, manual records, window-command dispatch, reload behavior and a real authenticated WebDAV test server with two browser devices, conflicts, conditional retries, deletion and offline recovery. Screenshot inspection covers light/dark, full and minimum-size windows. Browser simulation does not verify physical native material or system sleep on every OS.
+Unit tests cover Todo filters, plans, calendar clipping/lanes, timers, overlap corrections, statistics and atomic persistence. Playwright covers the actual forms, view presentations, pointer panel dragging, pointer zoom persistence, calendar modes, work/focus, manual records, window-command dispatch, reload behavior and a real authenticated WebDAV test server with two browser devices, conflicts, conditional retries, deletion and offline recovery. Screenshot inspection covers light/dark, full and minimum-size windows. Browser simulation does not verify physical native material or system sleep on every OS.

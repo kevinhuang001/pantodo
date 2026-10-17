@@ -1,4 +1,3 @@
-import { quadrantPanels } from './views'
 import { describe, expect, it } from 'vitest'
 
 import { dueState, matchesFilter, selectTasks, sortTasks } from './filters'
@@ -178,24 +177,6 @@ describe('selectTasks with built-in presets', () => {
     const selected = selectTasks(tasks, makeView('all'), ctx).map((task) => task.id)
     expect(selected).not.toContain('deleted')
     expect(selected).not.toContain('archived')
-  })
-})
-
-describe('quadrant panel filters', () => {
-  it('partitions tasks by two independent tags without changing Todo data', () => {
-    const tasks = ['both', 'importantOnly', 'urgentOnly', 'neither'].map((id) => makeTask(id))
-    const ctx = context({
-      both: ['important', 'urgent'],
-      importantOnly: ['important'],
-      urgentOnly: ['urgent'],
-      neither: [],
-    })
-    const panels = quadrantPanels('important', 'urgent')
-    expect(
-      panels.map((panel) =>
-        tasks.filter((task) => matchesFilter(task, panel.filter, ctx)).map((task) => task.id),
-      ),
-    ).toEqual([['both'], ['importantOnly'], ['urgentOnly'], ['neither']])
   })
 })
 

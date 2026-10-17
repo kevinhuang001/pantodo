@@ -47,7 +47,8 @@
   border-radius: 50%;
 }
 .capture-entity-picker[data-slot='popover-content'],
-.capture-schedule-picker[data-slot='popover-content'] {
+.capture-schedule-picker[data-slot='popover-content'],
+.capture-estimate-picker[data-slot='popover-content'] {
   padding: 0;
   width: 280px;
   max-width: calc(100vw - 28px);
@@ -177,82 +178,91 @@
 .capture-schedule-picker[data-slot='popover-content'] {
   width: 344px;
 }
-.schedule-endpoints {
+.schedule-tabs {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 4px;
-  padding: 8px;
-  border-bottom: 1px solid var(--hairline);
+  gap: 2px;
+  margin: 8px 10px 0;
+  padding: 3px;
+  border: 1px solid var(--hairline);
+  border-radius: 10px;
+  background: var(--surface-sunken);
 }
-.schedule-endpoints [role='tab'] {
+.schedule-tabs [role='tab'] {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   justify-content: center;
-  gap: 5px;
-  height: 57px;
-  min-height: 57px;
+  gap: 3px;
+  height: 48px;
+  min-height: 48px;
   min-width: 0;
-  padding: 7px 9px;
+  padding: 6px 8px;
   border-radius: 7px;
   background: transparent;
   text-align: left;
   color: var(--text-subtle);
+  box-shadow: none;
 }
-.schedule-endpoints [role='tab'] > span {
+.schedule-tabs [role='tab'] > span {
   font-size: 10px;
   font-weight: 450;
 }
-.schedule-endpoints strong {
-  font-size: 10px;
-  font-weight: 500;
+.schedule-tabs strong {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 11px;
+  font-weight: 550;
   color: var(--text-muted);
   white-space: nowrap;
 }
-.schedule-endpoints [aria-selected='true'] {
-  background: var(--accent-soft);
-  color: var(--accent);
+.schedule-tabs [aria-selected='true'] {
+  background: var(--surface-strong);
+  color: var(--text);
+  box-shadow:
+    0 1px 2px #18331e12,
+    inset 0 0 0 1px var(--hairline);
 }
-.schedule-endpoints [aria-selected='true'] strong {
+.schedule-tabs [aria-selected='true'] strong {
   color: var(--accent);
 }
 .capture-schedule-picker [data-slot='calendar'] {
-  --cell-size: 36px;
-  margin: 2px auto;
-  padding: 12px;
+  --cell-size: 34px;
+  margin: 0 auto;
+  padding: 8px 12px 4px;
 }
 .capture-schedule-picker [data-selected-single='true'] {
   background: var(--accent);
   color: #fff;
   border-radius: 7px;
 }
-.schedule-picker-fields {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding: 10px 14px;
-  border-top: 1px solid var(--hairline);
-}
-.schedule-clock,
-.schedule-estimate {
+.schedule-time {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
+  min-height: 52px;
+  padding: 9px 14px;
+  border-top: 1px solid var(--hairline);
   color: var(--text-muted);
   font-size: 12px;
 }
-.schedule-clock > span {
+.schedule-time > span {
   display: flex;
   align-items: center;
   gap: 7px;
 }
-.schedule-clock > div {
+.schedule-time-hint {
+  color: var(--text-subtle);
+  font-size: 11px;
+}
+.schedule-time-controls {
   display: flex;
   align-items: center;
   gap: 3px;
 }
-.schedule-clock [data-slot='select-trigger'] {
+.schedule-time-controls [data-slot='select-trigger'] {
   width: 57px;
   min-width: 57px;
   height: 30px;
@@ -265,34 +275,87 @@
   font-size: 12px;
   font-variant-numeric: tabular-nums;
 }
-.schedule-clock b {
+.schedule-time-controls b {
   font-weight: 400;
   color: var(--text-subtle);
-}
-.schedule-estimate > div {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-.schedule-estimate input {
-  width: 74px;
-  height: 30px;
-  min-height: 30px;
-  padding: 0 8px;
-  border-radius: 6px;
-  font-size: 12px;
-  box-shadow: none;
-  background: var(--surface-sunken);
-  border-color: var(--hairline);
-}
-.schedule-estimate > div > span {
-  font-size: 10px;
-  width: 28px;
 }
 .capture-schedule-picker > .form-error {
   margin: 0;
   padding: 0 14px 10px;
   font-size: 11px;
+}
+
+/* Estimation is a duration, so it gets a focused chooser of its own. */
+.capture-estimate-picker[data-slot='popover-content'] {
+  width: 264px;
+}
+.estimate-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 14px 10px;
+}
+.estimate-head > span {
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 550;
+}
+.estimate-head strong {
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 600;
+}
+.estimate-presets {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  padding: 0 12px 12px;
+}
+.estimate-presets [data-slot='button'] {
+  height: 34px;
+  min-height: 34px;
+  padding: 0 6px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  box-shadow: none;
+}
+.estimate-presets [aria-pressed='true'] {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+.estimate-custom {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 14px;
+  border-top: 1px solid var(--hairline);
+}
+.estimate-custom > span {
+  color: var(--text-muted);
+  font-size: 11px;
+}
+.estimate-custom > div {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.estimate-custom input {
+  width: 84px;
+  height: 32px;
+  min-height: 32px;
+  padding: 0 9px;
+  border-radius: 7px;
+  background: var(--surface-sunken);
+  border-color: var(--hairline);
+  box-shadow: none;
+  font-size: 12px;
+}
+.estimate-custom > div > span {
+  color: var(--text-subtle);
+  font-size: 10px;
 }
 @media (max-width: 1050px) {
   .capture-property {

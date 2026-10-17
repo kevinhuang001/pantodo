@@ -83,6 +83,12 @@
   min-height: 0;
   overflow: auto;
   padding-bottom: var(--space-3);
+  /* The navigation scrolls, but its scrollbar would break the flush glass edge. */
+  scrollbar-width: none;
+}
+
+.sidebar-scroll::-webkit-scrollbar {
+  display: none;
 }
 
 .sidebar-section {

@@ -1,10 +1,16 @@
-/** Set capture metadata through the same calendar and app-owned time menus a user sees.
+/** Set capture metadata through the same calendar, duration and app-owned menus a user sees.
  * @param {import('@playwright/test').Page} page
  * @param {{start?:string,end?:string,due?:string,estimate?:string}} values
  * @param {boolean} close
  */
 export async function setCaptureSchedule(page, values, close = true) {
-  await page.getByRole('button', { name: '时间与预估', exact: true }).click()
+  if (values.estimate !== undefined) {
+    await page.getByRole('button', { name: '预估时长', exact: true }).click()
+    const estimate = page.locator('.capture-estimate-picker')
+    await estimate.locator('#create-estimate').fill(values.estimate)
+    await estimate.getByRole('button', { name: '完成', exact: true }).click()
+  }
+  await page.getByRole('button', { name: '安排时间', exact: true }).click()
   const picker = page.locator('.capture-schedule-picker')
   for (const [key, label] of [
     ['start', '开始时间'],
@@ -26,6 +32,5 @@ export async function setCaptureSchedule(page, values, close = true) {
       await page.locator(`[role="option"][data-value="${value}"]`).click()
     }
   }
-  if (values.estimate !== undefined) await picker.locator('#create-estimate').fill(values.estimate)
   if (close) await picker.getByRole('button', { name: '完成', exact: true }).click()
 }

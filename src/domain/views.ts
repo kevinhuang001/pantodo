@@ -28,46 +28,6 @@ export function workbenchPanels(): ViewPanel[] {
     { ...newPanel(t('panels.done')), emoji: '✨', filter: { ...EMPTY_FILTER, statuses: ['done'] } },
   ]
 }
-export function quadrantPanels(important: string, urgent: string): ViewPanel[] {
-  return [
-    {
-      ...newPanel(t('quadrant.importantUrgent')),
-      emoji: '🔥',
-      filter: {
-        ...EMPTY_FILTER,
-        statuses: ['todo', 'doing'],
-        tagIds: [important, urgent],
-        tagMode: 'all',
-      },
-    },
-    {
-      ...newPanel(t('quadrant.importantOnly')),
-      emoji: '🌱',
-      filter: {
-        ...EMPTY_FILTER,
-        statuses: ['todo', 'doing'],
-        tagIds: [important],
-        excludeTagIds: [urgent],
-      },
-    },
-    {
-      ...newPanel(t('quadrant.urgentOnly')),
-      emoji: '⚡',
-      filter: {
-        ...EMPTY_FILTER,
-        statuses: ['todo', 'doing'],
-        tagIds: [urgent],
-        excludeTagIds: [important],
-      },
-    },
-    {
-      ...newPanel(t('quadrant.neither')),
-      emoji: '☁️',
-      filter: { ...EMPTY_FILTER, statuses: ['todo', 'doing'], excludeTagIds: [important, urgent] },
-    },
-  ]
-}
-
 /** Read persisted views into the current layout model; keep only active fields. */
 export function viewWithDefaults(view: View): View {
   return {

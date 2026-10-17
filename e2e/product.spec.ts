@@ -83,7 +83,7 @@ test('three second focus transition is automatic, can be cancelled and never req
 })
 
 test('capture calendar uses localized dates and returns focus after closing', async ({ page }) => {
-  const trigger = page.getByRole('button', { name: '时间与预估', exact: true })
+  const trigger = page.getByRole('button', { name: '安排时间', exact: true })
   await trigger.click()
   await expect(page.locator('[data-slot="calendar"]')).toBeVisible()
   await page.locator('.capture-schedule-picker button[data-day="2026/10/20"]').click()
@@ -95,4 +95,18 @@ test('capture calendar uses localized dates and returns focus after closing', as
   await expect(
     page.locator('.capture-card input[type="date"],.capture-card input[type="datetime-local"]'),
   ).toHaveCount(0)
+})
+
+test('capture estimate offers quick durations and a custom value', async ({ page }) => {
+  const trigger = page.getByRole('button', { name: '预估时长', exact: true })
+  await trigger.click()
+  await page.getByRole('button', { name: '45分', exact: true }).click()
+  await expect(trigger).toContainText('45分')
+  await trigger.click()
+  await page.locator('#create-estimate').fill('95')
+  await page
+    .locator('.capture-estimate-picker')
+    .getByRole('button', { name: '完成', exact: true })
+    .click()
+  await expect(trigger).toContainText('1小时35分')
 })

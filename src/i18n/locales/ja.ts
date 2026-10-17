@@ -77,10 +77,6 @@ const ja: Record<keyof typeof zhCN, string> = {
 
   'group.empty': 'ここには何もありません',
 
-  'quadrant.importantUrgent': '重要かつ緊急',
-  'quadrant.importantOnly': '重要・緊急でない',
-  'quadrant.urgentOnly': '緊急・重要でない',
-  'quadrant.neither': 'どちらでもない',
   'seed.tagImportant': '重要',
   'seed.tagUrgent': '緊急',
   'seed.projectProduct': 'プロダクト',
