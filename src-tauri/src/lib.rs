@@ -10,7 +10,9 @@ mod desktop {
     type Store = Mutex<WorkspaceStore>;
 
     #[tauri::command]
-    fn desktop_platform() -> &'static str { std::env::consts::OS }
+    fn desktop_platform() -> &'static str {
+        std::env::consts::OS
+    }
 
     #[tauri::command]
     fn load_workspace(state: tauri::State<'_, Store>) -> Result<Snapshot, String> {
@@ -89,7 +91,11 @@ mod desktop {
                 }
             }))
             .plugin(tauri_plugin_power_monitor::init())
-            .invoke_handler(tauri::generate_handler![load_workspace, save_workspace, desktop_platform])
+            .invoke_handler(tauri::generate_handler![
+                load_workspace,
+                save_workspace,
+                desktop_platform
+            ])
             .setup(|app| {
                 #[cfg(target_os = "windows")]
                 if let Some(window) = app.get_webview_window("main") {
