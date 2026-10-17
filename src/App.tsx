@@ -17,6 +17,7 @@ import { Icon } from './components/Icon'
 import { PanelBoard } from './components/PanelBoard'
 import { Statistics } from './components/Statistics'
 import { TimerBar, TimerLifecycle } from './components/TimerBar'
+import { FocusScreen } from './components/FocusScreen'
 import { PaperFriend } from './components/PaperFriend'
 import { InboxComposer } from './components/InboxComposer'
 import { SettingsDialog } from './components/SettingsDialog'
@@ -413,6 +414,7 @@ export function App() {
       ) : null}
 
       <Toast />
+      <FocusScreen />
     </>
   )
 }

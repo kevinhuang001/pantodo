@@ -4,6 +4,7 @@ import { useAppStore } from '@/domain/store'
 import { clockLabel, elapsedSeconds } from '@/domain/time'
 import { useNow } from '@/hooks'
 import { t } from '@/i18n'
+import { useFocusStore } from '@/domain/focus'
 import { Icon } from './Icon'
 
 /** Synchronous exit persistence plus durable heartbeats for interrupted processes. */
@@ -18,12 +19,16 @@ export function TimerLifecycle() {
       if (event.key === STORAGE_KEY) store.getState().reloadWorkspace()
     }
     const interval = window.setInterval(heartbeat, 5000)
+    const storageError = (event: Event) =>
+      store.setState({ error: String((event as CustomEvent).detail) })
+    window.addEventListener('pantodo:storage-error', storageError)
     window.addEventListener('pagehide', stop)
     window.addEventListener('beforeunload', stop)
     document.addEventListener('freeze', stop)
     window.addEventListener('storage', sync)
     return () => {
       window.clearInterval(interval)
+      window.removeEventListener('pantodo:storage-error', storageError)
       window.removeEventListener('pagehide', stop)
       window.removeEventListener('beforeunload', stop)
       document.removeEventListener('freeze', stop)
@@ -47,6 +52,10 @@ export function TimerBar({ onOpen }: { onOpen: () => void }) {
         <strong>{task?.title ?? t('work.deleted')}</strong>
       </button>
       <output className="timer-clock">{clockLabel(elapsedSeconds(timer, now))}</output>
+      <button className="secondary" onClick={() => useFocusStore.getState().enter()}>
+        <Icon name="maximize" size={13} />
+        {t('work.focus')}
+      </button>
       <button
         className="secondary"
         onClick={() => command({ kind: timer.startedAt ? 'pause' : 'resume' })}

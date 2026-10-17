@@ -68,6 +68,7 @@ export function applyTimeCommand(
   command: TimeCommand,
   now = new Date(),
   ownerId = 'default',
+  recoverGaps = true,
 ): TimeState {
   let entries = [...workspace.timeEntries]
   let timer = workspace.timer ? { ...workspace.timer } : null
@@ -98,7 +99,11 @@ export function applyTimeCommand(
     }
   }
   // Sleep, process crash, and stale owners must never count offline time.
-  if (timer?.startedAt && now.getTime() - Date.parse(timer.lastHeartbeatAt) > HEARTBEAT_GAP_MS) {
+  if (
+    recoverGaps &&
+    timer?.startedAt &&
+    now.getTime() - Date.parse(timer.lastHeartbeatAt) > HEARTBEAT_GAP_MS
+  ) {
     flush(timer.lastHeartbeatAt)
     timer = null
   }

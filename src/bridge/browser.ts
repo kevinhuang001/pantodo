@@ -74,7 +74,7 @@ function normalize(stored: Workspace): Workspace {
     timer: stored.timer ?? null,
   }
 }
-export function createBrowserBridge(): Bridge {
+export function createBrowserBridge(recoverGaps = true): Bridge {
   const ownerId = newId()
   let cache: Workspace | null = null
   let initialized = false
@@ -107,7 +107,7 @@ export function createBrowserBridge(): Bridge {
   const timeCommand = (command: TimeCommand) => {
     let result
     commit((workspace) => {
-      result = applyTimeCommand(workspace, command, new Date(), ownerId)
+      result = applyTimeCommand(workspace, command, new Date(), ownerId, recoverGaps)
       Object.assign(workspace, result)
     })
     return result!
@@ -122,6 +122,7 @@ export function createBrowserBridge(): Bridge {
       const workspace = ensure()
       // An orphaned timer after a crash stops at its last durable heartbeat.
       if (
+        recoverGaps &&
         workspace.timer?.startedAt &&
         Date.now() - Date.parse(workspace.timer.lastHeartbeatAt) > HEARTBEAT_GAP_MS
       )

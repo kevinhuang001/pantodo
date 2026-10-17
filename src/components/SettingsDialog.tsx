@@ -6,6 +6,8 @@ import { LOCALES, LOCALE_LABELS, t } from '@/i18n'
 import type { Locale, LocalePreference, MessageKey } from '@/i18n'
 
 import { Icon } from './Icon'
+import { version } from '../../package.json'
+import { desktop } from '@/platform'
 
 interface SettingsDialogProps {
   onClose: () => void
@@ -198,15 +200,17 @@ export function SettingsDialog({ onClose }: SettingsDialogProps) {
             <div className="settings-card">
               <div className="settings-row">
                 <span className="settings-label">{t('app.name')}</span>
-                <span className="count">v0.2.0</span>
+                <span className="count">v{version}</span>
               </div>
               <div className="settings-row">
                 <span className="settings-label">{t('about.stack')}</span>
-                <span className="count">React 19 · TypeScript</span>
+                <span className="count">
+                  {desktop ? 'Tauri 2 · Rust · React 19' : 'React 19 · TypeScript'}
+                </span>
               </div>
               <div className="settings-row">
                 <span className="settings-label">{t('about.milestone')}</span>
-                <span className="count">v0.2</span>
+                <span className="count">{desktop ? 'Desktop beta' : 'Web preview'}</span>
               </div>
             </div>
           ) : null}

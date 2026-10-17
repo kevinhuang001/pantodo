@@ -5,3 +5,9 @@ playwright-report
 test-results
 artifacts
 package-lock.json
+src-tauri/target
+src-tauri/gen
+src-tauri/icons
+installers
+release-assets
+src-tauri/vendor

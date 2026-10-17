@@ -1,4 +1,10 @@
 export const featureZh = {
+  'work.focus': '全屏专注',
+  'work.exitFocus': '退出专注',
+  'work.elapsed': '本次工作时长',
+  'work.focusMessage': '把这一刻，留给眼前的小事。',
+  'work.focusExitHint': '退出专注后继续计时；暂停或停止时才结束本段工作。',
+  'work.fullscreenFallback': '未能进入系统全屏。请再点击全屏专注，或检查浏览器权限。',
   'plan.clear': '清除计划时间',
   'plan.title': '安排时间',
   'plan.start': '开始时间',

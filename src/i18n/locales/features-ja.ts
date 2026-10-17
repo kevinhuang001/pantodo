@@ -1,4 +1,11 @@
 export const featureJa = {
+  'work.focus': '全画面で集中',
+  'work.exitFocus': '集中を終了',
+  'work.elapsed': '今回の作業時間',
+  'work.focusMessage': '目の前の小さなことに、このひとときを。',
+  'work.focusExitHint': '集中画面を閉じても計時は続きます。一時停止または停止で作業を区切ります。',
+  'work.fullscreenFallback':
+    '全画面に切り替えられませんでした。もう一度試すか、ブラウザの権限を確認してください。',
   'plan.clear': '予定時間をクリア',
   'plan.title': 'スケジュール',
   'plan.start': '開始日時',

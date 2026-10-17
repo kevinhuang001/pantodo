@@ -1,6 +1,6 @@
 # Pantodo product specification
 
-This specification records the design confirmed on 16 October 2026 and the resulting browser application.
+This specification records the design confirmed on 16 October 2026 and the resulting desktop application.
 
 ## Todo model
 
@@ -51,7 +51,7 @@ Only one timer runs. Starting another Todo saves the previous segment before sta
 
 Manual records require a positive interval ending no later than now. They may be unassigned. Saving a new or edited manual record takes priority over **every whole overlapping record**. Overlap uses exclusive ends, so adjacent records survive. Superseded records carry `deletedAt` and `supersededBy` and do not count in the UI or CSV. A correction overlapping a live segment first saves and stops that timer, then supersedes the overlapping segment. All changes persist in one workspace write.
 
-The browser owner persists a heartbeat every five seconds. Page exit saves synchronously and stops; reopening never automatically starts a timer. A gap longer than 30 seconds closes an interrupted session at its last heartbeat. Browser background throttling and brief system sleeps cannot be perfectly distinguished here; native suspend/resume events and native-window exit remain work for a Tauri host. Simulated interruption tests verify the current heartbeat policy, not physical OS sleep on every platform.
+The browser owner persists a heartbeat every five seconds. Page exit saves synchronously and stops; reopening never automatically starts a timer. A gap longer than 30 seconds closes an interrupted session at its last heartbeat. Browser background throttling and brief system sleeps cannot be perfectly distinguished here; the desktop host separately listens for native suspend/resume and window exit events. Simulated interruption tests verify the current heartbeat policy, not physical OS sleep on every platform.
 
 ## Statistics
 
@@ -75,10 +75,14 @@ Project and view emoji are editable through common choices or the system emoji k
 
 The current browser bridge stores one workspace in localStorage and reloads changes from other windows. Time-record replacement is atomic within its workspace write. Browser storage errors do not partially commit a time transition. A fresh workspace is empty apart from starter views/tags; sample Todos require the explicit demonstration/reset URL.
 
-The current repository contains the React/TypeScript browser app. The native Tauri shell, Rust/SQLite bridge, native reminders, recurring Todos, tray/autostart and WebDAV synchronization remain outside this iteration. Settings exposes implemented controls: general, timer, data export and about.
+The repository contains a Tauri 2/Rust desktop host and a React/TypeScript application. The native host writes workspace JSON atomically, owns lifecycle cutoffs and heartbeats, and rejects renderer writes from before a cutoff. SQLite, native reminders, recurring Todos, tray/autostart and WebDAV synchronization remain outside this iteration. Settings exposes implemented controls: general, timer, data export and about.
 
 ## Verification
 
 Unit tests cover filter/group behaviour, direct Todo plans, calendar clipping/lane packing, timer lifecycle, pause exclusion, interrupted sessions, whole-record overlap replacement, multi-tag deduplication, local-midnight splitting and atomic browser writes.
 
 Playwright covers creation/editing, calendar modes/zoom/deadlines, timer pause/resume and exit persistence, simulated interrupted execution, manual corrections, statistics, emoji, saved panel filters/order/width, language/theme and existing CRUD flows. The screenshot script captures 16 actual app states in light/dark and 960×640/1440×1080 windows.
+
+## Desktop and focus
+
+The running timer has a Fullscreen focus control. It enters the native system fullscreen window and presents a dedicated focus screen. Escape or Leave focus returns to the workspace without pausing. Pause and Stop act on the same work session. Native suspend closes the active segment at the event time; resume does not restart it. Rust maintains heartbeats independently of webview throttling. App startup recovers an orphaned timer at its last durable heartbeat. A lifecycle generation counter prevents queued pre-suspend writes from resurrecting a stopped timer. Native persistence uses a synchronized temporary file followed by atomic replacement.
