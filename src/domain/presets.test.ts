@@ -17,7 +17,7 @@ describe('createSeedWorkspace', () => {
   it('seeds three built-in views, the Eisenhower example and a trash view', () => {
     const workspace = createSeedWorkspace()
     const presets = workspace.views.map((view) => view.preset)
-    expect(presets).toEqual(['inbox', 'today', 'all', null, 'trash'])
+    expect(presets).toEqual(['inbox', 'today', 'all', null, 'trash', null])
   })
 
   it('seeds the Eisenhower example as an ordinary 2x2 view over pinned tag groups', () => {
@@ -56,7 +56,8 @@ describe('createSeedWorkspace', () => {
     const workspace = createSeedWorkspace()
     expect(workspace.tasks).toEqual([])
     expect(workspace.projects).toEqual([])
-    expect(workspace.scheduleBlocks).toEqual([])
+    expect(workspace.timeEntries).toEqual([])
+    expect(workspace.timer).toBeNull()
     expect(workspace.taskTags).toEqual({})
   })
 
@@ -64,7 +65,7 @@ describe('createSeedWorkspace', () => {
     const workspace = createSeedWorkspace({ withDemoData: true })
     expect(workspace.tasks.length).toBeGreaterThan(5)
     expect(workspace.projects).toHaveLength(1)
-    expect(workspace.scheduleBlocks.length).toBeGreaterThan(2)
+    expect(workspace.tasks.filter((task) => task.startAt && task.endAt).length).toBeGreaterThan(2)
     expect(workspace.tags.length).toBeGreaterThan(2)
     for (const task of workspace.tasks) {
       expect(workspace.taskTags[task.id]).toBeDefined()

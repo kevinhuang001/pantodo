@@ -6,6 +6,7 @@ import { useAppStore } from '@/domain/store'
 import type { Project, Tag } from '@/domain/types'
 import { t } from '@/i18n'
 
+import { EmojiPicker } from './EmojiPicker'
 import { Modal } from './Modal'
 
 interface EntityDialogProps {
@@ -24,6 +25,7 @@ export function EntityDialog({ kind, entity, onClose }: EntityDialogProps) {
   const softDeleteTag = useAppStore((state) => state.softDeleteTag)
 
   const palette = paletteFor(settings.theme === 'dark' ? 'dark' : 'light')
+  const [emoji, setEmoji] = useState(entity && 'emoji' in entity ? (entity.emoji ?? '📁') : '📁')
   const [name, setName] = useState(entity?.name ?? '')
   const [color, setColor] = useState<string | null>(entity?.color ?? null)
 
@@ -41,8 +43,8 @@ export function EntityDialog({ kind, entity, onClose }: EntityDialogProps) {
     const trimmed = name.trim()
     if (trimmed === '') return
     if (kind === 'project') {
-      if (entity === null) await createProject(trimmed, color)
-      else await updateProject(entity.id, { name: trimmed, color })
+      if (entity === null) await createProject(trimmed, color, emoji)
+      else await updateProject(entity.id, { name: trimmed, color, emoji })
     } else if (entity === null) {
       await createTag(trimmed, color)
     } else {
@@ -89,6 +91,7 @@ export function EntityDialog({ kind, entity, onClose }: EntityDialogProps) {
             onChange={(event) => setName(event.target.value)}
           />
         </div>
+        {kind === 'project' ? <EmojiPicker value={emoji} onChange={setEmoji} /> : null}
         <div className="field">
           <label>{t('task.field.color')}</label>
           <div className="swatches">

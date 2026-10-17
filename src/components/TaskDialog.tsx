@@ -1,103 +1,81 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
-
 import { fromLocalInputValue, toLocalInputValue } from '@/domain/date'
-import { paletteFor } from '@/domain/palette'
+import { validatePlan } from '@/domain/calendar'
 import { useAppStore } from '@/domain/store'
-import type { Task, TaskStatus } from '@/domain/types'
-import { TASK_STATUSES } from '@/domain/types'
 import { STATUS_LABEL_KEYS } from '@/domain/display'
+import { TASK_STATUSES } from '@/domain/types'
+import type { Task, TaskStatus } from '@/domain/types'
 import { t } from '@/i18n'
-
+import type { MessageKey } from '@/i18n'
 import { Modal } from './Modal'
+import { ScheduleFields } from './ScheduleFields'
+import type { ScheduleValues } from './ScheduleFields'
 
-interface TaskDialogProps {
-  task: Task | null
-  onClose: () => void
-}
-
-export function TaskDialog({ task, onClose }: TaskDialogProps) {
-  const projects = useAppStore((state) => state.projects).filter(
-    (project) => project.deletedAt === null,
-  )
-  const tags = useAppStore((state) => state.tags).filter((tag) => tag.deletedAt === null)
+export function TaskDialog({ task, onClose }: { task: Task | null; onClose: () => void }) {
+  const projects = useAppStore((state) => state.projects).filter((item) => !item.deletedAt)
+  const tags = useAppStore((state) => state.tags).filter((item) => !item.deletedAt)
   const taskTags = useAppStore((state) => state.taskTags)
-  const scheduleBlocks = useAppStore((state) => state.scheduleBlocks)
-  const settings = useAppStore((state) => state.settings)
-  const createTask = useAppStore((state) => state.createTask)
-  const updateTask = useAppStore((state) => state.updateTask)
-  const setTaskTags = useAppStore((state) => state.setTaskTags)
-  const setTaskSchedule = useAppStore((state) => state.setTaskSchedule)
-
-  const existingBlock =
-    task === null
-      ? null
-      : (scheduleBlocks.find((block) => block.taskId === task.id && block.deletedAt === null) ??
-        null)
-
   const [title, setTitle] = useState(task?.title ?? '')
   const [notes, setNotes] = useState(task?.notes ?? '')
-  const [projectId, setProjectId] = useState(task?.projectId ?? '')
   const [status, setStatus] = useState<TaskStatus>(task?.status ?? 'todo')
-  const [due, setDue] = useState(task?.dueAt == null ? '' : toLocalInputValue(task.dueAt))
-  const [estimate, setEstimate] = useState(
-    task?.estimateMinutes == null ? '' : String(task.estimateMinutes),
-  )
-  const [tagIds, setTagIds] = useState<string[]>(task === null ? [] : (taskTags[task.id] ?? []))
-  const [scheduled, setScheduled] = useState(existingBlock !== null)
-  const [start, setStart] = useState(
-    existingBlock === null ? '' : toLocalInputValue(existingBlock.startAt),
-  )
-  const [end, setEnd] = useState(
-    existingBlock === null ? '' : toLocalInputValue(existingBlock.endAt),
-  )
-
-  const palette = paletteFor(settings.theme === 'dark' ? 'dark' : 'light')
-
-  function toggleTag(id: string): void {
-    setTagIds((current) =>
-      current.includes(id) ? current.filter((value) => value !== id) : [...current, id],
-    )
-  }
-
-  async function submit(event: FormEvent): Promise<void> {
+  const [projectId, setProjectId] = useState(task?.projectId ?? '')
+  const [tagIds, setTagIds] = useState(task ? (taskTags[task.id] ?? []) : [])
+  const local = (value: string | null | undefined) => (value ? toLocalInputValue(value) : '')
+  const [time, setTime] = useState<ScheduleValues>({
+    start: local(task?.startAt),
+    end: local(task?.endAt),
+    due: local(task?.dueAt),
+    estimate: task?.estimateMinutes == null ? '' : String(task.estimateMinutes),
+  })
+  const [error, setError] = useState('')
+  const [saving, setSaving] = useState(false)
+  async function submit(event: FormEvent) {
     event.preventDefault()
-    const trimmed = title.trim()
-    if (trimmed === '') return
-    const block =
-      scheduled && start !== '' && end !== ''
-        ? { startAt: fromLocalInputValue(start), endAt: fromLocalInputValue(end) }
-        : null
-    const patches = {
-      title: trimmed,
-      notes,
-      projectId: projectId === '' ? null : projectId,
-      status,
-      dueAt: due === '' ? null : fromLocalInputValue(due),
-      estimateMinutes: estimate === '' ? null : Number(estimate),
+    setError('')
+    setSaving(true)
+    try {
+      if (!title.trim()) throw new Error('task.invalidTitle')
+      const startAt = time.start ? fromLocalInputValue(time.start) : null
+      const endAt = time.end ? fromLocalInputValue(time.end) : null
+      validatePlan(startAt, endAt)
+      const patch = {
+        title: title.trim(),
+        notes,
+        status,
+        projectId: projectId || null,
+        startAt,
+        endAt,
+        dueAt: time.due ? fromLocalInputValue(time.due) : null,
+        estimateMinutes: time.estimate ? Number(time.estimate) : null,
+      }
+      const store = useAppStore.getState()
+      if (task) {
+        await store.updateTask(task.id, patch)
+        await store.setTaskTags(task.id, tagIds)
+      } else await store.createTask({ ...patch, tagIds })
+      onClose()
+    } catch (error) {
+      setError(
+        error instanceof Error && ['time.invalidRange', 'task.invalidTitle'].includes(error.message)
+          ? t(error.message as MessageKey)
+          : t('work.failed'),
+      )
+    } finally {
+      setSaving(false)
     }
-
-    if (task === null) {
-      await createTask({ ...patches, tagIds, block })
-    } else {
-      await updateTask(task.id, patches)
-      await setTaskTags(task.id, tagIds)
-      await setTaskSchedule(task.id, block)
-    }
-    onClose()
   }
-
   return (
     <Modal
-      title={task === null ? t('dialog.newTask') : t('dialog.editTask')}
+      title={task ? t('dialog.editTask') : t('dialog.newTask')}
       onClose={onClose}
       footer={
         <>
-          <button type="button" className="secondary" onClick={onClose}>
+          <button className="secondary" onClick={onClose}>
             {t('dialog.cancel')}
           </button>
-          <button type="submit" form="pantodo-task-form" className="primary">
-            {task === null ? t('dialog.create') : t('dialog.save')}
+          <button className="primary" type="submit" form="pantodo-task-form" disabled={saving}>
+            {task ? t('dialog.save') : t('dialog.create')}
           </button>
         </>
       }
@@ -109,23 +87,20 @@ export function TaskDialog({ task, onClose }: TaskDialogProps) {
             id="task-title"
             className="input"
             value={title}
+            onChange={(e) => setTitle(e.target.value)}
             autoFocus
-            placeholder={t('task.placeholder.title')}
-            onChange={(event) => setTitle(event.target.value)}
+            required
           />
         </div>
-
         <div className="field">
           <label htmlFor="task-notes">{t('task.field.notes')}</label>
           <textarea
             id="task-notes"
             className="textarea"
             value={notes}
-            placeholder={t('task.placeholder.notes')}
-            onChange={(event) => setNotes(event.target.value)}
+            onChange={(e) => setNotes(e.target.value)}
           />
         </div>
-
         <div className="form-row">
           <div className="field">
             <label htmlFor="task-project">{t('task.field.project')}</label>
@@ -133,12 +108,12 @@ export function TaskDialog({ task, onClose }: TaskDialogProps) {
               id="task-project"
               className="select"
               value={projectId}
-              onChange={(event) => setProjectId(event.target.value)}
+              onChange={(e) => setProjectId(e.target.value)}
             >
               <option value="">{t('task.field.none')}</option>
-              {projects.map((project) => (
-                <option key={project.id} value={project.id}>
-                  {project.name}
+              {projects.map((p) => (
+                <option value={p.id} key={p.id}>
+                  {p.emoji} {p.name}
                 </option>
               ))}
             </select>
@@ -149,97 +124,45 @@ export function TaskDialog({ task, onClose }: TaskDialogProps) {
               id="task-status"
               className="select"
               value={status}
-              onChange={(event) => setStatus(event.target.value as TaskStatus)}
+              onChange={(e) => setStatus(e.target.value as TaskStatus)}
             >
-              {TASK_STATUSES.map((value) => (
-                <option key={value} value={value}>
-                  {t(STATUS_LABEL_KEYS[value])}
+              {TASK_STATUSES.map((s) => (
+                <option value={s} key={s}>
+                  {t(STATUS_LABEL_KEYS[s])}
                 </option>
               ))}
             </select>
           </div>
         </div>
-
-        <div className="form-row">
-          <div className="field">
-            <label htmlFor="task-due">{t('task.field.due')}</label>
-            <input
-              id="task-due"
-              type="datetime-local"
-              className="input"
-              value={due}
-              onChange={(event) => setDue(event.target.value)}
-            />
-          </div>
-          <div className="field">
-            <label htmlFor="task-estimate">{t('task.field.estimate')}</label>
-            <input
-              id="task-estimate"
-              type="number"
-              min={0}
-              step={5}
-              className="input"
-              value={estimate}
-              onChange={(event) => setEstimate(event.target.value)}
-            />
-          </div>
-        </div>
-
         <div className="field">
           <label>{t('task.field.tags')}</label>
           <div className="chip-row">
-            {tags.length === 0 ? (
-              <span className="sidebar-empty">{t('nav.noTags')}</span>
-            ) : (
-              tags.map((tag) => (
-                <button
-                  key={tag.id}
-                  type="button"
-                  className={
-                    tagIds.includes(tag.id) ? 'chip selectable selected' : 'chip selectable'
-                  }
-                  aria-pressed={tagIds.includes(tag.id)}
-                  onClick={() => toggleTag(tag.id)}
-                >
-                  <span
-                    className="dot"
-                    style={{ background: tag.color ?? palette[tag.sortOrder % palette.length] }}
-                  />
-                  {tag.name}
-                </button>
-              ))
-            )}
+            {tags.map((tag) => (
+              <button
+                className={tagIds.includes(tag.id) ? 'chip selectable selected' : 'chip selectable'}
+                type="button"
+                key={tag.id}
+                aria-pressed={tagIds.includes(tag.id)}
+                onClick={() =>
+                  setTagIds((current) =>
+                    current.includes(tag.id)
+                      ? current.filter((id) => id !== tag.id)
+                      : [...current, tag.id],
+                  )
+                }
+              >
+                <span className="dot" style={{ background: tag.color ?? 'var(--accent)' }} />
+                {tag.name}
+              </button>
+            ))}
           </div>
         </div>
-
-        <div className="field">
-          <label className="checkbox">
-            <input
-              type="checkbox"
-              checked={scheduled}
-              onChange={(event) => setScheduled(event.target.checked)}
-            />
-            {t('task.field.schedule')}
-          </label>
-          {scheduled ? (
-            <div className="form-row">
-              <input
-                type="datetime-local"
-                className="input"
-                aria-label={t('task.field.due')}
-                value={start}
-                onChange={(event) => setStart(event.target.value)}
-              />
-              <input
-                type="datetime-local"
-                className="input"
-                aria-label={t('task.field.due')}
-                value={end}
-                onChange={(event) => setEnd(event.target.value)}
-              />
-            </div>
-          ) : null}
-        </div>
+        <ScheduleFields value={time} onChange={setTime} />
+        {error ? (
+          <p role="alert" className="form-error">
+            {error}
+          </p>
+        ) : null}
       </form>
     </Modal>
   )

@@ -15,8 +15,7 @@ export function useNow(intervalMs = 60_000): Date {
 
 export function useFilterContext(now: Date): FilterContext {
   const taskTags = useAppStore((state) => state.taskTags)
-  const scheduleBlocks = useAppStore((state) => state.scheduleBlocks)
-  return useMemo(() => ({ taskTags, scheduleBlocks, now }), [taskTags, scheduleBlocks, now])
+  return useMemo(() => ({ taskTags, now }), [taskTags, now])
 }
 
 export function useDebounced<T>(value: T, delayMs = 180): T {

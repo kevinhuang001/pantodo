@@ -4,6 +4,7 @@ import { formatDateTime, formatMinutes } from '@/domain/date'
 import { colorFor, dueState } from '@/domain/filters'
 import type { Id, Project, Tag, Task } from '@/domain/types'
 
+import { useAppStore } from '@/domain/store'
 import { Icon } from './Icon'
 
 /** Everything a row needs, built once per render by the shell. */
@@ -70,6 +71,7 @@ export function TaskRow({ task, lookup }: { task: Task; lookup: TaskLookup }) {
         }}
       >
         <span className="task-title">{task.title}</span>
+        {task.notes ? <span className="task-description">{task.notes}</span> : null}
         <span className="task-meta">
           {project === null ? null : (
             <span className="chip">
@@ -83,21 +85,34 @@ export function TaskRow({ task, lookup }: { task: Task; lookup: TaskLookup }) {
               {tag.name}
             </span>
           ))}
-          {task.dueAt === null ? null : (
-            <span className="chip">
-              <Icon name="clock" size={11} />
-              {formatDateTime(task.dueAt, locale)}
-            </span>
-          )}
-          {state === 'overdue' ? (
-            <span className="chip overdue">{t('task.meta.overdue')}</span>
-          ) : null}
-          {task.estimateMinutes === null ? null : (
-            <span className="chip">{formatMinutes(task.estimateMinutes)}</span>
-          )}
         </span>
       </div>
 
+      <div className="task-timing">
+        {task.startAt ? (
+          <span className="task-plan">
+            <Icon name="calendar" size={12} />
+            {formatDateTime(task.startAt, locale)}
+          </span>
+        ) : null}
+        {task.dueAt === null ? (
+          <span className="task-unscheduled">—</span>
+        ) : (
+          <span className={state === 'overdue' ? 'task-due overdue' : 'task-due'}>
+            <Icon name="calendar" size={13} />
+            {formatDateTime(task.dueAt, locale)}
+          </span>
+        )}
+        {task.estimateMinutes === null ? null : (
+          <span className="task-estimate">
+            <Icon name="clock" size={11} />
+            {formatMinutes(task.estimateMinutes)}
+          </span>
+        )}
+      </div>
+      {task.deletedAt === null && task.status !== 'done' && task.status !== 'cancelled' ? (
+        <TaskTimerButton task={task} />
+      ) : null}
       <div className="task-actions">
         {task.deletedAt === null ? null : (
           <button
@@ -132,6 +147,32 @@ export function TaskRow({ task, lookup }: { task: Task; lookup: TaskLookup }) {
         ) : null}
       </div>
     </div>
+  )
+}
+
+function TaskTimerButton({ task }: { task: Task }) {
+  const timer = useAppStore((state) => state.timer)
+  const command = useAppStore((state) => state.timeCommand)
+  const active = timer?.taskId === task.id
+  const running = active && !!timer?.startedAt
+  return (
+    <button
+      type="button"
+      className={active ? 'task-start active' : 'task-start'}
+      aria-label={running ? t('work.pause') : active ? t('work.resume') : t('work.start')}
+      title={running ? t('work.pause') : active ? t('work.resume') : t('work.start')}
+      onClick={() =>
+        command(
+          running
+            ? { kind: 'pause' }
+            : active
+              ? { kind: 'resume' }
+              : { kind: 'start', taskId: task.id },
+        )
+      }
+    >
+      <Icon name={running ? 'pause' : 'play'} size={12} />
+    </button>
   )
 }
 

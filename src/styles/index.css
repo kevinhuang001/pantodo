@@ -2,3 +2,7 @@
 @import './base.css';
 @import './shell.css';
 @import './components.css';
+
+@import './atelier.css';
+@import './features.css';
+@import './focus.css';

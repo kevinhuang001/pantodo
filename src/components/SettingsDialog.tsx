@@ -6,18 +6,18 @@ import { LOCALES, LOCALE_LABELS, t } from '@/i18n'
 import type { Locale, LocalePreference, MessageKey } from '@/i18n'
 
 import { Icon } from './Icon'
+import { version } from '../../package.json'
+import { desktop } from '@/platform'
 
 interface SettingsDialogProps {
   onClose: () => void
 }
 
-type Pane = 'general' | 'reminders' | 'timer' | 'sync' | 'data' | 'about'
+type Pane = 'general' | 'timer' | 'data' | 'about'
 
 const PANES: { key: Pane; labelKey: MessageKey }[] = [
   { key: 'general', labelKey: 'settings.pane.general' },
-  { key: 'reminders', labelKey: 'settings.pane.reminders' },
   { key: 'timer', labelKey: 'settings.pane.timer' },
-  { key: 'sync', labelKey: 'settings.pane.sync' },
   { key: 'data', labelKey: 'settings.pane.data' },
   { key: 'about', labelKey: 'settings.pane.about' },
 ]
@@ -30,7 +30,6 @@ export function SettingsDialog({ onClose }: SettingsDialogProps) {
   const ref = useRef<HTMLDialogElement>(null)
   const settings = useAppStore((state) => state.settings)
   const updateSettings = useAppStore((state) => state.updateSettings)
-  const resetWorkspace = useAppStore((state) => state.resetWorkspace)
   const notify = useAppStore((state) => state.notify)
   const [pane, setPane] = useState<Pane>('general')
 
@@ -50,7 +49,8 @@ export function SettingsDialog({ onClose }: SettingsDialogProps) {
       tags: state.tags,
       tasks: state.tasks,
       taskTags: state.taskTags,
-      scheduleBlocks: state.scheduleBlocks,
+      timeEntries: state.timeEntries,
+      timer: state.timer,
       views: state.views,
       settings: state.settings,
     }
@@ -159,37 +159,31 @@ export function SettingsDialog({ onClose }: SettingsDialogProps) {
             </div>
           ) : null}
 
-          {pane === 'reminders' ? (
+          {pane === 'timer' ? (
             <div className="settings-card">
               <div className="settings-row">
-                <span className="settings-label">{t('settings.reminderLead')}</span>
+                <span className="settings-label">{t('calendar.defaultDuration')}</span>
                 <input
                   type="number"
-                  min={0}
-                  max={240}
-                  step={5}
                   className="input"
-                  value={settings.reminderLeadMinutes}
-                  aria-label={t('settings.reminderLead')}
-                  onChange={(event) => patch({ reminderLeadMinutes: Number(event.target.value) })}
+                  min={5}
+                  max={1440}
+                  step={5}
+                  aria-label={t('calendar.defaultDuration')}
+                  value={settings.defaultDurationMinutes ?? 30}
+                  onChange={(event) =>
+                    patch({
+                      defaultDurationMinutes: Math.min(
+                        1440,
+                        Math.max(5, Number(event.target.value)),
+                      ),
+                    })
+                  }
                 />
               </div>
-              <div className="settings-row">
-                <span className="settings-label">{t('settings.silent')}</span>
-                <label className="checkbox">
-                  <input
-                    type="checkbox"
-                    checked={settings.notificationsSilent}
-                    aria-label={t('settings.silent')}
-                    onChange={(event) => patch({ notificationsSilent: event.target.checked })}
-                  />
-                </label>
-              </div>
+              <p className="settings-timer-note">{t('work.autoStop')}</p>
             </div>
           ) : null}
-
-          {pane === 'timer' ? <p className="banner">{t('settings.timerNote')}</p> : null}
-          {pane === 'sync' ? <p className="banner">{t('settings.syncNote')}</p> : null}
 
           {pane === 'data' ? (
             <div className="settings-card">
@@ -199,21 +193,6 @@ export function SettingsDialog({ onClose }: SettingsDialogProps) {
                   {t('settings.export')}
                 </button>
               </div>
-              <div className="settings-row">
-                <span className="settings-label">
-                  {t('settings.reset')}
-                  <small>fixture</small>
-                </span>
-                <button
-                  type="button"
-                  className="danger-button"
-                  onClick={() => {
-                    void resetWorkspace()
-                  }}
-                >
-                  {t('settings.reset')}
-                </button>
-              </div>
             </div>
           ) : null}
 
@@ -221,15 +200,17 @@ export function SettingsDialog({ onClose }: SettingsDialogProps) {
             <div className="settings-card">
               <div className="settings-row">
                 <span className="settings-label">{t('app.name')}</span>
-                <span className="count">v0.1.0</span>
+                <span className="count">v{version}</span>
               </div>
               <div className="settings-row">
                 <span className="settings-label">{t('about.stack')}</span>
-                <span className="count">Tauri 2 · React 19 · TypeScript</span>
+                <span className="count">
+                  {desktop ? 'Tauri 2 · Rust · React 19' : 'React 19 · TypeScript'}
+                </span>
               </div>
               <div className="settings-row">
                 <span className="settings-label">{t('about.milestone')}</span>
-                <span className="count">M1</span>
+                <span className="count">{desktop ? 'Desktop beta' : 'Web preview'}</span>
               </div>
             </div>
           ) : null}

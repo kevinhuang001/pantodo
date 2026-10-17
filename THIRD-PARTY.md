@@ -31,3 +31,7 @@ The frosted-glass visual language, palette anchors and key metrics (accent `#2d6
 blur, 20px window radius, cool low-alpha shadows) are inherited from the author's earlier project
 **Glassmark** — `kevinhuang001/bookmark-web`. No code is copied from it; the values were consolidated
 into `src/styles/tokens.css` and a dark palette was added (Glassmark is light-only).
+
+## Native power monitor
+
+`src-tauri/vendor/tauri-plugin-power-monitor` is tauri-plugin-power-monitor 0.1.0 from https://github.com/marrionesa/tauri-plugin-power-monitor, under MIT OR Apache-2.0 (license texts included). Pantodo replaces the macOS snapshot destructor with CoreFoundation `CFRelease`, as required by the IOPowerSources Copy API.

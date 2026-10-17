@@ -1,0 +1,95 @@
+.focus-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  flex-direction: column;
+  overflow: auto;
+  color: var(--text);
+  background: radial-gradient(ellipse at 50% 38%, #dce9cc70, transparent 62%), #f8faf3;
+}
+:root[data-theme='dark'] .focus-screen {
+  background: radial-gradient(ellipse at 50% 38%, #7f976030, transparent 65%), #1d241d;
+}
+.focus-header,
+.focus-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 28px 40px;
+  flex-shrink: 0;
+}
+.focus-exit kbd {
+  margin-left: 12px;
+  opacity: 0.5;
+  font: inherit;
+  font-size: 11px;
+}
+.focus-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 20px 32px 60px;
+  min-height: 500px;
+}
+.focus-content .paper-friend {
+  width: 115px;
+  height: 115px;
+  margin-bottom: 24px;
+}
+.focus-content h1 {
+  font-size: clamp(22px, 3vw, 38px);
+  font-weight: 550;
+  max-width: 850px;
+  line-height: 1.45;
+  margin: 18px 0 10px;
+  overflow-wrap: anywhere;
+}
+.focus-project {
+  color: var(--text-muted);
+  font-size: 13px;
+}
+.focus-clock {
+  display: block;
+  font-size: clamp(64px, 11vw, 144px);
+  font-weight: 350;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.05em;
+  line-height: 1.3;
+  margin-top: 32px;
+}
+.focus-message,
+.focus-hint {
+  color: var(--text-muted);
+  font-size: 13px;
+}
+.focus-actions {
+  display: flex;
+  gap: 14px;
+  margin-top: 30px;
+}
+.focus-actions button {
+  min-height: 46px;
+  padding: 10px 24px;
+  border-radius: 16px;
+}
+.focus-footer {
+  justify-content: center;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+@media (max-width: 700px) {
+  .focus-header {
+    padding: 20px;
+    justify-content: flex-end;
+  }
+  .focus-header .little-label {
+    display: none;
+  }
+  .focus-content {
+    padding-inline: 24px;
+  }
+}

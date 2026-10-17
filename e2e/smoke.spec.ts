@@ -6,7 +6,8 @@ import { expect, test } from '@playwright/test'
  */
 test.beforeEach(async ({ page }) => {
   await page.goto('/?reset=1')
-  await expect(page.locator('.task-row').first()).toBeVisible()
+  await expect(page.locator('.capture-desk')).toBeVisible()
+  await page.locator('.nav-row', { hasText: '全部任务' }).click()
 })
 
 test('renders the flush glass frame with the seeded views', async ({ page }) => {
@@ -36,22 +37,25 @@ test('renders the flush glass frame with the seeded views', async ({ page }) => 
   // No view/timetable switch, no Upcoming, no "new task" button anywhere.
   await expect(page.locator('.tabs')).toHaveCount(0)
   await expect(page.locator('.nav-row', { hasText: '时间表' })).toHaveCount(1)
-  for (const name of ['收件箱', '今天', '全部任务', '四象限', '回收站']) {
+  for (const name of ['创建', '今天', '全部任务', '我的工作台', '回收站']) {
     await expect(page.locator('.nav-row', { hasText: name })).toHaveCount(1)
   }
   await expect(page.locator('.nav-row', { hasText: '即将到来' })).toHaveCount(0)
   await expect(page.locator('.toolbar .primary')).toHaveCount(0)
-  await expect(page.locator('.toolbar h1')).toHaveText('今天')
+  await expect(page.locator('.toolbar h1')).toHaveText('全部任务')
 })
 
 test('captures a task from the inbox composer', async ({ page }) => {
-  await page.locator('.nav-row', { hasText: '收件箱' }).click()
-  await expect(page.locator('.inbox-composer')).toBeVisible()
+  await page.locator('.nav-row', { hasText: '创建' }).click()
+  await expect(page.locator('.capture-card')).toBeVisible()
 
   await page.locator('#pantodo-inbox-input').fill('e2e 收件箱捕获')
   await page.locator('#pantodo-inbox-input').press('Enter')
 
+  await expect(page.locator('.scattered-note', { hasText: 'e2e 收件箱捕获' })).toHaveCount(1)
+  await page.locator('.nav-row', { hasText: '全部任务' }).click()
   await expect(page.locator('.task-row', { hasText: 'e2e 收件箱捕获' })).toBeVisible()
+  await page.locator('.nav-row', { hasText: '创建' }).click()
   await expect(page.locator('#pantodo-inbox-input')).toHaveValue('')
 })
 
@@ -82,52 +86,56 @@ test('edits a task through the dialog', async ({ page }) => {
   await expect(page.locator('.task-row', { hasText: '改过了' })).toBeVisible()
 })
 
-test('the Eisenhower view renders four pinned cells in a 2x2 grid', async ({ page }) => {
-  await page.locator('.nav-row', { hasText: '四象限' }).click()
-
-  const board = page.locator('.group-board[data-arrangement="grid"]')
-  await expect(board).toBeVisible()
-  const groups = board.locator('.group')
-  await expect(groups).toHaveCount(4)
-  await expect(groups.nth(0).locator('.group-head h2')).toHaveText('重要且紧急')
-  await expect(groups.nth(3).locator('.group-head h2')).toHaveText('都不紧急也不重要')
-
-  const first = await groups.nth(0).boundingBox()
-  const second = await groups.nth(1).boundingBox()
-  const third = await groups.nth(2).boundingBox()
-  expect(first).not.toBeNull()
-  expect(second).not.toBeNull()
-  expect(third).not.toBeNull()
-  expect(Math.abs((first?.y ?? 0) - (second?.y ?? 0))).toBeLessThan(4)
-  expect(third?.y ?? 0).toBeGreaterThan((first?.y ?? 0) + 10)
+test('separates the decorative create desk from saved composed views', async ({ page }) => {
+  await expect(page.locator('.nav-row', { hasText: '四象限' })).toHaveCount(0)
+  await page.locator('.nav-row', { hasText: '创建' }).click()
+  await expect(page.locator('.desk-notes')).toHaveAttribute('aria-hidden', 'true')
+  expect(
+    await page
+      .locator('.desk-notes')
+      .evaluate((element) => getComputedStyle(element).pointerEvents),
+  ).toBe('none')
+  await page.locator('.nav-row', { hasText: '我的工作台' }).click()
+  await expect(page.locator('.composed-panel')).toHaveCount(3)
+  await expect(page.locator('.preview-badge')).toHaveCount(0)
+  await expect(page.locator('.toolbar h1')).toContainText('我的工作台')
 })
 
-test('arranges the groups vertically and in columns', async ({ page }) => {
-  await page.locator('.nav-row', { hasText: '四象限' }).click()
-  const board = page.locator('.group-board')
-  const arrangement = page.getByRole('group', { name: '排列方式' })
-
-  await arrangement.getByRole('button', { name: '纵向' }).click()
-  await expect(board).toHaveAttribute('data-arrangement', 'vertical')
-
-  await arrangement.getByRole('button', { name: '横向' }).click()
-  await expect(board).toHaveAttribute('data-arrangement', 'columns')
+test('changes saved panel layouts', async ({ page }) => {
+  await page.locator('.nav-row', { hasText: '我的工作台' }).click()
+  const layout = page.getByRole('group', { name: '排列方式' })
+  await layout.getByRole('button', { name: '纵向' }).click()
+  await expect
+    .poll(async () =>
+      page
+        .locator('.composed-panels')
+        .evaluate((el) => el.style.getPropertyValue('--panel-columns')),
+    )
+    .toBe('1')
+  await layout.getByRole('button', { name: '网格' }).click()
+  await expect
+    .poll(async () =>
+      page
+        .locator('.composed-panels')
+        .evaluate((el) => el.style.getPropertyValue('--panel-columns')),
+    )
+    .toBe('2')
 })
 
 test('switches to the dark theme', async ({ page }) => {
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'light')
 
-  await page.locator('.toolbar .menu').first().locator('summary').click()
-  await page.locator('.menu-panel .menu-item', { hasText: '深色' }).click()
+  await page.getByRole('button', { name: '设置', exact: true }).click()
+  await page.getByRole('combobox', { name: '主题', exact: true }).selectOption('dark')
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark')
 })
 
 test('switches language and re-localises built-in views', async ({ page }) => {
-  await page.locator('.toolbar .menu').nth(1).locator('summary').click()
-  await page.locator('.menu-panel .menu-item', { hasText: 'English' }).click()
+  await page.getByRole('button', { name: '设置', exact: true }).click()
+  await page.getByRole('combobox', { name: '语言', exact: true }).selectOption('en')
 
-  await expect(page.locator('.toolbar h1')).toHaveText('Today')
-  await expect(page.locator('.nav-row', { hasText: 'Inbox' })).toHaveCount(1)
+  await expect(page.locator('.toolbar h1')).toHaveText('All tasks')
+  await expect(page.locator('.nav-row', { hasText: 'Create' })).toHaveCount(1)
 })
 
 test('searches, then shows an empty state for no matches', async ({ page }) => {
@@ -160,11 +168,11 @@ test('opens the settings window and moves between panes', async ({ page }) => {
   const settings = page.locator('dialog.settings-window')
   await expect(settings).toBeVisible()
 
-  await settings.locator('.settings-nav button', { hasText: '提醒' }).click()
+  await settings.locator('.settings-nav button', { hasText: '计时' }).click()
   await expect(settings.locator('input[type="number"]')).toBeVisible()
 
   await settings.locator('.settings-nav button', { hasText: '关于' }).click()
-  await expect(settings.locator('.settings-card')).toContainText('Tauri 2')
+  await expect(settings.locator('.settings-card')).toContainText('React 19')
 
   await settings.locator('.settings-footer .primary').click()
   await expect(settings).toHaveCount(0)
@@ -177,6 +185,7 @@ test('the timetable is a left-hand row with a zoomable week grid', async ({ page
   await expect(page.locator('.timetable .tt-column')).toHaveCount(7)
   await expect(page.locator('.timetable .tt-hour')).toHaveCount(24)
   await expect(page.locator('.timetable .tt-block').first()).toBeVisible()
+  await expect(page.locator('.tt-deadline').first()).toBeVisible()
   await expect(page.locator('.timetable .tt-now')).toHaveCount(1)
   await expect(page.locator('.toolbar .primary')).toHaveCount(0)
 
@@ -187,7 +196,7 @@ test('the timetable is a left-hand row with a zoomable week grid', async ({ page
   await expect.poll(async () => body.evaluate((element) => element.style.height)).not.toBe(large)
 
   await page.getByRole('group', { name: '缩放' }).getByRole('button', { name: '宽松' }).click()
-  await expect.poll(async () => body.evaluate((element) => element.style.height)).toBe(large)
+  await expect.poll(async () => body.evaluate((element) => element.style.height)).toBe('2688px')
 })
 
 test('creates a custom view that joins the views list', async ({ page }) => {
@@ -195,22 +204,25 @@ test('creates a custom view that joins the views list', async ({ page }) => {
   await viewsSection.getByRole('button', { name: '新建视图' }).click()
 
   await page.locator('#view-name').fill('e2e 自定义视图')
+  await page.locator('#view-mode').selectOption('groups')
   await page.locator('#view-group').selectOption('tag')
   await page.locator('#view-arrangement').selectOption('columns')
   await page.locator('button[form="pantodo-view-form"]').click()
 
-  await expect(page.locator('.toolbar h1')).toHaveText('e2e 自定义视图')
+  await expect(page.locator('.toolbar h1')).toContainText('e2e 自定义视图')
   await expect(page.locator('.nav-row', { hasText: 'e2e 自定义视图' })).toHaveCount(1)
   await expect(page.locator('.group-board[data-arrangement="columns"]')).toBeVisible()
 })
 
 test('persists captured tasks across a reload', async ({ page }) => {
-  await page.locator('.nav-row', { hasText: '收件箱' }).click()
+  await page.locator('.nav-row', { hasText: '创建' }).click()
   await page.locator('#pantodo-inbox-input').fill('刷新后仍在的任务')
   await page.locator('#pantodo-inbox-input').press('Enter')
+  await page.locator('.nav-row', { hasText: '全部任务' }).click()
   await expect(page.locator('.task-row', { hasText: '刷新后仍在的任务' })).toBeVisible()
 
   await page.goto('/')
-  await page.locator('.nav-row', { hasText: '收件箱' }).click()
+  await page.locator('.nav-row', { hasText: '创建' }).click()
+  await page.locator('.nav-row', { hasText: '全部任务' }).click()
   await expect(page.locator('.task-row', { hasText: '刷新后仍在的任务' })).toBeVisible()
 })

@@ -14,6 +14,11 @@ import { EmptyState } from './components/EmptyState'
 import { EntityDialog } from './components/EntityDialog'
 import { GroupBoard } from './components/GroupBoard'
 import { Icon } from './components/Icon'
+import { PanelBoard } from './components/PanelBoard'
+import { Statistics } from './components/Statistics'
+import { TimerBar, TimerLifecycle } from './components/TimerBar'
+import { FocusScreen } from './components/FocusScreen'
+import { PaperFriend } from './components/PaperFriend'
 import { InboxComposer } from './components/InboxComposer'
 import { SettingsDialog } from './components/SettingsDialog'
 import { Sidebar } from './components/Sidebar'
@@ -141,7 +146,10 @@ export function App() {
       now,
       palette,
       selectedTaskId,
-      onSelect: (task) => selectTask(task.id === selectedTaskId ? null : task.id),
+      onSelect: (task) => {
+        selectTask(task.id)
+        setDialog({ kind: 'task', task })
+      },
       onCycleStatus: (task) => {
         void setTaskStatus(task.id, nextStatus(task.status))
       },
@@ -216,6 +224,7 @@ export function App() {
 
   return (
     <>
+      <TimerLifecycle />
       <div className="scene" />
       <div id="app">
         <Sidebar
@@ -223,7 +232,9 @@ export function App() {
           theme={theme}
           onNewProject={() => setDialog({ kind: 'entity', entityKind: 'project', entity: null })}
           onNewTag={() => setDialog({ kind: 'entity', entityKind: 'tag', entity: null })}
-          onNewView={() => setDialog({ kind: 'view', view: null })}
+          onNewView={() => {
+            setDialog({ kind: 'view', view: null })
+          }}
           onEditProject={(project) =>
             setDialog({ kind: 'entity', entityKind: 'project', entity: project })
           }
@@ -240,18 +251,76 @@ export function App() {
             doneCount={doneCount}
           />
 
-          <div className={activeTab === 'timetable' ? 'reader reader-flush' : 'reader'}>
+          <div
+            className={
+              isInbox && activeTab === 'views'
+                ? 'reader reader-create'
+                : activeTab === 'timetable'
+                  ? 'reader reader-flush'
+                  : 'reader'
+            }
+          >
             {error !== null ? <p className="banner">{error}</p> : null}
 
             {!ready ? (
               <p className="banner">…</p>
+            ) : activeTab === 'statistics' ? (
+              <Statistics />
             ) : activeTab === 'timetable' ? (
-              <Timetable now={now} theme={theme} />
+              <Timetable
+                now={now}
+                theme={theme}
+                onEdit={(task) => setDialog({ kind: 'task', task })}
+              />
+            ) : isInbox ? (
+              <InboxComposer />
             ) : activeView === null ? null : (
               <>
-                {isInbox ? <InboxComposer /> : null}
+                <div className="page-intro list-intro">
+                  <div>
+                    <span className="little-label">{t('ui.atYourPace')}</span>
+                    <h2>
+                      {activeView.preset === 'today'
+                        ? t('ui.todayTitle')
+                        : activeView.preset === 'trash'
+                          ? t('nav.trash')
+                          : activeView.preset === 'all'
+                            ? t('ui.allTitle')
+                            : activeView.name}
+                      <span className="heading-spark">✳</span>
+                    </h2>
+                    <p>{t('ui.listSubtitle')}</p>
+                  </div>
+                  <PaperFriend small />
+                </div>
+                <div className="list-overview">
+                  <span>
+                    <span className="status-dot" />
+                    {
+                      filtered.filter(
+                        (task) => task.status !== 'done' && task.status !== 'cancelled',
+                      ).length
+                    }{' '}
+                    {t('ui.openTasks')}
+                  </span>
+                  <span>
+                    {doneCount} {t('ui.doneTasks')}
+                  </span>
+                  <span className="toolbar-spacer" />
+                  <span className="sort-caption">
+                    <Icon name="rows" size={14} />
+                    {t('ui.order')}
+                  </span>
+                </div>
 
-                {filtered.length === 0 && activeView.groups.length === 0 ? (
+                {activeView.panels !== undefined ? (
+                  <PanelBoard
+                    view={activeView}
+                    tasks={filtered}
+                    context={context}
+                    lookup={lookup}
+                  />
+                ) : filtered.length === 0 && activeView.groups.length === 0 ? (
                   <EmptyState
                     icon={isTrash ? 'trash' : isInbox ? 'inbox' : 'calendarCheck'}
                     titleKey={emptyTitle}
@@ -291,6 +360,13 @@ export function App() {
               </>
             )}
           </div>
+          <TimerBar
+            onOpen={() => {
+              const timer = useAppStore.getState().timer
+              const task = tasks.find((task) => task.id === timer?.taskId)
+              if (task) setDialog({ kind: 'task', task })
+            }}
+          />
         </main>
       </div>
 
@@ -338,6 +414,7 @@ export function App() {
       ) : null}
 
       <Toast />
+      <FocusScreen />
     </>
   )
 }

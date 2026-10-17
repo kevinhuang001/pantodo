@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { dueState, groupTasks, matchesFilter, selectTasks, sortTasks } from './filters'
 import type { FilterContext } from './filters'
 import { EMPTY_FILTER } from './types'
-import type { Project, ScheduleBlock, Tag, Task, View, ViewFilter, ViewPreset } from './types'
+import type { Project, Tag, Task, View, ViewFilter, ViewPreset } from './types'
 
 const NOW = new Date(2026, 2, 5, 9, 0, 0)
 const at = (hour: number, minute = 0, day = 5): string =>
@@ -21,24 +21,14 @@ function makeTask(id: string, partial: Partial<Task> = {}): Task {
     notes: '',
     status: 'todo',
     projectId: null,
+    startAt: null,
+    endAt: null,
     dueAt: null,
     estimateMinutes: null,
     completedAt: null,
     archivedAt: null,
     sortOrder: 0,
     ...partial,
-  }
-}
-
-function makeBlock(id: string, taskId: string, startAt: string, endAt: string): ScheduleBlock {
-  return {
-    id,
-    taskId,
-    startAt,
-    endAt,
-    createdAt: at(7),
-    updatedAt: at(7),
-    deletedAt: null,
   }
 }
 
@@ -67,11 +57,8 @@ function makeView(
   }
 }
 
-function context(
-  taskTags: Record<string, string[]> = {},
-  blocks: ScheduleBlock[] = [],
-): FilterContext {
-  return { taskTags, scheduleBlocks: blocks, now: NOW }
+function context(taskTags: Record<string, string[]> = {}): FilterContext {
+  return { taskTags, now: NOW }
 }
 
 describe('matchesFilter', () => {
@@ -134,9 +121,13 @@ describe('matchesFilter', () => {
   })
 
   it('filters on whether a task occupies the timetable', () => {
-    const ctx = context({}, [makeBlock('b1', 'scheduled', at(10), at(11))])
+    const ctx = context()
     expect(
-      matchesFilter(makeTask('scheduled'), makeView('all', { hasTime: 'scheduled' }).filter, ctx),
+      matchesFilter(
+        makeTask('scheduled', { startAt: at(10), endAt: at(11) }),
+        makeView('all', { hasTime: 'scheduled' }).filter,
+        ctx,
+      ),
     ).toBe(true)
     expect(
       matchesFilter(makeTask('free'), makeView('all', { hasTime: 'scheduled' }).filter, ctx),
@@ -157,12 +148,12 @@ describe('selectTasks with built-in presets', () => {
     makeTask('dueToday', { dueAt: at(18) }),
     makeTask('dueTomorrow', { dueAt: at(18, 0, 6) }),
     makeTask('dueYesterday', { dueAt: at(18, 0, 4) }),
-    makeTask('scheduledToday', {}),
+    makeTask('scheduledToday', { startAt: at(14), endAt: at(15) }),
     makeTask('projectTask', { projectId: 'p1' }),
     makeTask('deleted', { deletedAt: at(8) }),
     makeTask('archived', { archivedAt: at(8) }),
   ]
-  const ctx = context({}, [makeBlock('b1', 'scheduledToday', at(14), at(15))])
+  const ctx = context()
 
   it('Today means due today OR scheduled today', () => {
     const selected = selectTasks(tasks, makeView('today'), ctx).map((task) => task.id)

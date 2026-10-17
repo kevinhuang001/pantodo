@@ -1,13 +1,12 @@
 import { createBrowserBridge } from './browser'
+import { createTauriBridge } from './tauri'
+import { desktop } from '@/platform'
 import type { Bridge } from './types'
 
 export type { Bridge } from './types'
 export { STORAGE_KEY } from './browser'
 
-/**
- * The desktop build will replace this with the Tauri IPC implementation in M2 — the surface is
- * already identical (`src-tauri` commands mirror `Bridge`), so nothing above this line changes.
- */
+/** Local workspace persistence implementation. */
 export function createBridge(): Bridge {
-  return createBrowserBridge()
+  return desktop ? createTauriBridge() : createBrowserBridge()
 }

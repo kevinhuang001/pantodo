@@ -4,6 +4,8 @@ import { createBridge } from '@/bridge'
 import type { MessageKey } from '@/i18n'
 import { resolveLocale, setLocale } from '@/i18n'
 
+import { validatePlan } from './calendar'
+import type { TimeCommand } from './time'
 import { nowIso } from './date'
 import { newId } from './ids'
 import type {
@@ -12,11 +14,13 @@ import type {
   GroupField,
   Id,
   Project,
-  ScheduleBlock,
   Settings,
   Tag,
   Task,
   TaskStatus,
+  TimeEntry,
+  TimerSession,
+  ViewPanel,
   View,
   ViewFilter,
   Workspace,
@@ -32,12 +36,15 @@ export interface NewTaskInput {
   estimateMinutes?: number | null
   status?: TaskStatus
   tagIds?: Id[]
-  block?: { startAt: string; endAt: string } | null
+  startAt?: string | null
+  endAt?: string | null
 }
 
 export interface NewViewInput {
   name: string
   icon: string
+  emoji?: string
+  panels?: ViewPanel[]
   filter: ViewFilter
   groupBy: GroupField
   arrangement: GroupArrangement
@@ -57,7 +64,8 @@ export interface AppState {
   tags: Tag[]
   tasks: Task[]
   taskTags: Record<Id, Id[]>
-  scheduleBlocks: ScheduleBlock[]
+  timeEntries: TimeEntry[]
+  timer: TimerSession | null
   views: View[]
   settings: Settings
 
@@ -90,9 +98,11 @@ export interface AppState {
   archiveTask: (id: Id) => Promise<void>
   emptyTrash: () => Promise<void>
   setTaskTags: (id: Id, tagIds: Id[]) => Promise<void>
-  setTaskSchedule: (id: Id, block: { startAt: string; endAt: string } | null) => Promise<void>
+  timeCommand: (command: TimeCommand) => void
+  reloadWorkspace: () => void
+  suspendTimer: () => void
 
-  createProject: (name: string, color: string | null) => Promise<void>
+  createProject: (name: string, color: string | null, emoji?: string) => Promise<void>
   updateProject: (id: Id, patch: Partial<Project>) => Promise<void>
   softDeleteProject: (id: Id) => Promise<void>
 
@@ -113,7 +123,8 @@ const emptyWorkspace: Workspace = {
   tags: [],
   tasks: [],
   taskTags: {},
-  scheduleBlocks: [],
+  timeEntries: [],
+  timer: null,
   views: [],
   settings: {
     theme: 'system',
@@ -132,7 +143,8 @@ function workspaceSlice(workspace: Workspace) {
     tags: workspace.tags,
     tasks: workspace.tasks,
     taskTags: workspace.taskTags,
-    scheduleBlocks: workspace.scheduleBlocks,
+    timeEntries: workspace.timeEntries,
+    timer: workspace.timer,
     views: workspace.views,
     settings: workspace.settings,
   }
@@ -163,11 +175,12 @@ export const useAppStore = create<AppState>()((set, get) => ({
   toast: null,
 
   async init() {
+    if (get().ready) return
     try {
       const workspace = await bridge.load()
       setLocale(resolveLocale(workspace.settings.localePreference))
       const activeViewId =
-        workspace.views.find((view) => view.builtin && view.preset === 'today')?.id ??
+        workspace.views.find((view) => view.builtin && view.preset === 'inbox')?.id ??
         workspace.views[0]?.id ??
         null
       set({ ...workspaceSlice(workspace), ready: true, activeViewId, error: null })
@@ -223,6 +236,8 @@ export const useAppStore = create<AppState>()((set, get) => ({
   async createTask(input) {
     const state = get()
     const now = nowIso()
+    if (!input.title.trim()) throw new Error('task.invalidTitle')
+    validatePlan(input.startAt ?? null, input.endAt ?? null)
     const task: Task = {
       id: newId(),
       createdAt: now,
@@ -233,34 +248,22 @@ export const useAppStore = create<AppState>()((set, get) => ({
       status: input.status ?? 'todo',
       projectId: input.projectId ?? null,
       dueAt: input.dueAt ?? null,
+      startAt: input.startAt ?? null,
+      endAt: input.endAt ?? null,
       estimateMinutes: input.estimateMinutes ?? null,
       completedAt: input.status === 'done' ? now : null,
       archivedAt: null,
       sortOrder: state.tasks.length,
     }
     const tagIds = input.tagIds ?? []
-    const block: ScheduleBlock | null =
-      input.block === null || input.block === undefined
-        ? null
-        : {
-            id: newId(),
-            createdAt: now,
-            updatedAt: now,
-            deletedAt: null,
-            taskId: task.id,
-            startAt: input.block.startAt,
-            endAt: input.block.endAt,
-          }
 
     set({
       tasks: [...state.tasks, task],
       taskTags: { ...state.taskTags, [task.id]: tagIds },
-      scheduleBlocks: block === null ? state.scheduleBlocks : [...state.scheduleBlocks, block],
     })
 
     await bridge.upsertTask(task)
     if (tagIds.length > 0) await bridge.setTaskTags(task.id, tagIds)
-    if (block !== null) await bridge.upsertScheduleBlock(block)
     get().notify('toast.taskCreated')
     return task.id
   },
@@ -269,6 +272,10 @@ export const useAppStore = create<AppState>()((set, get) => ({
     const current = get().tasks.find((task) => task.id === id)
     if (current === undefined) return
     const next = withUpdated(current, patch)
+    validatePlan(next.startAt, next.endAt)
+    if (!next.title.trim()) throw new Error('task.invalidTitle')
+    if ((next.status === 'done' || next.status === 'cancelled') && get().timer?.taskId === id)
+      get().timeCommand({ kind: 'stop' })
     if (patch.status === 'done' && current.status !== 'done') next.completedAt = nowIso()
     if (patch.status !== undefined && patch.status !== 'done') next.completedAt = null
     set({ tasks: upsert(get().tasks, next) })
@@ -283,6 +290,7 @@ export const useAppStore = create<AppState>()((set, get) => ({
   async softDeleteTask(id) {
     const current = get().tasks.find((task) => task.id === id)
     if (current === undefined) return
+    if (get().timer?.taskId === id) get().timeCommand({ kind: 'stop' })
     const next = withUpdated(current, { deletedAt: nowIso() })
     set({ tasks: upsert(get().tasks, next), selectedTaskId: null })
     await bridge.upsertTask(next)
@@ -301,6 +309,7 @@ export const useAppStore = create<AppState>()((set, get) => ({
   async archiveTask(id) {
     const current = get().tasks.find((task) => task.id === id)
     if (current === undefined) return
+    if (get().timer?.taskId === id) get().timeCommand({ kind: 'stop' })
     const next = withUpdated(current, { archivedAt: nowIso() })
     set({ tasks: upsert(get().tasks, next) })
     await bridge.upsertTask(next)
@@ -317,7 +326,6 @@ export const useAppStore = create<AppState>()((set, get) => ({
     for (const id of purge) delete taskTags[id]
     set({
       tasks: get().tasks.filter((task) => !purge.has(task.id)),
-      scheduleBlocks: get().scheduleBlocks.filter((block) => !purge.has(block.taskId)),
       taskTags,
     })
     await bridge.purgeTasks(ids)
@@ -329,38 +337,22 @@ export const useAppStore = create<AppState>()((set, get) => ({
     await bridge.setTaskTags(id, tagIds)
   },
 
-  async setTaskSchedule(id, block) {
-    const state = get()
-    const existing = state.scheduleBlocks.filter(
-      (candidate) => candidate.taskId === id && candidate.deletedAt === null,
-    )
-    for (const stale of existing) {
-      await bridge.removeScheduleBlock(stale.id)
-    }
-    const remaining = state.scheduleBlocks.filter(
-      (candidate) => !existing.some((stale) => stale.id === candidate.id),
-    )
-    if (block === null) {
-      set({ scheduleBlocks: remaining })
-      return
-    }
-    const now = nowIso()
-    const created: ScheduleBlock = {
-      id: newId(),
-      createdAt: now,
-      updatedAt: now,
-      deletedAt: null,
-      taskId: id,
-      startAt: block.startAt,
-      endAt: block.endAt,
-    }
-    set({ scheduleBlocks: [...remaining, created] })
-    await bridge.upsertScheduleBlock(created)
+  timeCommand(command) {
+    set(bridge.timeCommand(command))
+  },
+  reloadWorkspace() {
+    const workspace = bridge.loadSync()
+    set(workspaceSlice(workspace))
+    setLocale(resolveLocale(workspace.settings.localePreference))
+  },
+  suspendTimer() {
+    if (get().timer?.ownerId === bridge.ownerId) set(bridge.timeCommand({ kind: 'stop' }))
   },
 
-  async createProject(name, color) {
+  async createProject(name, color, emoji) {
     const now = nowIso()
     const project: Project = {
+      emoji: emoji ?? '📁',
       id: newId(),
       createdAt: now,
       updatedAt: now,
@@ -443,6 +435,8 @@ export const useAppStore = create<AppState>()((set, get) => ({
       deletedAt: null,
       name: input.name.trim(),
       icon: input.icon,
+      emoji: input.emoji,
+      panels: input.panels,
       builtin: false,
       preset: null,
       filter: input.filter,
