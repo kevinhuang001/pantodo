@@ -36,6 +36,7 @@ export default tseslint.config(
       'artifacts/**',
       'src-tauri/target/**',
       'src-tauri/gen/**',
+      'src-tauri/vendor/**',
     ],
   },
   js.configs.recommended,

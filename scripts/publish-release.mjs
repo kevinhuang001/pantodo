@@ -67,6 +67,11 @@ execFileSync(
     '--notes-file',
     'docs/RELEASE-NOTES.md',
     '--prerelease',
+    '--draft',
   ],
   { stdio: 'inherit' },
 )
+
+execFileSync('gh', ['release', 'edit', tag, '--repo', repo, '--draft=false', '--prerelease'], {
+  stdio: 'inherit',
+})

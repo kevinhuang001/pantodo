@@ -71,7 +71,7 @@ npm run build
 npm run screenshots
 ```
 
-Install the Playwright browser with `npx playwright install chromium` before UI checks. `PLAYWRIGHT_CHROMIUM_EXECUTABLE` optionally selects an installed Chromium. Screenshots start their own Vite server, exercise an isolated sample workspace and write 16 captures to `artifacts/screenshots`.
+Install the Playwright browser with `npx playwright install chromium` before UI checks. `PLAYWRIGHT_CHROMIUM_EXECUTABLE` optionally selects an installed Chromium. Screenshots start their own Vite server, exercise an isolated sample workspace and write 17 captures to `artifacts/screenshots`.
 
 - [Product rules and data model](docs/SPEC.md)
 - [Interface and verification guide](docs/UI-PREVIEW.md)
