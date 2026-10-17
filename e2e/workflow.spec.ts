@@ -184,14 +184,18 @@ test('panel filters, width and order persist without Todo dragging', async ({ pa
   await page.getByRole('button', { name: '添加面板', exact: true }).click()
   await page.locator('#panel-name').fill('紧急待办')
   await page.getByRole('dialog').getByRole('button', { name: '紧急', exact: true }).first().click()
+  await choose(page, page.locator('#panel-span'), '2')
   await page.locator('button[form="panel-form"]').click()
   const panel = page.locator('.composed-panel', {
     has: page.getByRole('heading', { name: '紧急待办', exact: true }),
   })
   await expect(panel.locator('.task-row')).toHaveCount(2)
-  await choose(page, panel.getByRole('combobox', { name: '面板宽度', exact: true }), '2')
+  await expect(panel).toHaveCSS('--panel-span', '2')
   const firstId = await page.locator('.composed-panel').first().getAttribute('data-panel-id')
-  await page.locator('.composed-panel').first().getByRole('button', { name: '后移面板' }).click()
+  await page.locator('.composed-panel').first().locator('.panel-move').focus()
+  await page.keyboard.press('Space')
+  await page.keyboard.press('ArrowRight')
+  await page.keyboard.press('Space')
   expect(await page.locator('.composed-panel').first().getAttribute('data-panel-id')).not.toBe(
     firstId,
   )
@@ -199,21 +203,16 @@ test('panel filters, width and order persist without Todo dragging', async ({ pa
   await page.goto('/')
   await page.locator('.nav-row', { hasText: '我的工作台' }).click()
   await expect(page.locator('.composed-panel')).toHaveCount(4)
-  await expect(
-    page
-      .locator('.composed-panel', { hasText: '紧急待办' })
-      .getByRole('combobox', { name: '面板宽度' }),
-  ).toHaveAttribute('data-value', '2')
+  await expect(page.locator('.composed-panel', { hasText: '紧急待办' })).toHaveCSS(
+    '--panel-span',
+    '2',
+  )
 })
 
 test('Eisenhower is created as four editable filtered panels', async ({ page }) => {
   await page.getByRole('button', { name: '新建视图', exact: true }).click()
   await page.locator('#view-name').fill('我的四象限')
   await page.locator('button[form="pantodo-view-form"]').click()
-  await page
-    .getByRole('group', { name: '展示方式' })
-    .getByRole('button', { name: '面板', exact: true })
-    .click()
   await page.getByRole('button', { name: '从模板开始', exact: true }).click()
   await page.locator('button[form="quadrant-form"]').click()
   await expect(page.locator('.composed-panel')).toHaveCount(4)

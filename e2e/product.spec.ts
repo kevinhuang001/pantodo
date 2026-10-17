@@ -21,10 +21,6 @@ test('view creation contains only identity fields and supports cancelling an emo
   await page.locator('button[form="pantodo-view-form"]').click()
   await expect(page.locator('.toolbar h1')).toContainText('论文进度')
   await expect(page.locator('.composed-panel')).toHaveCount(0)
-  await page
-    .getByRole('group', { name: '展示方式' })
-    .getByRole('button', { name: '面板', exact: true })
-    .click()
   await page.getByRole('button', { name: '添加面板', exact: true }).click()
   await page.locator('#panel-name').fill('实验')
   await page.locator('.emoji-trigger').click()

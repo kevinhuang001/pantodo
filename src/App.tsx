@@ -1,4 +1,4 @@
-import { TaskBoard } from './components/TaskBoard'
+import { startAutoSync } from '@/sync/store'
 import { useEffect, useMemo, useState } from 'react'
 
 import { useDebounced, useFilterContext, useNow } from '@/hooks'
@@ -16,7 +16,7 @@ import { EmptyState } from './components/EmptyState'
 import { EntityDialog } from './components/EntityDialog'
 import { TaskList } from './components/TaskList'
 import { Icon } from './components/Icon'
-import { PanelBoard } from './components/PanelBoard'
+import { ViewPanels } from './components/ViewPanels'
 import { Statistics } from './components/Statistics'
 import { TimerBar, TimerLifecycle } from './components/TimerBar'
 import { FocusScreen } from './components/FocusScreen'
@@ -36,7 +36,7 @@ type DialogState =
   | { kind: 'view'; view: View | null }
   | { kind: 'confirm-delete'; task: Task }
   | { kind: 'confirm-empty-trash' }
-  | { kind: 'settings' }
+  | { kind: 'settings'; pane?: 'sync' }
   | null
 
 function useResolvedTheme(preference: ThemePreference): ResolvedTheme {
@@ -58,6 +58,7 @@ function useResolvedTheme(preference: ThemePreference): ResolvedTheme {
 }
 
 export function App() {
+  useEffect(startAutoSync, [])
   const ready = useAppStore((state) => state.ready)
   const error = useAppStore((state) => state.error)
   const init = useAppStore((state) => state.init)
@@ -234,7 +235,7 @@ export function App() {
           }
           onEditTag={(tag) => setDialog({ kind: 'entity', entityKind: 'tag', entity: tag })}
           onEditView={(view) => setDialog({ kind: 'view', view })}
-          onOpenSettings={() => setDialog({ kind: 'settings' })}
+          onOpenSettings={(pane) => setDialog({ kind: 'settings', pane })}
         />
 
         <main className="main">
@@ -273,10 +274,8 @@ export function App() {
               <InboxComposer />
             ) : activeView === null ? null : (
               <>
-                {activeView.presentation === 'board' ? (
-                  <TaskBoard tasks={filtered} lookup={lookup} />
-                ) : activeView.presentation === 'panels' ? (
-                  <PanelBoard
+                {activeView.preset === null ? (
+                  <ViewPanels
                     view={activeView}
                     tasks={filtered}
                     context={context}
@@ -347,7 +346,9 @@ export function App() {
         <ViewDialog view={dialog.view} onClose={() => setDialog(null)} />
       ) : null}
 
-      {dialog?.kind === 'settings' ? <SettingsDialog onClose={() => setDialog(null)} /> : null}
+      {dialog?.kind === 'settings' ? (
+        <SettingsDialog initialPane={dialog.pane} onClose={() => setDialog(null)} />
+      ) : null}
 
       {dialog?.kind === 'confirm-delete' ? (
         <ConfirmDialog

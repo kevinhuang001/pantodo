@@ -19,8 +19,7 @@ import { CSS } from '@dnd-kit/utilities'
 import { useAppStore } from '@/domain/store'
 import { matchesFilter, sortTasks, type FilterContext } from '@/domain/filters'
 import { newPanel, quadrantPanels } from '@/domain/views'
-import { ARRANGEMENT_LABEL_KEYS } from '@/domain/display'
-import type { PanelArrangement, Task, View, ViewPanel, ViewSort } from '@/domain/types'
+import type { Task, View, ViewPanel, ViewSort } from '@/domain/types'
 import { t } from '@/i18n'
 import { Button } from './ui/button'
 import { SelectField } from './SelectField'
@@ -29,7 +28,7 @@ import { FilterFields } from './FilterFields'
 import { EmojiPicker } from './EmojiPicker'
 import { Modal } from './Modal'
 import { Icon } from './Icon'
-import { Segmented } from './Menu'
+import { PresentationPicker } from './PresentationPicker'
 import { TaskList, type TaskLookup } from './TaskList'
 
 function SortablePanel({
@@ -80,7 +79,7 @@ function SortablePanel({
     </section>
   )
 }
-export function PanelBoard({
+export function ViewPanels({
   view,
   tasks,
   context,
@@ -101,7 +100,7 @@ export function PanelBoard({
   )
   const [templateOpen, setTemplateOpen] = useState(false)
   const panels = view.panels ?? [],
-    columns = view.arrangement === 'vertical' ? 1 : Math.max(1, view.gridColumns)
+    columns = view.arrangement === 'vertical' ? 1 : Math.max(1, view.columnCount)
   const patch = (value: Partial<View>) => {
     setError(false)
     void updateView(view.id, value).catch(() => setError(true))
@@ -112,30 +111,7 @@ export function PanelBoard({
   }
   return (
     <>
-      <div className="panel-board-toolbar">
-        <Segmented
-          label={t('toolbar.arrangement')}
-          value={view.arrangement}
-          options={(['vertical', 'columns', 'grid'] as const).map((key) => ({
-            key,
-            label: t(ARRANGEMENT_LABEL_KEYS[key]),
-          }))}
-          onChange={(value) => patch({ arrangement: value as PanelArrangement })}
-        />
-        {view.arrangement !== 'vertical' ? (
-          <SelectField
-            className="compact-select"
-            aria-label={t('view.field.columns')}
-            value={view.gridColumns}
-            onValueChange={(value) => patch({ gridColumns: Number(value) })}
-          >
-            {[1, 2, 3, 4].map((n) => (
-              <option key={n} value={n}>
-                {n} ×
-              </option>
-            ))}
-          </SelectField>
-        ) : null}
+      <div className="panel-toolbar">
         <Button variant="ghost" onClick={() => setTemplateOpen(true)}>
           {t('panel.template')}
         </Button>
@@ -163,7 +139,7 @@ export function PanelBoard({
       >
         <SortableContext items={panels.map((panel) => panel.id)} strategy={rectSortingStrategy}>
           <div className="composed-panels" style={{ '--panel-columns': columns } as CSSProperties}>
-            {panels.map((panel, index) => {
+            {panels.map((panel) => {
               const list = sortTasks(
                 tasks.filter((task) => matchesFilter(task, panel.filter, context)),
                 { ...view, sort: panel.sort },
@@ -180,6 +156,16 @@ export function PanelBoard({
                         </span>
                         <h3>{panel.name}</h3>
                         <span className="panel-count">{list.length}</span>
+                        <PresentationPicker
+                          value={panel.presentation ?? 'list'}
+                          onChange={(presentation) =>
+                            patch({
+                              panels: panels.map((p) =>
+                                p.id === panel.id ? { ...p, presentation } : p,
+                              ),
+                            })
+                          }
+                        />
                         <button
                           className="icon-button"
                           aria-label={t('panel.edit')}
@@ -201,44 +187,6 @@ export function PanelBoard({
                                 .join(' / ')
                             : ''}
                         </span>
-                        <div className="panel-reorder">
-                          <button
-                            type="button"
-                            className="icon-button"
-                            disabled={index === 0}
-                            aria-label={t('panel.moveBefore')}
-                            onClick={() => move(index, index - 1)}
-                          >
-                            <Icon name="chevronLeft" size={12} />
-                          </button>
-                          <button
-                            type="button"
-                            className="icon-button"
-                            disabled={index === panels.length - 1}
-                            aria-label={t('panel.moveAfter')}
-                            onClick={() => move(index, index + 1)}
-                          >
-                            <Icon name="chevronRight" size={12} />
-                          </button>
-                          <SelectField
-                            className="compact-select"
-                            aria-label={t('panel.width')}
-                            value={Math.min(panel.span, columns)}
-                            onValueChange={(value) =>
-                              patch({
-                                panels: panels.map((p) =>
-                                  p.id === panel.id ? { ...p, span: Number(value) } : p,
-                                ),
-                              })
-                            }
-                          >
-                            {Array.from({ length: columns }, (_, i) => (
-                              <option key={i + 1} value={i + 1}>
-                                {i + 1} / {columns}
-                              </option>
-                            ))}
-                          </SelectField>
-                        </div>
                       </div>
                       <TaskList
                         tasks={list}
@@ -271,6 +219,7 @@ export function PanelBoard({
         <PanelDialog
           key={editing.id}
           panel={editing}
+          columns={columns}
           isNew={!panels.some((p) => p.id === editing.id)}
           onClose={() => setEditing(null)}
           onSave={async (panel) => {
@@ -293,12 +242,14 @@ export function PanelBoard({
 }
 function PanelDialog({
   panel,
+  columns,
   onClose,
   onSave,
   onDelete,
   isNew,
 }: {
   panel: ViewPanel
+  columns: number
   onClose: () => void
   onSave: (panel: ViewPanel) => Promise<void>
   onDelete: () => void
@@ -386,6 +337,22 @@ function PanelDialog({
             ))}
           </SelectField>
         </div>
+        {columns > 1 ? (
+          <div className="field">
+            <label htmlFor="panel-span">{t('panel.width')}</label>
+            <SelectField
+              id="panel-span"
+              value={Math.min(value.span, columns)}
+              onValueChange={(span) => setValue({ ...value, span: Number(span) })}
+            >
+              {Array.from({ length: columns }, (_, i) => (
+                <option key={i + 1} value={i + 1}>
+                  {i + 1} / {columns}
+                </option>
+              ))}
+            </SelectField>
+          </div>
+        ) : null}
         <FilterFields
           prefix="panel-filter"
           value={value.filter}

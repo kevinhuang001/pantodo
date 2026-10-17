@@ -12,13 +12,13 @@ Navigation contains Create, Today, All Todos, Calendar, Statistics, saved views 
 
 ## Views
 
-A view stores name, emoji, filter, presentation, sort, panels and panel layout. Creating it requires name and optional emoji, starts in List, and creates no placeholder panels. View settings contain identity and a collapsed overall filter.
+A custom view contains panels. Creating it requires only a name and optional emoji and creates no placeholder panels. View settings contain identity, column count (default two) and a collapsed overall filter.
 
-The compact 44px title row switches List, Gallery, Board and Panels. The choice persists per view. List and Gallery use the same filtered Todo set; Board groups that set into four status columns. Switching presentation preserves panel configuration.
+The compact 44px title row switches between vertical and column panel arrangements. Each panel independently switches between List and Gallery using localized hover/focus tooltips. Built-in Today, All and Trash use List or Gallery directly.
 
 Each panel stores name, emoji, list/gallery presentation, filter, sort and column span. Filters support included/excluded tags, any/all matching, status, project or unassigned project, planned/unplanned time, deadline bounds and title/notes text. Overall view, search and sidebar filters apply first. A Todo may appear in several panels.
 
-The panel workspace provides layout, column count, Add panel and an Eisenhower template built from two distinct tags. The template appends four editable panels. Pointer, touch and keyboard sorting operate only on panel handles and persist the new order. Move buttons provide another ordering control. Small windows collapse to one column without changing saved spans.
+Add panels directly or append an Eisenhower template built from two distinct tags. Column count is edited only in View settings; panel spans are edited in the panel dialog. Pointer, touch and keyboard sorting operate only on panel handles and persist order. Small windows collapse to one column without changing saved spans.
 
 Capture metadata uses three compact triggers. The date popover has separate start/end/deadline targets, a calendar, in-app hour/minute menus and an estimate. Moving the start keeps the planned duration; clearing either planned endpoint clears the pair. Project/tag pickers support search and keyboard navigation, display selected values, and provide colored multi-select tags. View and calendar-mode controls have localized hover/focus tooltips.
 
@@ -50,10 +50,22 @@ Browser preview stores one workspace in localStorage and observes updates from o
 
 The Tauri host writes workspace JSON atomically. Native heartbeats and suspend/exit events close active work at a durable cutoff. Reopening never resumes a timer. A generation counter rejects queued writes from before a cutoff. Browser preview uses five-second heartbeats and stops an interrupted session at its last heartbeat after a gap over 30 seconds.
 
-The window is frameless and resizable. Native platform detection selects macOS traffic lights or Windows/Linux controls. Buttons sit above drag regions. Title/sidebar backgrounds initiate native dragging; eight edges/corners initiate native resize dragging. The sidebar uses frosted Sidebar material on macOS and Acrylic on Windows. A substantial tint over the native blur limits background visibility to a slight color glow. Linux depends on the compositor. The right pane is opaque. Native file-drop interception is disabled for panel interaction.
+The window is frameless and resizable. Native platform detection selects macOS traffic lights or Windows/Linux controls. Buttons sit above drag regions. Title/sidebar backgrounds initiate native dragging; eight edges/corners initiate native resize dragging. The sidebar uses frosted Sidebar material on macOS and Acrylic on Windows. A medium translucent tint over native blur reveals background colors while keeping text readable. Browser glass uses a 22px blur. Linux depends on the compositor. The right pane is opaque. Native file-drop interception is disabled for panel interaction.
 
-Settings supports light/dark/system appearance, Chinese/English/Japanese, week start, default planned duration and JSON export.
+Settings uses an icon navigation rail and grouped cards for appearance, timer, sync, data and about. It supports light/dark/system appearance, Chinese/English/Japanese, week start, default planned duration and JSON export.
+
+## WebDAV sync
+
+Browser data uses localStorage by default; desktop uses the native workspace file. Sync is disabled until configured. A user supplies an existing WebDAV directory, username and password; the client reads/writes `pantodo-workspace.json`. Credentials and the last successful sync base remain in local browser/webview storage and are excluded from exports and remote documents. Disconnect removes local sync configuration/base and retains both workspace copies.
+
+Version 1 documents contain project, tag, Todo-with-tag-assignment, custom-view and committed-time-entry records keyed by ID. They exclude appearance settings, built-in views and live timers. Seed identities are deterministic across new devices. First synchronization from an untouched workspace imports the server workspace without duplicating starter panels. The current view layout is normalized on local read; unused fields are not carried forward.
+
+A three-way merge compares the last synced base with current local and remote records. Independent changes merge. Concurrent edits, deletion-versus-edit conflicts and overlapping time recordings require the user to choose local or remote for the listed conflicts. The choice is valid only for the reviewed record contents; another change requires review again. Permanent deletion uses null tombstones. Resolving overlapping time tombstones the unchosen record.
+
+GET validates every record before local writes. PUT uses `If-None-Match: *` for creation or a strong `If-Match` ETag for updates. A 412 retries the read/merge/write sequence up to three times. A missing ETag, authentication failure, invalid document or transport error leaves local data available. Local edits made during network requests are retained, and automatic sync queues another attempt when needed. Remote deletion of a locally timed Todo commits and stops its current segment before applying the deletion.
+
+Automatic sync is opt-in, debounced after data changes, polls each minute and checks on reconnect/focus. Ordinary timer heartbeats do not trigger writes. Network operations time out after 20 seconds, reject redirects, support HTTP(S) and cap documents at 32 MB. Desktop requests use Rust HTTP; browser requests require server CORS permissions and an exposed ETag header. No server directory is created.
 
 ## Verification
 
-Unit tests cover Todo filters, quadrant panel rules, plans, calendar clipping/lanes, timers, overlap corrections, statistics and atomic persistence. Playwright covers the actual forms, view presentations, pointer panel dragging, pointer zoom persistence, calendar modes, work/focus, manual records, window-command dispatch and reload behavior. Screenshot inspection covers light/dark, full and minimum-size windows. Browser simulation does not verify physical native material or system sleep on every OS.
+Unit tests cover Todo filters, quadrant panel rules, plans, calendar clipping/lanes, timers, overlap corrections, statistics and atomic persistence. Playwright covers the actual forms, view presentations, pointer panel dragging, pointer zoom persistence, calendar modes, work/focus, manual records, window-command dispatch, reload behavior and a real authenticated WebDAV test server with two browser devices, conflicts, conditional retries, deletion and offline recovery. Screenshot inspection covers light/dark, full and minimum-size windows. Browser simulation does not verify physical native material or system sleep on every OS.

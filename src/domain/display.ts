@@ -27,7 +27,6 @@ export function viewDisplayName(view: View, t: TFunction): string {
 export const ARRANGEMENT_LABEL_KEYS = {
   vertical: 'toolbar.arrange.vertical',
   columns: 'toolbar.arrange.columns',
-  grid: 'toolbar.arrange.grid',
 } as const
 
 export const STATUS_LABEL_KEYS = {

@@ -1,18 +1,14 @@
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from './ui/tooltip'
-import { List, LayoutGrid, Columns3, PanelsTopLeft } from 'lucide-react'
+import { Rows3, Columns3 } from 'lucide-react'
 import { beginWindowDrag } from '@/window'
-import { viewDisplayName } from '@/domain/display'
+import { viewDisplayName, ARRANGEMENT_LABEL_KEYS } from '@/domain/display'
 import { useAppStore } from '@/domain/store'
-import type { AppTab, View, ViewPresentation } from '@/domain/types'
+import type { AppTab, View } from '@/domain/types'
 import { t } from '@/i18n'
 import { Icon } from './Icon'
 import { Button } from './ui/button'
-const MODES = [
-  { key: 'list', icon: List },
-  { key: 'gallery', icon: LayoutGrid },
-  { key: 'board', icon: Columns3 },
-  { key: 'panels', icon: PanelsTopLeft },
-] as const
+import { PresentationPicker } from './PresentationPicker'
+
 export function Toolbar({
   tab,
   view,
@@ -35,15 +31,12 @@ export function Toolbar({
           ? viewDisplayName(view, t)
           : t('views.section')
   const showModes = tab === 'views' && view && view.preset !== 'inbox'
-  const presentation = view ? view.presentation : 'list'
-  const change = (mode: ViewPresentation) => {
-    if (!view) return
-    void useAppStore
-      .getState()
-      .updateView(view.id, {
-        presentation: mode,
-      })
-      .catch(() => useAppStore.getState().notify('work.failed'))
+  const patch = (value: Partial<View>) => {
+    if (view)
+      void useAppStore
+        .getState()
+        .updateView(view.id, value)
+        .catch(() => useAppStore.getState().notify('work.failed'))
   }
   return (
     <header className="toolbar" onMouseDown={beginWindowDrag}>
@@ -63,33 +56,41 @@ export function Toolbar({
         ) : null}
       </div>
       <span className="toolbar-spacer" />
-      {showModes ? (
+      {showModes && view.preset === null ? (
         <TooltipProvider delayDuration={250} disableHoverableContent>
-          <div className="view-presentation" role="group" aria-label={t('view.presentation')}>
-            {MODES.filter((mode) => mode.key !== 'panels' || view.preset === null).map(
-              ({ key, icon: ModeIcon }) => (
-                <Tooltip key={key}>
-                  <TooltipTrigger asChild>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      aria-label={t(('view.' + key) as 'view.list')}
-                      aria-pressed={presentation === key}
-                      onClick={() => change(key)}
-                    >
-                      <ModeIcon size={14} />
-                      <span>{t(('view.' + key) as 'view.list')}</span>
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent side="bottom" sideOffset={7}>
-                    {t(('view.tooltip.' + key) as 'view.tooltip.list')}
-                  </TooltipContent>
-                </Tooltip>
-              ),
-            )}
+          <div className="view-presentation" role="group" aria-label={t('toolbar.arrangement')}>
+            {(
+              [
+                { key: 'vertical', icon: Rows3 },
+                { key: 'columns', icon: Columns3 },
+              ] as const
+            ).map(({ key, icon: ModeIcon }) => (
+              <Tooltip key={key}>
+                <TooltipTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    aria-label={t(ARRANGEMENT_LABEL_KEYS[key])}
+                    aria-pressed={view.arrangement === key}
+                    onClick={() => patch({ arrangement: key })}
+                  >
+                    <ModeIcon size={14} />
+                    <span>{t(ARRANGEMENT_LABEL_KEYS[key])}</span>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" sideOffset={7}>
+                  {t(`panel.layout.${key}`)}
+                </TooltipContent>
+              </Tooltip>
+            ))}
           </div>
         </TooltipProvider>
+      ) : showModes ? (
+        <PresentationPicker
+          value={view.presentation}
+          onChange={(presentation) => patch({ presentation })}
+        />
       ) : null}
       {tab === 'views' && view?.preset === null ? (
         <Button

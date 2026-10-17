@@ -35,8 +35,7 @@ const zhCN = {
   'toolbar.language': '语言',
   'toolbar.arrangement': '排列方式',
   'toolbar.arrange.vertical': '纵向',
-  'toolbar.arrange.columns': '横向',
-  'toolbar.arrange.grid': '网格',
+  'toolbar.arrange.columns': '分栏',
 
   'theme.system': '跟随系统',
   'theme.light': '浅色',
@@ -122,7 +121,6 @@ const zhCN = {
   'toast.tagUpdated': '标签已保存',
   'toast.trashEmptied': '回收站已清空',
   'toast.archived': '已归档',
-  'toast.reset': '已重置为示例数据',
 
   'count.tasks': '{count} 个任务',
   'count.progress': '{done}/{total} 已完成',

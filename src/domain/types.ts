@@ -45,8 +45,8 @@ export interface Task extends Entity {
   sortOrder: number
 }
 
-export type ViewPresentation = 'list' | 'gallery' | 'board' | 'panels'
-export type PanelArrangement = 'vertical' | 'columns' | 'grid'
+export type ViewPresentation = 'list' | 'gallery'
+export type PanelArrangement = 'vertical' | 'columns'
 export type AppTab = 'views' | 'timetable' | 'statistics'
 export type CalendarMode = 'day' | 'week' | 'month'
 export type TagMatchMode = 'any' | 'all'
@@ -108,7 +108,7 @@ export interface View extends Entity {
   preset: ViewPreset | null
   filter: ViewFilter
   arrangement: PanelArrangement
-  gridColumns: number
+  columnCount: number
   sort: ViewSort
   sortOrder: number
 }

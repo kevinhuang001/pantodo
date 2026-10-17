@@ -47,7 +47,7 @@ function makeView(
     preset,
     filter: { ...EMPTY_FILTER, ...filter },
     arrangement: 'vertical',
-    gridColumns: 2,
+    columnCount: 2,
     sort: 'manual',
     presentation: 'list',
     panels: [],

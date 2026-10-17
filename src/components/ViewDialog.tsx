@@ -7,10 +7,12 @@ import { Button } from './ui/button'
 import { Input } from './ui/input'
 import { EmojiPicker } from './EmojiPicker'
 import { FilterFields } from './FilterFields'
+import { SelectField } from './SelectField'
 export function ViewDialog({ view, onClose }: { view: View | null; onClose: () => void }) {
   const [name, setName] = useState(view?.name ?? ''),
     [emoji, setEmoji] = useState(view?.emoji ?? '🧩')
   const [filter, setFilter] = useState(view?.filter ?? { ...EMPTY_FILTER })
+  const [columnCount, setColumnCount] = useState(view?.columnCount ?? 2)
   const [saving, setSaving] = useState(false),
     [error, setError] = useState('')
   async function submit() {
@@ -19,7 +21,9 @@ export function ViewDialog({ view, onClose }: { view: View | null; onClose: () =
     setError('')
     try {
       if (view)
-        await useAppStore.getState().updateView(view.id, { name: name.trim(), emoji, filter })
+        await useAppStore
+          .getState()
+          .updateView(view.id, { name: name.trim(), emoji, filter, columnCount })
       else await useAppStore.getState().createView({ name: name.trim(), emoji })
       onClose()
     } catch {
@@ -83,6 +87,25 @@ export function ViewDialog({ view, onClose }: { view: View | null; onClose: () =
           />
         </div>
         <EmojiPicker value={emoji} onChange={setEmoji} />
+        {view ? (
+          <div className="view-layout-settings">
+            <div>
+              <label htmlFor="view-column-count">{t('view.field.columns')}</label>
+              <p>{t('view.columnsHint')}</p>
+            </div>
+            <SelectField
+              id="view-column-count"
+              value={columnCount}
+              onValueChange={(value) => setColumnCount(Number(value))}
+            >
+              {[1, 2, 3, 4].map((n) => (
+                <option key={n} value={n}>
+                  {n}
+                </option>
+              ))}
+            </SelectField>
+          </div>
+        ) : null}
         {view ? (
           <details className="view-filter-details">
             <summary>

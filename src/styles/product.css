@@ -15,12 +15,14 @@ body,
 }
 .sidebar {
   width: var(--sidebar-width);
-  background: linear-gradient(150deg, #f0f4ebc7, #e5edd8b8);
+  background: linear-gradient(150deg, #f0f4eb85, #e5edd878);
+  backdrop-filter: blur(22px) saturate(135%);
+  -webkit-backdrop-filter: blur(22px) saturate(135%);
   border-radius: 14px 0 0 14px;
   padding-top: 44px;
 }
 :root[data-theme='dark'] .sidebar {
-  background: linear-gradient(150deg, #26352bd1, #1c2b21c2);
+  background: linear-gradient(150deg, #26352b99, #1c2b218a);
 }
 .sidebar-top {
   gap: 18px;
@@ -224,11 +226,11 @@ body,
 .reader {
   padding: 20px 24px 28px;
 }
-.panel-board-toolbar {
+.panel-toolbar {
   margin: 0 0 16px;
   min-height: 34px;
 }
-.panel-board-toolbar .field-hint {
+.panel-toolbar .field-hint {
   display: none;
 }
 .composed-panel {

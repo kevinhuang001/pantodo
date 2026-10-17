@@ -24,7 +24,8 @@ import type {
   Workspace,
 } from './types'
 
-const bridge = createBridge()
+export const workspaceBridge = createBridge()
+const bridge = workspaceBridge
 
 export interface NewTaskInput {
   title: string
@@ -71,7 +72,6 @@ export interface AppState {
   toast: Toast | null
 
   init: () => Promise<void>
-  resetWorkspace: () => Promise<void>
 
   setActiveTab: (tab: AppTab) => void
   setActiveView: (id: Id) => void
@@ -176,12 +176,6 @@ export const useAppStore = create<AppState>()((set, get) => ({
     } catch (error) {
       set({ error: error instanceof Error ? error.message : String(error), ready: true })
     }
-  },
-
-  async resetWorkspace() {
-    const workspace = await bridge.reset()
-    set({ ...workspaceSlice(workspace), selectedTaskId: null })
-    get().notify('toast.reset')
   },
 
   setActiveTab(tab) {
@@ -335,7 +329,18 @@ export const useAppStore = create<AppState>()((set, get) => ({
   },
   reloadWorkspace() {
     const workspace = bridge.loadSync()
-    set(workspaceSlice(workspace))
+    const active = get().activeViewId
+    set({
+      ...workspaceSlice(workspace),
+      ...(workspace.views.some((view) => view.id === active && !view.deletedAt)
+        ? {}
+        : { activeViewId: workspace.views.find((view) => view.preset === 'all')?.id ?? null }),
+      selectedTaskId: workspace.tasks.some(
+        (task) => task.id === get().selectedTaskId && !task.deletedAt,
+      )
+        ? get().selectedTaskId
+        : null,
+    })
     setLocale(resolveLocale(workspace.settings.localePreference))
   },
   suspendTimer() {
@@ -433,8 +438,8 @@ export const useAppStore = create<AppState>()((set, get) => ({
       builtin: false,
       preset: null,
       filter: { ...EMPTY_FILTER },
-      arrangement: 'grid',
-      gridColumns: 2,
+      arrangement: 'columns',
+      columnCount: 2,
       sort: 'manual',
       sortOrder: views.reduce((max, candidate) => Math.max(max, candidate.sortOrder), 0) + 1,
     }

@@ -1,3 +1,5 @@
+import { viewWithDefaults } from '@/domain/views'
+import { applyData, extractData, mergeData } from '@/sync/model'
 import { createSeedWorkspace } from '@/domain/presets'
 import { newId } from '@/domain/ids'
 import { applyTimeCommand, HEARTBEAT_GAP_MS } from '@/domain/time'
@@ -13,7 +15,9 @@ function clone<T>(value: T): T {
 function readStorage(): Workspace | null {
   if (typeof localStorage === 'undefined') return null
   const raw = localStorage.getItem(STORAGE_KEY)
-  return raw ? (JSON.parse(raw) as Workspace) : null
+  if (!raw) return null
+  const workspace = JSON.parse(raw) as Workspace
+  return { ...workspace, views: workspace.views.map(viewWithDefaults) }
 }
 function writeStorage(workspace: Workspace): void {
   if (typeof localStorage !== 'undefined')
@@ -78,11 +82,25 @@ export function createBrowserBridge(recoverGaps = true): Bridge {
       writeStorage(workspace)
       return clone(workspace)
     },
-    async reset() {
-      cache = createSeedWorkspace({ withDemoData: true })
-      initialized = true
-      writeStorage(cache)
-      return clone(cache)
+    async applySync(data, previous) {
+      commit((workspace) => {
+        const current = extractData(workspace, previous)
+        const preview = mergeData(previous, current, data)
+        const choices = Object.fromEntries(
+          preview.conflicts.map((conflict) => [conflict.key, 'local' as const]),
+        )
+        const merged = mergeData(previous, current, data, choices).data
+        const running = workspace.timer?.taskId
+        if (running && (!merged.tasks[running] || merged.tasks[running]?.task.deletedAt)) {
+          Object.assign(
+            workspace,
+            applyTimeCommand(workspace, { kind: 'stop' }, new Date(), ownerId, recoverGaps),
+          )
+          // Stopping a deleted running Todo must retain its last committed segment.
+          for (const entry of workspace.timeEntries) merged.timeEntries[entry.id] ??= entry
+        }
+        Object.assign(workspace, applyData(workspace, merged))
+      })
     },
     async upsertProject(project: Project) {
       commit((w) => replaceById(w.projects, project))

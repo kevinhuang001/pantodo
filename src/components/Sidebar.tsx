@@ -1,3 +1,4 @@
+import { useSyncStore } from '@/sync/store'
 import { beginWindowDrag } from '@/window'
 import { Input } from './ui/input'
 import { useMemo } from 'react'
@@ -21,7 +22,7 @@ interface SidebarProps {
   onEditProject: (project: Project) => void
   onEditTag: (tag: Tag) => void
   onEditView: (view: View) => void
-  onOpenSettings: () => void
+  onOpenSettings: (pane?: 'sync') => void
 }
 
 const VIEW_ICONS = new Set<IconName>([
@@ -76,7 +77,7 @@ export function Sidebar({
   const setActiveView = useAppStore((state) => state.setActiveView)
   const setTagFilter = useAppStore((state) => state.setTagFilter)
   const setProjectFilter = useAppStore((state) => state.setProjectFilter)
-  const resetWorkspace = useAppStore((state) => state.resetWorkspace)
+  const sync = useSyncStore()
 
   const palette = paletteFor(theme)
   const context = useMemo(() => ({ taskTags, now }), [taskTags, now])
@@ -178,7 +179,7 @@ export function Sidebar({
               className="icon-button"
               title={t('toolbar.settings')}
               aria-label={t('toolbar.settings')}
-              onClick={onOpenSettings}
+              onClick={() => onOpenSettings()}
             >
               <Icon name="settings" />
             </button>
@@ -354,20 +355,28 @@ export function Sidebar({
         {sortedViews.filter((view) => view.preset === 'trash').map(renderViewRow)}
       </div>
       <div className="sidebar-footer">
-        <span className="status-dot" />
-        <span>{t('ui.local')}</span>
-        <button
-          type="button"
-          className="icon-button"
-          style={{ marginLeft: 'auto' }}
-          title={t('toast.reset')}
-          aria-label={t('toast.reset')}
-          onClick={() => {
-            void resetWorkspace()
-          }}
-        >
-          <Icon name="refresh" size={14} />
-        </button>
+        {sync.config.url ? (
+          <button
+            type="button"
+            className="sidebar-sync-status"
+            onClick={() => onOpenSettings('sync')}
+          >
+            <span className={'status-dot ' + sync.status} />
+            <span>
+              WebDAV ·{' '}
+              {sync.status === 'error'
+                ? t('sync.attention')
+                : sync.status === 'conflict'
+                  ? t('sync.needsReview')
+                  : t(('sync.' + sync.status) as 'sync.idle')}
+            </span>
+          </button>
+        ) : (
+          <>
+            <span className="status-dot" />
+            <span>{t('ui.local')}</span>
+          </>
+        )}
       </div>
     </aside>
   )

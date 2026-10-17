@@ -1,3 +1,5 @@
+import { SlidersHorizontal, Timer, Cloud, Database, Info, Download } from 'lucide-react'
+import { SyncSettings } from './SyncSettings'
 import { SelectField } from './SelectField'
 import { Input } from './ui/input'
 import { Button } from './ui/button'
@@ -14,27 +16,33 @@ import { version } from '../../package.json'
 import { desktop } from '@/platform'
 
 interface SettingsDialogProps {
+  initialPane?: 'sync'
   onClose: () => void
 }
 
-type Pane = 'general' | 'timer' | 'data' | 'about'
+type Pane = 'general' | 'timer' | 'sync' | 'data' | 'about'
+
+const PANE_ICONS = {
+  general: SlidersHorizontal,
+  timer: Timer,
+  sync: Cloud,
+  data: Database,
+  about: Info,
+}
 
 const PANES: { key: Pane; labelKey: MessageKey }[] = [
   { key: 'general', labelKey: 'settings.pane.general' },
   { key: 'timer', labelKey: 'settings.pane.timer' },
+  { key: 'sync', labelKey: 'settings.pane.sync' },
   { key: 'data', labelKey: 'settings.pane.data' },
   { key: 'about', labelKey: 'settings.pane.about' },
 ]
 
-/**
- * The reference project's settings window: a macOS-style two-pane dialog. All six agreed panes are
- * present; the timer and sync panes state which milestone fills them.
- */
-export function SettingsDialog({ onClose }: SettingsDialogProps) {
+export function SettingsDialog({ onClose, initialPane }: SettingsDialogProps) {
   const settings = useAppStore((state) => state.settings)
   const updateSettings = useAppStore((state) => state.updateSettings)
   const notify = useAppStore((state) => state.notify)
-  const [pane, setPane] = useState<Pane>('general')
+  const [pane, setPane] = useState<Pane>(initialPane ?? 'general')
 
   function patch(next: Partial<Settings>): void {
     void updateSettings(next)
@@ -92,20 +100,29 @@ export function SettingsDialog({ onClose }: SettingsDialogProps) {
 
         <div className="settings-body">
           <nav className="settings-nav">
-            {PANES.map((entry) => (
-              <button
-                key={entry.key}
-                type="button"
-                className={entry.key === pane ? 'active' : ''}
-                aria-current={entry.key === pane ? 'true' : undefined}
-                onClick={() => setPane(entry.key)}
-              >
-                {t(entry.labelKey)}
-              </button>
-            ))}
+            {PANES.map((entry) => {
+              const PaneIcon = PANE_ICONS[entry.key]
+              return (
+                <button
+                  key={entry.key}
+                  type="button"
+                  className={entry.key === pane ? 'active' : ''}
+                  aria-current={entry.key === pane ? 'true' : undefined}
+                  onClick={() => setPane(entry.key)}
+                >
+                  <PaneIcon size={16} />
+                  {t(entry.labelKey)}
+                </button>
+              )
+            })}
           </nav>
 
           <div className="settings-panel">
+            <div className="settings-pane-heading">
+              <h2>{t(('settings.pane.' + pane) as MessageKey)}</h2>
+              <p>{t(('settings.' + pane + 'Hint') as MessageKey)}</p>
+            </div>
+            {pane === 'sync' ? <SyncSettings /> : null}
             {pane === 'general' ? (
               <div className="settings-card">
                 <div className="settings-row">
@@ -157,7 +174,10 @@ export function SettingsDialog({ onClose }: SettingsDialogProps) {
             {pane === 'timer' ? (
               <div className="settings-card">
                 <div className="settings-row">
-                  <span className="settings-label">{t('calendar.defaultDuration')}</span>
+                  <span className="settings-label">
+                    {t('calendar.defaultDuration')}
+                    <small>{t('settings.durationHint')}</small>
+                  </span>
                   <Input
                     type="number"
                     className="input"
@@ -183,13 +203,17 @@ export function SettingsDialog({ onClose }: SettingsDialogProps) {
             {pane === 'data' ? (
               <div className="settings-card">
                 <div className="settings-row">
-                  <span className="settings-label">{t('settings.export')}</span>
+                  <span className="settings-label">
+                    {t('settings.export')}
+                    <small>{t('settings.exportHint')}</small>
+                  </span>
                   <Button
                     type="button"
                     className="secondary"
                     variant="outline"
                     onClick={exportJson}
                   >
+                    <Download size={15} />
                     {t('settings.export')}
                   </Button>
                 </div>

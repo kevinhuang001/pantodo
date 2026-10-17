@@ -37,7 +37,6 @@ const ja: Record<keyof typeof zhCN, string> = {
   'toolbar.arrangement': '配置',
   'toolbar.arrange.vertical': '縦',
   'toolbar.arrange.columns': '横',
-  'toolbar.arrange.grid': 'グリッド',
 
   'theme.system': 'システム',
   'theme.light': 'ライト',
@@ -122,7 +121,6 @@ const ja: Record<keyof typeof zhCN, string> = {
   'toast.tagUpdated': 'タグを保存しました',
   'toast.trashEmptied': 'ゴミ箱を空にしました',
   'toast.archived': 'アーカイブしました',
-  'toast.reset': 'サンプルデータに戻しました',
 
   'count.tasks': '{count} 件のタスク',
   'count.progress': '{done}/{total} 完了',

@@ -100,82 +100,22 @@
 .task-gallery .task-unscheduled {
   display: none;
 }
-.task-status-board {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(226px, 1fr));
-  gap: 16px;
-  align-items: start;
-  min-width: 0;
-  overflow-x: auto;
-  padding-bottom: 16px;
-}
-.status-column {
-  background: var(--surface-sunken);
-  padding: 12px;
-  border-radius: 12px;
-  min-width: 0;
-}
-.status-column > header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 4px 3px 15px;
-}
-.status-column > header h2 {
-  flex: 1;
-  font-size: 12px;
-  font-weight: 600;
-}
-.status-column > header > span:last-child {
-  font-size: 11px;
-  color: var(--text-muted);
-}
-.status-indicator {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--text-faint);
-}
-.status-doing .status-indicator {
-  background: var(--accent);
-}
-.status-done .status-indicator {
-  background: var(--success-dot);
-}
-.status-cancelled .status-indicator {
-  background: var(--danger);
-}
-.status-column .task-gallery {
-  grid-template-columns: 1fr;
-  gap: 10px;
-}
-.status-column .task-gallery .task-row {
-  min-height: 190px;
-  padding: 14px;
-}
-.status-column .group-empty {
-  margin: 0;
-  padding: 22px 10px;
-  font-size: 12px;
-  text-align: center;
-  color: var(--text-muted);
-}
-.panel-board-toolbar {
+.panel-toolbar {
   display: flex;
   align-items: center;
   gap: 8px;
   margin-bottom: 18px;
 }
-.panel-board-toolbar .segmented {
+.panel-toolbar .segmented {
   padding: 2px;
   border: 1px solid var(--border);
   border-radius: 7px;
 }
-.panel-board-toolbar .segmented-item {
+.panel-toolbar .segmented-item {
   padding: 4px 8px;
   font-size: 11px;
 }
-.panel-board-toolbar > .secondary {
+.panel-toolbar > .secondary {
   margin-left: auto;
   min-height: 32px;
   height: 32px;
@@ -248,7 +188,7 @@
   flex-direction: row;
   overflow: visible;
 }
-.panel-board-toolbar {
+.panel-toolbar {
   justify-content: flex-start;
 }
 /* Lists read as rows in one surface; galleries remain independent cards. */
@@ -282,4 +222,16 @@
 }
 .composed-panel .task-list:not(.task-gallery) > .task-row {
   padding: 12px 0;
+}
+.composed-panel > header .view-presentation {
+  margin-left: auto;
+  gap: 2px;
+}
+.composed-panel > header .view-presentation button {
+  width: 26px;
+  height: 26px;
+  padding: 0;
+}
+.composed-panel > header .view-presentation button > span {
+  display: none;
 }

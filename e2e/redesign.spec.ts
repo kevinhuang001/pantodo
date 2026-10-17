@@ -26,33 +26,33 @@ test('create is one borderless writing surface with a stable, nonrepeating quote
   expect((await page.locator('.toolbar').boundingBox())!.height).toBeLessThanOrEqual(44)
 })
 
-test('list, gallery, board and panels use the same tasks and remember the chosen presentation', async ({
+test('custom views contain panels, each with independent list/gallery content', async ({
   page,
 }) => {
   await page.locator('.nav-row', { hasText: '我的工作台' }).click()
   await expect(page.locator('.composed-panel')).toHaveCount(3)
-  await modes(page).getByRole('button', { name: '画廊', exact: true }).click()
-  await expect(page.locator('.task-gallery')).toHaveCount(1)
-  const ids = await page
-    .locator('.task-gallery .task-row')
+  await expect(page.locator('.toolbar').getByRole('group', { name: '排列方式' })).toBeVisible()
+  await expect(
+    page.locator('.toolbar').getByRole('group', { name: '展示方式', exact: true }),
+  ).toHaveCount(0)
+  const panel = page.locator('.composed-panel').nth(1)
+  const id = await panel.getAttribute('data-panel-id')
+  const ids = await panel
+    .locator('.task-row')
     .evaluateAll((rows) => rows.map((row) => row.getAttribute('data-task-id')))
-  expect(new Set(ids).size).toBe(ids.length)
-  expect(ids.length).toBeGreaterThan(0)
-  await page.locator('.task-gallery .task-body').first().click()
-  await expect(page.getByRole('dialog')).toBeVisible()
-  await page.getByRole('dialog').getByRole('button', { name: '取消', exact: true }).click()
-  await modes(page).getByRole('button', { name: '看板', exact: true }).click()
-  await expect(page.locator('.status-column')).toHaveCount(4)
-  await expect(page.locator('.task-status-board .task-row')).toHaveCount(ids.length)
-  await modes(page).getByRole('button', { name: '列表', exact: true }).click()
-  await expect(page.locator('.task-list > .task-row')).toHaveCount(ids.length)
+  await panel.getByRole('button', { name: '画廊', exact: true }).click()
+  await expect(panel.locator('.task-gallery')).toHaveCount(1)
+  await expect(panel.locator('.task-row')).toHaveCount(ids.length)
+  await expect(page.locator('.composed-panel').first().locator('.task-gallery')).toHaveCount(0)
   await page.goto('/')
   await page.locator('.nav-row', { hasText: '我的工作台' }).click()
-  await expect(modes(page).getByRole('button', { name: '列表', exact: true })).toHaveAttribute(
-    'aria-pressed',
-    'true',
-  )
-  await expect(page.locator('.composed-panel')).toHaveCount(0)
+  await expect(page.locator(`[data-panel-id="${id}"] .task-gallery`)).toHaveCount(1)
+  await expect(page.getByRole('button', { name: '看板', exact: true })).toHaveCount(0)
+  await page.locator('.nav-row', { hasText: '全部任务' }).click()
+  await modes(page).getByRole('button', { name: '画廊', exact: true }).click()
+  await expect(page.locator('.task-gallery')).toHaveCount(1)
+  await modes(page).getByRole('button', { name: '列表', exact: true }).click()
+  await expect(page.locator('.task-gallery')).toHaveCount(0)
 })
 
 test('panel handles actually drag with pointer input and persist their new positions', async ({
@@ -102,7 +102,7 @@ test('view settings stay basic and the calendar zoom is dragged directly', async
   await page.locator('.nav-row', { hasText: '我的工作台' }).click()
   await page.getByRole('button', { name: '视图设置', exact: true }).click()
   await expect(page.locator('#view-name')).toBeVisible()
-  await expect(page.getByRole('dialog').getByRole('combobox')).toHaveCount(0)
+  await expect(page.getByRole('dialog').getByRole('combobox')).toHaveCount(1)
   await expect(
     page.locator('#view-template,#view-presentation,#view-columns,#view-arrangement'),
   ).toHaveCount(0)

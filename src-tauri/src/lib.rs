@@ -1,3 +1,5 @@
+#[cfg(feature = "webdav")]
+pub mod webdav;
 pub mod workspace;
 
 #[cfg(feature = "desktop")]
@@ -29,6 +31,22 @@ mod desktop {
             .lock()
             .map_err(|e| e.to_string())?
             .save(workspace, generation)
+    }
+
+    #[tauri::command]
+    async fn webdav_request(
+        url: String,
+        username: String,
+        password: String,
+        method: String,
+        body: Option<String>,
+        etag: Option<String>,
+    ) -> Result<super::webdav::DavResponse, String> {
+        tauri::async_runtime::spawn_blocking(move || {
+            super::webdav::request(&url, &username, &password, &method, body, etag)
+        })
+        .await
+        .map_err(|_| "sync.network".to_string())?
     }
 
     fn cutoff(app: &tauri::AppHandle, last_heartbeat: bool) {
@@ -94,7 +112,8 @@ mod desktop {
             .invoke_handler(tauri::generate_handler![
                 load_workspace,
                 save_workspace,
-                desktop_platform
+                desktop_platform,
+                webdav_request
             ])
             .setup(|app| {
                 #[cfg(target_os = "windows")]

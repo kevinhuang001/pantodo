@@ -1,3 +1,4 @@
+import type { SyncData } from '@/sync/model'
 import type { TimeCommand, TimeState } from '@/domain/time'
 import type { Id, Project, Settings, Tag, Task, View, Workspace } from '@/domain/types'
 
@@ -7,7 +8,7 @@ export interface Bridge {
   readonly ownerId: string
   load(): Promise<Workspace>
   loadSync(): Workspace
-  reset(): Promise<Workspace>
+  applySync(data: SyncData, previous: SyncData): Promise<void>
   upsertProject(project: Project): Promise<void>
   upsertTag(tag: Tag): Promise<void>
   upsertTask(task: Task): Promise<void>

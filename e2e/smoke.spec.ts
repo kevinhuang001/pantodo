@@ -111,7 +111,7 @@ test('changes saved panel layouts', async ({ page }) => {
         .evaluate((el) => el.style.getPropertyValue('--panel-columns')),
     )
     .toBe('1')
-  await layout.getByRole('button', { name: '网格' }).click()
+  await layout.getByRole('button', { name: '分栏' }).click()
   await expect
     .poll(async () =>
       page
@@ -206,14 +206,10 @@ test('creates a custom view that joins the views list', async ({ page }) => {
 
   await page.locator('#view-name').fill('e2e 自定义视图')
   await page.locator('button[form="pantodo-view-form"]').click()
-  await page
-    .getByRole('group', { name: '展示方式' })
-    .getByRole('button', { name: '画廊', exact: true })
-    .click()
-
   await expect(page.locator('.toolbar h1')).toContainText('e2e 自定义视图')
   await expect(page.locator('.nav-row', { hasText: 'e2e 自定义视图' })).toHaveCount(1)
-  await expect(page.locator('.task-gallery').first()).toBeVisible()
+  await expect(page.getByRole('button', { name: '添加面板', exact: true })).toBeVisible()
+  await expect(page.locator('.composed-panel')).toHaveCount(0)
 })
 
 test('persists captured tasks across a reload', async ({ page }) => {

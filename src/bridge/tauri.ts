@@ -48,10 +48,9 @@ export function createTauriBridge(): Bridge {
       await persist()
       return workspace
     },
-    async reset() {
-      const result = await cache.reset()
+    async applySync(data, previous) {
+      await cache.applySync(data, previous)
       await persist()
-      return result
     },
     async upsertProject(value) {
       await cache.upsertProject(value)

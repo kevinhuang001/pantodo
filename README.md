@@ -1,6 +1,6 @@
 # Pantodo
 
-A quiet place for your Todos, planned time and actual work. Pantodo combines a playful paper desk with a translucent sidebar, a calendar, a work timer and saved views with list, gallery, board and panel presentations.
+A quiet place for your Todos, planned time and actual work. Pantodo combines a playful paper desk with a translucent sidebar, a calendar, a work timer and saved panel views with list and gallery content.
 
 Pantodo is a **Tauri 2 desktop application** for macOS, Windows and Linux, built with Rust and React. Download installers from [GitHub Releases](https://github.com/kevinhuang001/pantodo/releases). The Vite browser preview remains available for development.
 
@@ -33,11 +33,21 @@ Each tag receives the entry’s full duration. Combined tag filters count each e
 
 ## Build your own views
 
-Switch each saved view between **List**, **Gallery**, **Board** and **Panels**. The chosen presentation is remembered per view. Lists use compact rows, galleries make room for notes, boards group by status, and panels combine independent filters. A new view starts as a list; choose Panels to add panels after creation. Each panel has its own title, emoji, include/exclude tags, any/all tag matching, status, project, schedule, deadline range, text filter and sort order.
+Saved views contain independently filtered panels. Create a view with a name and optional emoji, then add panels or apply the Eisenhower template. Each panel switches between **List** and **Gallery**, with its own title, emoji, tags, status, project, schedule, deadline range, text filter and sorting.
 
-Drag panel handles with a mouse or touch, use Space and the arrow keys on a focused handle, or use the move buttons to reorder panels. Todos themselves never drag. Change a panel’s column span, choose the grid width or switch to vertical/column arrangements. A Todo may appear in multiple panels. The Eisenhower template creates four ordinary, editable panels from two selected tags.
+Arrange panels vertically or in **Columns**. Columns default to two; change the count in View settings. Panel spans live in the panel editor. Drag handles with a pointer or touch, or use Space and arrow keys on a focused handle to reorder. Todos never drag. The same Todo may appear in several panels. Built-in Today, All and Trash support List and Gallery directly.
 
 Projects and views support emoji icons. Only tags have colors; projects use a name and an icon. Appearance, language, week start and default planned duration live in Settings. Light/dark/system themes and Chinese, English and Japanese are supported.
+
+## Sync your devices
+
+The web app saves to **localStorage by default** and works offline. Desktop saves to a local workspace file. WebDAV is optional: open **Settings → Sync**, enter an existing server directory and credentials, save the configuration, then sync. The file is `pantodo-workspace.json` inside that directory.
+
+Sync includes Todos and their tags, projects, tags, custom panel views and recorded time. Appearance, built-in navigation, login information and the running timer stay on each device. Separate edits merge; conflicting edits and overlapping work records require a choice. Permanent-deletion markers prevent offline devices from restoring emptied Trash. Conditional writes use ETags and retry concurrent changes.
+
+Automatic sync is opt-in: it runs after edits, on reconnect/focus and every minute. Disconnecting preserves local data and the remote file. Credentials remain in this device’s webview/browser storage and are excluded from sync files and exports.
+
+WebDAV must support GET/PUT and strong ETags. For browser access, allow the app’s origin, methods `GET, PUT, OPTIONS`, request headers `Authorization, Content-Type, If-Match, If-None-Match`, and expose response header `ETag`. An HTTPS web app needs an HTTPS WebDAV endpoint. The desktop client uses native HTTP and does not require CORS. The app does not create server directories or follow redirects. Files are limited to 32 MB.
 
 ## Run locally
 
@@ -71,7 +81,7 @@ npm run build
 npm run screenshots
 ```
 
-Install the Playwright browser with `npx playwright install chromium` before UI checks. `PLAYWRIGHT_CHROMIUM_EXECUTABLE` optionally selects an installed Chromium. Screenshots start their own Vite server, exercise an isolated sample workspace and write 26 captures to `artifacts/screenshots`.
+Install the Playwright browser with `npx playwright install chromium` before UI checks. `PLAYWRIGHT_CHROMIUM_EXECUTABLE` optionally selects an installed Chromium. Screenshots start their own Vite server, exercise an isolated sample workspace and write application captures to `artifacts/screenshots`.
 
 - [Product rules and data model](docs/SPEC.md)
 - [Interface and verification guide](docs/UI-PREVIEW.md)
@@ -81,4 +91,4 @@ GitHub Actions checks type safety, formatting, lint, unit tests and production b
 
 ### Interface components
 
-Forms use shadcn/ui components (Radix primitives, Tailwind CSS and Lucide). Source components live in `src/components/ui`; `components.json` configures the registry aliases. Selects, calendars, emoji pickers and menus render inside the app, with keyboard navigation and focus handling. Creating a view requires only a name and optional emoji; panels, filters, templates and layout can be configured after creation. The frameless Tauri window provides one compact 44px title row, macOS traffic lights or Windows/Linux controls, drag regions on the title and sidebar, and eight resize edges/corners. The native platform selects the controls. A writing card and a random localized phrase replace the previous dense create screen; explanatory captions and footers are removed. The sidebar uses native frosted Sidebar material on macOS and Acrylic on Windows, covered by a substantial translucent tint so only a little background color shows through; Linux transparency depends on the compositor. Capture metadata uses a calendar popover and searchable project/tag pickers. View controls show localized tooltips on hover and keyboard focus.
+Forms use shadcn/ui components (Radix primitives, Tailwind CSS and Lucide). Source components live in `src/components/ui`; `components.json` configures the registry aliases. Selects, calendars, emoji pickers and menus render inside the app, with keyboard navigation and focus handling. Creating a view requires only a name and optional emoji; panels, filters, templates and layout can be configured after creation. The frameless Tauri window provides one compact 44px title row, macOS traffic lights or Windows/Linux controls, drag regions on the title and sidebar, and eight resize edges/corners. The native platform selects the controls. A writing card and a random localized phrase replace the previous dense create screen; explanatory captions and footers are removed. The sidebar uses native frosted Sidebar material on macOS and Acrylic on Windows, covered by a medium translucent tint that reveals blurred background colors; Linux transparency depends on the compositor. Capture metadata uses a calendar popover and searchable project/tag pickers. View controls show localized tooltips on hover and keyboard focus.

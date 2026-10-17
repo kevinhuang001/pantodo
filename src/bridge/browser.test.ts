@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { extractData } from '@/sync/model'
 import { createSeedWorkspace } from '@/domain/presets'
 import { createBrowserBridge, STORAGE_KEY } from './browser'
 
@@ -35,5 +36,46 @@ describe('atomic workspace persistence', () => {
     )
     expect(memory.get(STORAGE_KEY)).toBe(before)
     expect(bridge.loadSync().timer).toBeNull()
+  })
+})
+
+describe('sync persistence and local timer ownership', () => {
+  it('retains the local active timer while merging other tasks', async () => {
+    const w = createSeedWorkspace({ withDemoData: true })
+    memory.set(STORAGE_KEY, JSON.stringify(w))
+    const bridge = createBrowserBridge()
+    await bridge.load()
+    bridge.timeCommand({ kind: 'start', taskId: w.tasks[0].id })
+    const before = bridge.loadSync(),
+      data = extractData(before)
+    const remote = structuredClone(data)
+    remote.tasks[w.tasks[1].id]!.task.title = 'Remote title'
+    await bridge.applySync(remote, data)
+    const after = bridge.loadSync()
+    expect(after.timer).toEqual(before.timer)
+    expect(after.tasks.find((task) => task.id === w.tasks[1].id)?.title).toBe('Remote title')
+  })
+  it('commits active work before applying remote deletion of the running Todo', async () => {
+    const w = createSeedWorkspace({ withDemoData: true })
+    memory.set(STORAGE_KEY, JSON.stringify(w))
+    const bridge = createBrowserBridge()
+    await bridge.load()
+    vi.useFakeTimers()
+    try {
+      vi.setSystemTime(new Date('2026-10-17T08:00:00Z'))
+      bridge.timeCommand({ kind: 'start', taskId: w.tasks[0].id })
+      const data = extractData(bridge.loadSync()),
+        remote = structuredClone(data)
+      remote.tasks[w.tasks[0].id] = null
+      vi.setSystemTime(new Date('2026-10-17T08:00:10Z'))
+      await bridge.applySync(remote, data)
+      const after = bridge.loadSync()
+      expect(after.timer).toBeNull()
+      expect(after.tasks.some((task) => task.id === w.tasks[0].id)).toBe(false)
+      expect(after.timeEntries).toHaveLength(1)
+      expect(after.timeEntries[0].endedAt).toBe('2026-10-17T08:00:10.000Z')
+    } finally {
+      vi.useRealTimers()
+    }
   })
 })

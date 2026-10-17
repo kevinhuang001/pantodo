@@ -31,7 +31,7 @@ function makeView(partial: Partial<View> & { name: string; icon: string }): View
     preset: null,
     filter: { ...EMPTY_FILTER },
     arrangement: 'vertical',
-    gridColumns: 2,
+    columnCount: 2,
     sort: 'manual',
     presentation: 'list',
     panels: [],
@@ -54,12 +54,18 @@ export function createSeedWorkspace(
 
   const importantTag: Tag = {
     ...envelope(),
+    id: 'tag-important',
+    createdAt: '2026-01-01T00:00:00.000Z',
+    updatedAt: '2026-01-01T00:00:00.000Z',
     name: t('seed.tagImportant'),
     color: TAG_PALETTE[4]!,
     sortOrder: 0,
   }
   const urgentTag: Tag = {
     ...envelope(),
+    id: 'tag-urgent',
+    createdAt: '2026-01-01T00:00:00.000Z',
+    updatedAt: '2026-01-01T00:00:00.000Z',
     name: t('seed.tagUrgent'),
     color: TAG_PALETTE[2]!,
     sortOrder: 1,
@@ -72,17 +78,19 @@ export function createSeedWorkspace(
     makeView({ name: t('nav.trash'), icon: 'trash', builtin: true, preset: 'trash', sortOrder: 5 }),
   ]
 
-  views.push(
-    makeView({
+  views.push({
+    ...makeView({
       name: t('panels.title'),
       emoji: '🪴',
       icon: 'layers',
-      presentation: 'panels',
-      panels: workbenchPanels(),
-      arrangement: 'grid',
+      panels: workbenchPanels().map((panel, i) => ({ ...panel, id: 'workbench-panel-' + i })),
+      arrangement: 'columns',
       sortOrder: 3,
     }),
-  )
+    id: 'view-workbench',
+    createdAt: '2026-01-01T00:00:00.000Z',
+    updatedAt: '2026-01-01T00:00:00.000Z',
+  })
 
   const workspace: Workspace = {
     projects: [],

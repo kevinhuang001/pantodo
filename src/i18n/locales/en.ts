@@ -37,7 +37,6 @@ const en: Record<keyof typeof zhCN, string> = {
   'toolbar.arrangement': 'Arrangement',
   'toolbar.arrange.vertical': 'Vertical',
   'toolbar.arrange.columns': 'Columns',
-  'toolbar.arrange.grid': 'Grid',
 
   'theme.system': 'System',
   'theme.light': 'Light',
@@ -122,7 +121,6 @@ const en: Record<keyof typeof zhCN, string> = {
   'toast.tagUpdated': 'Tag saved',
   'toast.trashEmptied': 'Trash emptied',
   'toast.archived': 'Archived',
-  'toast.reset': 'Reset to sample data',
 
   'count.tasks': '{count} tasks',
   'count.progress': '{done}/{total} done',

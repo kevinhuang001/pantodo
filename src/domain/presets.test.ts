@@ -23,7 +23,7 @@ describe('createSeedWorkspace', () => {
       'trash',
       null,
     ])
-    const workbench = workspace.views.find((view) => view.presentation === 'panels')
+    const workbench = workspace.views.find((view) => view.preset === null)
     expect(workbench?.builtin).toBe(false)
     expect(workbench?.panels).toHaveLength(3)
   })

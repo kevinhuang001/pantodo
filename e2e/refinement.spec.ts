@@ -52,13 +52,11 @@ test('searchable project and tag pickers capture selected metadata and keep the 
   await expect(page.locator('.capture-card .schedule-fields,.capture-card select')).toHaveCount(0)
 })
 test('view controls show localized tooltips on hover and keyboard focus', async ({ page }) => {
-  await page.locator('.nav-row', { hasText: '我的工作台' }).click()
+  await page.locator('.nav-row', { hasText: '全部任务' }).click()
   const modes = page.getByRole('group', { name: '展示方式', exact: true })
   for (const [name, tip] of [
     ['列表', '列表视图'],
     ['画廊', '画廊视图'],
-    ['看板', '状态看板'],
-    ['面板', '组合面板'],
   ]) {
     await modes.getByRole('button', { name, exact: true }).hover()
     await page.clock.runFor(300)

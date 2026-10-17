@@ -34,3 +34,7 @@ The author's [Glassmark](https://github.com/kevinhuang001/bookmark-web) is a vis
 The components in `src/components/ui` originate from the shadcn/ui new-york-v4 registry (https://ui.shadcn.com), MIT licensed, copyright shadcn. Imports, translations and theme tokens are adapted for Pantodo. Radix UI primitives, Tailwind CSS, class-variance-authority, clsx and tailwind-merge are MIT licensed; Lucide icons are ISC licensed; React DayPicker is MIT licensed.
 
 Panel sorting uses dnd kit (`@dnd-kit/core`, `@dnd-kit/sortable`, `@dnd-kit/utilities`), MIT licensed, copyright Clauderic Demers.
+
+## WebDAV transport
+
+The native client uses reqwest (MIT OR Apache-2.0), rustls (Apache-2.0 OR ISC OR MIT) and their dependency licenses as distributed by Cargo. Browser transport uses the Fetch API.
