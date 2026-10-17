@@ -49,8 +49,15 @@ export function createTauriBridge(): Bridge {
       return workspace
     },
     async applySync(data, previous) {
-      await cache.applySync(data, previous)
-      await persist()
+      for (let attempt = 0; attempt < 3; attempt++) {
+        const epoch = generation
+        await cache.applySync(data, previous)
+        await persist()
+        if (epoch === generation) return
+        // A native sleep/exit cutoff can reject a queued write. Reapply the data
+        // against that newer snapshot while preserving its committed timer segment.
+      }
+      throw new Error('sync.storage')
     },
     async upsertProject(value) {
       await cache.upsertProject(value)
