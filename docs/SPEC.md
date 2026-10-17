@@ -6,21 +6,21 @@ This document describes the current application.
 
 A Todo stores title, notes, status (`todo`, `doing`, `done`, `cancelled`), optional project, multiple tags, optional planned interval, independent deadline, optional estimate and lifecycle timestamps. Both planned endpoints must be present together, with end after start. Plans may cross midnight. Changing a plan does not rewrite actual work.
 
-Projects have a name and emoji. Tags have a name and color. Create is the entry point for new Todos: one writing card, optional notes, project/tags, and a calendar/time popover. A localized phrase is chosen from 16 messages on entry without immediately repeating; typing does not change it. Content clicks open the Todo editor. The checkbox cycles Todo → Doing → Done → Todo.
+Projects have a name and emoji. Tags have a name and color. Create is the entry point for new Todos: one writing card, optional notes, project/tags, and a calendar/time popover. A localized phrase is chosen from 16 messages on entry without immediately repeating; typing does not change it. Content clicks open the Todo editor. Clicking an unchecked checkbox asks for completion confirmation; confirming marks Done with dimming and strikethrough. Reopening Done returns directly to Todo. Work timers still set Doing.
 
 Navigation contains Create, Today, All Todos, Calendar, Statistics, saved views and Trash. Today includes planned or due Todos for the local day. Deleted Todos appear only in Trash. Todos never drag.
 
 ## Views
 
-A custom view contains panels. Creating it requires only a name and optional emoji and creates no placeholder panels. View settings contain identity, column count (default two) and a collapsed overall filter.
+A custom view contains panels. Creating it requires only a name and optional emoji and creates no placeholder panels. View settings contain identity and column count (default two). All saved filters belong to panels; views have no filter field.
 
 The compact 44px title row switches between vertical and column panel arrangements. Each panel independently switches between List and Gallery using localized hover/focus tooltips. Built-in Today, All and Trash use List or Gallery directly.
 
-Each panel stores name, emoji, list/gallery presentation, filter, sort and column span. Filters support included/excluded tags, any/all matching, status, project or unassigned project, planned/unplanned time, deadline bounds and title/notes text. Overall view, search and sidebar filters apply first. A Todo may appear in several panels.
+Each panel stores name, emoji, list/gallery presentation, filter, sort and column span. Filters support included/excluded tags, any/all matching, status, project or unassigned project, planned/unplanned time, deadline bounds and title/notes text. Search and sidebar filters apply before each panel’s filter. A Todo may appear in several panels.
 
-Add panels directly. Column count is edited only in View settings; panel spans are edited in the panel dialog. Pointer, touch and keyboard sorting operate only on panel handles and persist order. Small windows collapse to one column without changing saved spans.
+Add panels directly. Column count is edited only in View settings; panel spans are edited in the panel dialog. Pointer, touch and keyboard sorting operate only on panel handles and persist order. The dragged overlay retains its original size; displaced panels translate without scaling. Small windows collapse to one column without changing saved spans.
 
-Capture metadata uses four compact triggers. The schedule popover has separate start/end/deadline targets, a calendar, and in-app hour/minute menus in five-minute steps; the estimate popover offers quick durations and a custom value. Moving the start keeps the planned duration; clearing either planned endpoint clears the pair. Project/tag pickers support search and keyboard navigation, display selected values, and provide colored multi-select tags. View and calendar-mode controls have localized hover/focus tooltips.
+Capture metadata uses four compact triggers. The schedule popover has three start/end/deadline rows. Clicking a date or time opens its own compact selector. Empty end selectors start at the planned start. Both endpoints must be explicitly selected before saving; the estimate popover offers quick durations and a custom value. Moving the start keeps the planned duration; clearing either planned endpoint clears the pair. Project/tag pickers support search and keyboard navigation, display selected values, and provide colored multi-select tags. View and calendar-mode controls have localized hover/focus tooltips.
 
 Forms use shadcn/ui with Radix primitives. Selects, emoji choices, date calendars and menus render inside the application and support keyboard navigation.
 
@@ -52,13 +52,13 @@ The Tauri host writes workspace JSON atomically. Native heartbeats and suspend/e
 
 The window is frameless and resizable. Native platform detection selects macOS traffic lights or Windows/Linux controls. Buttons sit above drag regions. Title/sidebar backgrounds initiate native dragging; eight edges/corners initiate native resize dragging. The sidebar uses frosted Sidebar material on macOS and Acrylic on Windows. A medium translucent tint over native blur reveals background colors while keeping text readable. Browser glass uses a 22px blur. Linux depends on the compositor. The right pane is opaque. Native file-drop interception is disabled for panel interaction.
 
-Settings uses an icon navigation rail and grouped cards for appearance, timer, sync, data and about. It supports light/dark/system appearance, Chinese/English/Japanese, week start, default planned duration and JSON export.
+Settings uses an icon navigation rail and grouped cards for appearance, timer, sync, data and about. It supports light/dark/system appearance, Chinese/English/Japanese, week start, eight accent presets and JSON export.
 
 ## WebDAV sync
 
 Browser data uses localStorage by default; desktop uses the native workspace file. Sync is disabled until configured. A user supplies an existing WebDAV directory, username and password; the client reads/writes `pantodo-workspace.json`. Credentials and the last successful sync base remain in local browser/webview storage and are excluded from exports and remote documents. Disconnect removes local sync configuration/base and retains both workspace copies.
 
-Version 1 documents contain project, tag, Todo-with-tag-assignment, custom-view and committed-time-entry records keyed by ID. They exclude appearance settings, built-in views and live timers. Seed identities are deterministic across new devices. First synchronization from an untouched workspace imports the server workspace without duplicating starter panels. The current view layout is normalized on local read; unused fields are not carried forward.
+Version 1 documents contain project, tag, Todo-with-tag-assignment, custom-view and committed-time-entry records keyed by ID. They exclude appearance settings, built-in views and live timers. Seed identities are deterministic across new devices. First synchronization from an untouched workspace imports the server workspace without duplicating starter panels.
 
 A three-way merge compares the last synced base with current local and remote records. Independent changes merge. Concurrent edits, deletion-versus-edit conflicts and overlapping time recordings require the user to choose local or remote for the listed conflicts. The choice is valid only for the reviewed record contents; another change requires review again. Permanent deletion uses null tombstones. Resolving overlapping time tombstones the unchosen record.
 
@@ -69,3 +69,5 @@ Automatic sync is opt-in, debounced after data changes, polls each minute and ch
 ## Verification
 
 Unit tests cover Todo filters, plans, calendar clipping/lanes, timers, overlap corrections, statistics and atomic persistence. Playwright covers the actual forms, view presentations, pointer panel dragging, pointer zoom persistence, calendar modes, work/focus, manual records, window-command dispatch, reload behavior and a real authenticated WebDAV test server with two browser devices, conflicts, conditional retries, deletion and offline recovery. Screenshot inspection covers light/dark, full and minimum-size windows. Browser simulation does not verify physical native material or system sleep on every OS.
+
+Appearance settings include eight accent presets with light/dark colors and persistent selection. Trash is the final item of the scrolling sidebar. The native effect and application clip share a 14px radius; child panes do not add another rounded boundary.

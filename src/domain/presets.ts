@@ -6,7 +6,6 @@ import { newId } from './ids'
 import { workbenchPanels } from './views'
 import { TAG_PALETTE } from './palette'
 import type { Settings, Tag, Task, View, Workspace } from './types'
-import { EMPTY_FILTER } from './types'
 
 function envelope(): { id: string; createdAt: string; updatedAt: string; deletedAt: null } {
   return { id: newId(), createdAt: nowIso(), updatedAt: nowIso(), deletedAt: null }
@@ -14,12 +13,12 @@ function envelope(): { id: string; createdAt: string; updatedAt: string; deleted
 
 export function defaultSettings(): Settings {
   return {
+    accentColor: 'sage',
     theme: 'system',
     localePreference: 'system',
     weekStartsOn: 1,
     calendarMode: 'week',
     calendarHourHeight: 76,
-    defaultDurationMinutes: 30,
     reminderLeadMinutes: 20,
     notificationsSilent: true,
   }
@@ -29,7 +28,6 @@ function makeView(partial: Partial<View> & { name: string; icon: string }): View
   return {
     builtin: false,
     preset: null,
-    filter: { ...EMPTY_FILTER },
     arrangement: 'vertical',
     columnCount: 2,
     sort: 'manual',

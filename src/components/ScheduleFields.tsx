@@ -1,11 +1,8 @@
 import { DateTimeField } from './DateTimeField'
 import { Input } from './ui/input'
 import { Button } from './ui/button'
-import { addMinutes } from 'date-fns'
-import { toLocalInputValue } from '@/domain/date'
-import { useAppStore } from '@/domain/store'
 import { t } from '@/i18n'
-import type { ScheduleValues } from '@/domain/planning'
+import { changeSchedule, type ScheduleValues } from '@/domain/planning'
 export function ScheduleFields({
   value,
   onChange,
@@ -15,7 +12,6 @@ export function ScheduleFields({
   onChange: (value: ScheduleValues) => void
   prefix?: string
 }) {
-  const minutes = useAppStore((state) => state.settings.defaultDurationMinutes ?? 30)
   const patch = (key: keyof ScheduleValues, next: string) => onChange({ ...value, [key]: next })
   return (
     <fieldset className="schedule-fields">
@@ -28,17 +24,7 @@ export function ScheduleFields({
             className="input"
 
             value={value.start}
-            onChange={(event) => {
-              const start = event.target.value
-              onChange({
-                ...value,
-                start,
-                end:
-                  !value.end && start
-                    ? toLocalInputValue(addMinutes(new Date(start), minutes).toISOString())
-                    : value.end,
-              })
-            }}
+            onChange={(event) => onChange(changeSchedule(value, 'start', event.target.value))}
           />
         </div>
         <div className="field">
@@ -49,6 +35,7 @@ export function ScheduleFields({
 
             value={value.end}
             min={value.start || undefined}
+            fallback={value.start}
             onChange={(event) => patch('end', event.target.value)}
           />
         </div>

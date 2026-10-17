@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { dueState, matchesFilter, selectTasks, sortTasks } from './filters'
 import type { FilterContext } from './filters'
 import { EMPTY_FILTER } from './types'
-import type { Task, View, ViewFilter, ViewPreset } from './types'
+import type { Task, View, PanelFilter, ViewPreset } from './types'
 
 const NOW = new Date(2026, 2, 5, 9, 0, 0)
 const at = (hour: number, minute = 0, day = 5): string =>
@@ -30,11 +30,7 @@ function makeTask(id: string, partial: Partial<Task> = {}): Task {
   }
 }
 
-function makeView(
-  preset: ViewPreset | null,
-  filter: Partial<ViewFilter> = {},
-  extra: Partial<View> = {},
-): View {
+function makeView(preset: ViewPreset | null, extra: Partial<View> = {}): View {
   return {
     id: `view-${preset ?? 'custom'}`,
     createdAt: at(7),
@@ -44,7 +40,6 @@ function makeView(
     icon: 'list',
     builtin: preset !== null,
     preset,
-    filter: { ...EMPTY_FILTER, ...filter },
     arrangement: 'vertical',
     columnCount: 2,
     sort: 'manual',
@@ -53,6 +48,10 @@ function makeView(
     sortOrder: 0,
     ...extra,
   }
+}
+
+function makeFilter(value: Partial<PanelFilter>): PanelFilter {
+  return { ...EMPTY_FILTER, ...value }
 }
 
 function context(taskTags: Record<string, string[]> = {}): FilterContext {
@@ -65,57 +64,35 @@ describe('matchesFilter', () => {
   it('requires all tags in "all" mode and any tag in "any" mode', () => {
     const tags = { a: ['t1'], b: ['t1', 't2'], c: ['t2'] }
     const ctx = context(tags)
-    const any = makeView('all', { tagIds: ['t1'] })
-    const all = makeView('all', { tagIds: ['t1', 't2'], tagMode: 'all' })
+    const any = makeFilter({ tagIds: ['t1'] })
+    const all = makeFilter({ tagIds: ['t1', 't2'], tagMode: 'all' })
 
-    expect(matchesFilter(makeTask('a'), any.filter, ctx)).toBe(true)
-    expect(matchesFilter(makeTask('c'), any.filter, ctx)).toBe(false)
-    expect(matchesFilter(makeTask('a'), all.filter, ctx)).toBe(false)
-    expect(matchesFilter(makeTask('b'), all.filter, ctx)).toBe(true)
+    expect(matchesFilter(makeTask('a'), any, ctx)).toBe(true)
+    expect(matchesFilter(makeTask('c'), any, ctx)).toBe(false)
+    expect(matchesFilter(makeTask('a'), all, ctx)).toBe(false)
+    expect(matchesFilter(makeTask('b'), all, ctx)).toBe(true)
   })
 
   it('filters by project, status and text', () => {
     expect(
-      matchesFilter(
-        makeTask('a', { projectId: 'p1' }),
-        makeView('all', { projectIds: ['p1'] }).filter,
-        empty,
-      ),
+      matchesFilter(makeTask('a', { projectId: 'p1' }), makeFilter({ projectIds: ['p1'] }), empty),
     ).toBe(true)
     expect(
-      matchesFilter(
-        makeTask('a', { projectId: null }),
-        makeView('all', { projectIds: ['p1'] }).filter,
-        empty,
-      ),
+      matchesFilter(makeTask('a', { projectId: null }), makeFilter({ projectIds: ['p1'] }), empty),
     ).toBe(false)
     expect(
-      matchesFilter(
-        makeTask('a', { status: 'done' }),
-        makeView('all', { statuses: ['done'] }).filter,
-        empty,
-      ),
+      matchesFilter(makeTask('a', { status: 'done' }), makeFilter({ statuses: ['done'] }), empty),
+    ).toBe(true)
+    expect(matchesFilter(makeTask('a'), makeFilter({ statuses: ['done'] }), empty)).toBe(false)
+    expect(
+      matchesFilter(makeTask('a', { title: '写周报' }), makeFilter({ text: '周报' }), empty),
     ).toBe(true)
     expect(
-      matchesFilter(makeTask('a'), makeView('all', { statuses: ['done'] }).filter, empty),
-    ).toBe(false)
-    expect(
-      matchesFilter(
-        makeTask('a', { title: '写周报' }),
-        makeView('all', { text: '周报' }).filter,
-        empty,
-      ),
+      matchesFilter(makeTask('a', { notes: '季度复盘' }), makeFilter({ text: '复盘' }), empty),
     ).toBe(true)
-    expect(
-      matchesFilter(
-        makeTask('a', { notes: '季度复盘' }),
-        makeView('all', { text: '复盘' }).filter,
-        empty,
-      ),
-    ).toBe(true)
-    expect(
-      matchesFilter(makeTask('a', { title: 'x' }), makeView('all', { text: 'y' }).filter, empty),
-    ).toBe(false)
+    expect(matchesFilter(makeTask('a', { title: 'x' }), makeFilter({ text: 'y' }), empty)).toBe(
+      false,
+    )
   })
 
   it('filters on whether a task occupies the timetable', () => {
@@ -123,16 +100,12 @@ describe('matchesFilter', () => {
     expect(
       matchesFilter(
         makeTask('scheduled', { startAt: at(10), endAt: at(11) }),
-        makeView('all', { hasTime: 'scheduled' }).filter,
+        makeFilter({ hasTime: 'scheduled' }),
         ctx,
       ),
     ).toBe(true)
-    expect(
-      matchesFilter(makeTask('free'), makeView('all', { hasTime: 'scheduled' }).filter, ctx),
-    ).toBe(false)
-    expect(
-      matchesFilter(makeTask('free'), makeView('all', { hasTime: 'unscheduled' }).filter, ctx),
-    ).toBe(true)
+    expect(matchesFilter(makeTask('free'), makeFilter({ hasTime: 'scheduled' }), ctx)).toBe(false)
+    expect(matchesFilter(makeTask('free'), makeFilter({ hasTime: 'unscheduled' }), ctx)).toBe(true)
   })
 
   it('never matches a deleted task', () => {
@@ -189,14 +162,16 @@ describe('sortTasks', () => {
   ]
 
   it('sorts by due date with undated last', () => {
-    expect(
-      sortTasks(tasks, makeView('all', {}, { sort: 'due' }), ctx).map((task) => task.id),
-    ).toEqual(['sooner', 'later', 'undated'])
+    expect(sortTasks(tasks, makeView('all', { sort: 'due' }), ctx).map((task) => task.id)).toEqual([
+      'sooner',
+      'later',
+      'undated',
+    ])
   })
 
   it('sorts by title', () => {
     expect(
-      sortTasks(tasks, makeView('all', {}, { sort: 'title' }), ctx).map((task) => task.id),
+      sortTasks(tasks, makeView('all', { sort: 'title' }), ctx).map((task) => task.id),
     ).toEqual(['undated', 'later', 'sooner'])
   })
 

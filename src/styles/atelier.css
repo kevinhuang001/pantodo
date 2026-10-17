@@ -214,7 +214,7 @@
   position: relative;
 }
 .sidebar-bottom-nav {
-  padding: 0 15px 10px;
+  padding: 14px 0 0;
 }
 .sidebar-bottom-nav .nav-row {
   color: var(--text-muted);
@@ -502,6 +502,7 @@
   opacity: 0.72;
 }
 .task-row.done .task-title {
+  text-decoration: line-through;
   color: var(--text-muted);
 }
 .task-actions {

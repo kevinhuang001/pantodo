@@ -11,7 +11,7 @@ Capture and inspect the current application in an isolated sample workspace.
 5. **Statistics** — date/project/tag filters, daily bars, category breakdown, per-Todo estimates/actuals, manual entry and correction, CSV and a ledger.
 6. **Views** — custom views composed of independently filtered panels; each panel uses list/gallery content. Vertical/column arrangements, column count in View settings, spans in panel settings, and pointer/touch/keyboard sorting.
 7. **Focus** — starting a task counts down 3 seconds, then fills the right pane; the sidebar remains available and no OS fullscreen is requested.
-8. **Settings** — icon navigation and grouped cards for theme/language, week start, default plan duration, optional WebDAV sync and JSON export.
+8. **Settings** — icon navigation and grouped cards for theme/language, eight accent presets, week start, optional WebDAV sync and JSON export.
 
 ## Reproduce captures
 

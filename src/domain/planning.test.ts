@@ -2,13 +2,13 @@ import { describe, it, expect } from 'vitest'
 import { changeSchedule, type ScheduleValues } from './planning'
 const empty: ScheduleValues = { start: '', end: '', due: '', estimate: '' }
 describe('capture planning', () => {
-  it('creates a complete interval from either endpoint, including across midnight', () => {
-    expect(changeSchedule(empty, 'start', '2026-10-19T23:45', 30)).toMatchObject({
+  it('keeps an endpoint explicit until the user selects the other endpoint', () => {
+    expect(changeSchedule(empty, 'start', '2026-10-19T23:45')).toEqual({
+      ...empty,
       start: '2026-10-19T23:45',
-      end: '2026-10-20T00:15',
     })
-    expect(changeSchedule(empty, 'end', '2026-10-20T00:15', 30)).toMatchObject({
-      start: '2026-10-19T23:45',
+    expect(changeSchedule(empty, 'end', '2026-10-20T00:15')).toEqual({
+      ...empty,
       end: '2026-10-20T00:15',
     })
   })
@@ -19,7 +19,7 @@ describe('capture planning', () => {
       end: '2026-10-19T11:30',
       due: '2026-10-22T20:00',
     }
-    expect(changeSchedule(value, 'start', '2026-10-21T13:00', 30)).toMatchObject({
+    expect(changeSchedule(value, 'start', '2026-10-21T13:00')).toMatchObject({
       start: '2026-10-21T13:00',
       end: '2026-10-21T14:30',
       due: value.due,
@@ -32,7 +32,7 @@ describe('capture planning', () => {
       due: '2026-10-20T15:00',
       estimate: '90',
     }
-    expect(changeSchedule(value, 'end', '', 30)).toEqual({ ...value, start: '', end: '' })
-    expect(changeSchedule(value, 'due', '', 30)).toEqual({ ...value, due: '' })
+    expect(changeSchedule(value, 'end', '')).toEqual({ ...value, start: '', end: '' })
+    expect(changeSchedule(value, 'due', '')).toEqual({ ...value, due: '' })
   })
 })

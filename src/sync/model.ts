@@ -264,7 +264,6 @@ function valid(collection: (typeof COLLECTIONS)[number], value: unknown, id: str
     value.columnCount <= 4 &&
     number(value.sortOrder) &&
     ['manual', 'due', 'created', 'title'].includes(String(value.sort)) &&
-    filter(value.filter) &&
     Array.isArray(value.panels) &&
     value.panels.every(
       (p) =>

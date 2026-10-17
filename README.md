@@ -37,7 +37,7 @@ Saved views contain independently filtered panels. Create a view with a name and
 
 Arrange panels vertically or in **Columns**. Columns default to two; change the count in View settings. Panel spans live in the panel editor. Drag handles with a pointer or touch, or use Space and arrow keys on a focused handle to reorder. Todos never drag. The same Todo may appear in several panels. Built-in Today, All and Trash support List and Gallery directly.
 
-Projects and views support emoji icons. Only tags have colors; projects use a name and an icon. Appearance, language, week start and default planned duration live in Settings. Light/dark/system themes and Chinese, English and Japanese are supported.
+Projects and views support emoji icons. Only tags have colors; projects use a name and an icon. Appearance, language, week start and eight accent presets live in Settings. Light/dark/system themes and Chinese, English and Japanese are supported.
 
 ## Sync your devices
 
@@ -92,3 +92,5 @@ GitHub Actions checks type safety, formatting, lint, unit tests and production b
 ### Interface components
 
 Forms use shadcn/ui components (Radix primitives, Tailwind CSS and Lucide). Source components live in `src/components/ui`; `components.json` configures the registry aliases. Selects, calendars, emoji pickers and menus render inside the app, with keyboard navigation and focus handling. Creating a view requires only a name and optional emoji; panels, filters and layout can be configured after creation. The frameless Tauri window provides one compact 44px title row, macOS traffic lights or Windows/Linux controls, drag regions on the title and sidebar, and eight resize edges/corners. The native platform selects the controls. A writing card and a random localized phrase replace the previous dense create screen; explanatory captions and footers are removed. The sidebar uses native frosted Sidebar material on macOS and Acrylic on Windows, covered by a medium translucent tint that reveals blurred background colors; Linux transparency depends on the compositor. Capture metadata uses schedule and duration popovers plus searchable project/tag pickers, and the sidebar scrolls without showing a scrollbar. View controls show localized tooltips on hover and keyboard focus.
+
+Appearance settings offer Sage, Ocean, Teal, Lavender, Rose, Peach, Amber and Graphite accents in light and dark themes. Projects, views and panels share an offline Emoji Mart catalog with categories, search and skin tones. All saved filters are panel properties.

@@ -95,6 +95,7 @@ test('pause excludes break time, stop saves records and completed Todos stop tim
   await page.locator('.work-timer').getByRole('button', { name: '继续', exact: true }).click()
   await page.clock.runFor(10_000)
   await row.locator('.task-check').click()
+  await page.getByRole('dialog').getByRole('button', { name: '完成', exact: true }).click()
   await expect(page.locator('.work-timer')).toHaveCount(0)
   const entries = (await read(page)).timeEntries.filter((entry) => !entry.deletedAt)
   const seconds = entries.reduce(
@@ -165,6 +166,7 @@ test('projects and saved views support emoji', async ({ page }) => {
   await page.getByRole('button', { name: '新建项目', exact: true }).click()
   await page.locator('#entity-name').fill('实验项目')
   await page.locator('.emoji-trigger').click()
+  await page.locator('em-emoji-picker input[type=search]').fill('test tube')
   await page.getByRole('button', { name: '🧪', exact: true }).click()
   await page.locator('button[form="pantodo-entity-form"]').click()
   await expect(page.locator('.nav-row', { hasText: '实验项目' }).locator('.nav-emoji')).toHaveText(
@@ -173,6 +175,7 @@ test('projects and saved views support emoji', async ({ page }) => {
   await page.getByRole('button', { name: '新建视图', exact: true }).click()
   await page.locator('#view-name').fill('实验面板')
   await page.locator('.emoji-trigger').click()
+  await page.locator('em-emoji-picker input[type=search]').fill('rocket')
   await page.getByRole('button', { name: '🚀', exact: true }).click()
   await page.locator('button[form="pantodo-view-form"]').click()
   await expect(page.locator('.toolbar h1')).toContainText('🚀 实验面板')

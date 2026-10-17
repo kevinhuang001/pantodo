@@ -9,7 +9,6 @@ import { validatePlan } from './calendar'
 import type { TimeCommand } from './time'
 import { nowIso } from './date'
 import { newId } from './ids'
-import { EMPTY_FILTER } from './types'
 import type {
   AppTab,
   Id,
@@ -118,6 +117,7 @@ const emptyWorkspace: Workspace = {
   timer: null,
   views: [],
   settings: {
+    accentColor: 'sage',
     theme: 'system',
     localePreference: 'system',
     weekStartsOn: 1,
@@ -437,7 +437,6 @@ export const useAppStore = create<AppState>()((set, get) => ({
       presentation: 'list',
       builtin: false,
       preset: null,
-      filter: { ...EMPTY_FILTER },
       arrangement: 'columns',
       columnCount: 2,
       sort: 'manual',

@@ -57,7 +57,7 @@ export function CaptureEstimatePicker({
       >
         <header className="estimate-head">
           <span>{t('picker.estimate')}</span>
-          <strong>{value ? detail(estimate) : t('picker.unset')}</strong>
+          {value ? <strong>{detail(estimate)}</strong> : <Timer size={17} />}
         </header>
         <div className="estimate-presets" role="group" aria-label={t('picker.estimate')}>
           {PRESETS.map((minutes) => (

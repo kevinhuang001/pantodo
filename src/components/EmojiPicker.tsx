@@ -1,43 +1,60 @@
-import { useId, useState } from 'react'
-import { ChevronDown, Search, Smile } from 'lucide-react'
-import { t } from '@/i18n'
+import { useEffect, useId, useRef, useState } from 'react'
+import { ChevronDown, Smile } from 'lucide-react'
+import { getLocale, t } from '@/i18n'
+import { useAppStore } from '@/domain/store'
+import { resolveTheme, systemPrefersDark } from '@/domain/theme'
 import { Button } from './ui/button'
 import { Input } from './ui/input'
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover'
-const CHOICES = [
-  ['📁', 'folder project 文件夹 项目 フォルダ'],
-  ['🪴', 'plant 植物 植木'],
-  ['📚', 'books study 学习 书 本'],
-  ['🎯', 'target goal 目标'],
-  ['💻', 'computer work 工作 电脑 パソコン'],
-  ['🧪', 'science experiment 实验 科学'],
-  ['✍️', 'write 写作 笔记'],
-  ['☕', 'coffee life 生活 咖啡'],
-  ['🏡', 'home 家 房子'],
-  ['🌿', 'leaf nature 自然 树叶'],
-  ['✨', 'sparkles 星光 完成'],
-  ['🗓️', 'calendar 日历 日程'],
-  ['🧩', 'puzzle view 视图 拼图'],
-  ['🎨', 'art 设计 绘画'],
-  ['🚀', 'rocket 火箭 启动'],
-  ['🛠️', 'tools 工具 修理'],
-  ['🌱', 'seed 成长 幼苗'],
-  ['🔥', 'fire 火 紧急'],
-  ['⚡', 'bolt 电 闪电'],
-  ['☁️', 'cloud 云'],
-  ['📌', 'pin 固定 图钉'],
-  ['✅', 'done 完成'],
-  ['🔬', 'research 研究 显微镜'],
-  ['🎓', 'graduate 毕业 学业'],
-  ['📝', 'note 记录 论文'],
-  ['🏃', 'run 运动 跑步'],
-  ['🎵', 'music 音乐'],
-  ['✈️', 'travel 旅行 飞机'],
-  ['💡', 'idea 想法 灵感'],
-  ['📦', 'box 收纳 箱子'],
-  ['⏰', 'time 时间 闹钟'],
-  ['🌙', 'moon 夜晚 月亮'],
-]
+
+function EmojiCatalog({ onSelect }: { onSelect: (emoji: string) => void }) {
+  const host = useRef<HTMLDivElement>(null)
+  const [failed, setFailed] = useState(false)
+  const preference = useAppStore((s) => s.settings.theme)
+  const locale = getLocale()
+  useEffect(() => {
+    let disposed = false
+    let picker: HTMLElement | undefined
+    void Promise.all([
+      import('emoji-mart'),
+      import('@emoji-mart/data'),
+      locale === 'zh-CN'
+        ? import('@emoji-mart/data/i18n/zh.json')
+        : locale === 'ja'
+          ? import('@emoji-mart/data/i18n/ja.json')
+          : import('@emoji-mart/data/i18n/en.json'),
+    ])
+      .then(([{ Picker }, { default: data }, { default: i18n }]) => {
+        if (disposed || !host.current) return
+        picker = new Picker({
+          data,
+          i18n,
+          set: 'native',
+          theme: resolveTheme(preference, systemPrefersDark()),
+          previewPosition: 'none',
+          skinTonePosition: 'search',
+          maxFrequentRows: 1,
+          perLine: 8,
+          autoFocus: true,
+          onEmojiSelect: (emoji: { native: string }) => onSelect(emoji.native),
+        }) as unknown as HTMLElement
+        host.current.replaceChildren(picker)
+      })
+      .catch(() => {
+        if (!disposed) setFailed(true)
+      })
+    return () => {
+      disposed = true
+      picker?.remove()
+    }
+  }, [locale, preference, onSelect])
+  return (
+    <div className="emoji-catalog" ref={host}>
+      {failed ? <p role="alert">{t('work.failed')}</p> : null}
+    </div>
+  )
+}
+
 export function EmojiPicker({
   value,
   onChange,
@@ -45,8 +62,7 @@ export function EmojiPicker({
   value: string
   onChange: (value: string) => void
 }) {
-  const [open, setOpen] = useState(false),
-    [search, setSearch] = useState('')
+  const [open, setOpen] = useState(false)
   const id = useId()
   return (
     <div className="field emoji-field">
@@ -59,36 +75,13 @@ export function EmojiPicker({
             <ChevronDown size={14} />
           </Button>
         </PopoverTrigger>
-        <PopoverContent align="start" className="emoji-popover">
-          <div className="emoji-search">
-            <Search size={15} />
-            <Input
-              aria-label={t('emoji.search')}
-              placeholder={t('emoji.search')}
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-          </div>
-          <div className="emoji-grid">
-            {CHOICES.filter(([emoji, keywords]) =>
-              (emoji + keywords).includes(search.toLowerCase()),
-            ).map(([emoji]) => (
-              <Button
-                key={emoji}
-                type="button"
-                variant="ghost"
-                className="emoji-choice"
-                aria-label={emoji}
-                aria-pressed={value === emoji}
-                onClick={() => {
-                  onChange(emoji!)
-                  setOpen(false)
-                }}
-              >
-                {emoji}
-              </Button>
-            ))}
-          </div>
+        <PopoverContent side="right" align="center" collisionPadding={12} className="emoji-popover">
+          <EmojiCatalog
+            onSelect={(emoji) => {
+              onChange(emoji)
+              setOpen(false)
+            }}
+          />
           <div className="emoji-custom">
             <Input
               aria-label={t('emoji.custom')}

@@ -15,7 +15,7 @@ export interface TaskLookup {
   palette: readonly string[]
   selectedTaskId: Id | null
   onSelect: (task: Task) => void
-  onCycleStatus: (task: Task) => void
+  onToggleComplete: (task: Task) => void
   onEdit: (task: Task) => void
   onDelete: (task: Task) => void
   onRestore: (task: Task) => void
@@ -23,7 +23,6 @@ export interface TaskLookup {
 
 function checkClass(status: Task['status']): string {
   if (status === 'done') return 'task-check done'
-  if (status === 'doing') return 'task-check doing'
   return 'task-check'
 }
 
@@ -51,11 +50,12 @@ export function TaskRow({ task, lookup }: { task: Task; lookup: TaskLookup }) {
       <button
         type="button"
         className={checkClass(task.status)}
+        role="checkbox"
+        aria-checked={task.status === 'done'}
         aria-label={checkLabel(task.status)}
-        onClick={() => lookup.onCycleStatus(task)}
+        onClick={() => lookup.onToggleComplete(task)}
       >
         {task.status === 'done' ? <Icon name="check" size={11} /> : null}
-        {task.status === 'doing' ? <Icon name="play" size={9} /> : null}
       </button>
 
       <div

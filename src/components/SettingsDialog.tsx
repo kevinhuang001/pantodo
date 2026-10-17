@@ -1,7 +1,7 @@
+import { ACCENT_COLORS } from '@/domain/accent'
 import { SlidersHorizontal, Timer, Cloud, Database, Info, Download } from 'lucide-react'
 import { SyncSettings } from './SyncSettings'
 import { SelectField } from './SelectField'
-import { Input } from './ui/input'
 import { Button } from './ui/button'
 import { useState } from 'react'
 
@@ -138,6 +138,30 @@ export function SettingsDialog({ onClose, initialPane }: SettingsDialogProps) {
                     <option value="dark">{t('theme.dark')}</option>
                   </SelectField>
                 </div>
+                <div className="settings-row settings-accent-row">
+                  <span className="settings-label">{t('settings.accentColor')}</span>
+                  <div
+                    className="accent-options"
+                    role="group"
+                    aria-label={t('settings.accentColor')}
+                  >
+                    {ACCENT_COLORS.map((key) => (
+                      <button
+                        key={key}
+                        type="button"
+                        className="accent-choice"
+                        data-accent={key}
+                        aria-pressed={settings.accentColor === key}
+                        aria-label={t(('accent.' + key) as MessageKey)}
+                        title={t(('accent.' + key) as MessageKey)}
+                        style={{ background: `var(--accent-${key})` }}
+                        onClick={() => patch({ accentColor: key })}
+                      >
+                        {settings.accentColor === key ? <Icon name="check" size={14} /> : null}
+                      </button>
+                    ))}
+                  </div>
+                </div>
                 <div className="settings-row">
                   <span className="settings-label">{t('toolbar.language')}</span>
                   <SelectField
@@ -173,29 +197,6 @@ export function SettingsDialog({ onClose, initialPane }: SettingsDialogProps) {
 
             {pane === 'timer' ? (
               <div className="settings-card">
-                <div className="settings-row">
-                  <span className="settings-label">
-                    {t('calendar.defaultDuration')}
-                    <small>{t('settings.durationHint')}</small>
-                  </span>
-                  <Input
-                    type="number"
-                    className="input"
-                    min={5}
-                    max={1440}
-                    step={5}
-                    aria-label={t('calendar.defaultDuration')}
-                    value={settings.defaultDurationMinutes ?? 30}
-                    onChange={(event) =>
-                      patch({
-                        defaultDurationMinutes: Math.min(
-                          1440,
-                          Math.max(5, Number(event.target.value)),
-                        ),
-                      })
-                    }
-                  />
-                </div>
                 <p className="settings-timer-note">{t('work.autoStop')}</p>
               </div>
             ) : null}

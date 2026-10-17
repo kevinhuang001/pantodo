@@ -176,108 +176,7 @@
   color: var(--text-muted);
 }
 .capture-schedule-picker[data-slot='popover-content'] {
-  width: 344px;
-}
-.schedule-tabs {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 2px;
-  margin: 8px 10px 0;
-  padding: 3px;
-  border: 1px solid var(--hairline);
-  border-radius: 10px;
-  background: var(--surface-sunken);
-}
-.schedule-tabs [role='tab'] {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  justify-content: center;
-  gap: 3px;
-  height: 48px;
-  min-height: 48px;
-  min-width: 0;
-  padding: 6px 8px;
-  border-radius: 7px;
-  background: transparent;
-  text-align: left;
-  color: var(--text-subtle);
-  box-shadow: none;
-}
-.schedule-tabs [role='tab'] > span {
-  font-size: 10px;
-  font-weight: 450;
-}
-.schedule-tabs strong {
-  max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  font-size: 11px;
-  font-weight: 550;
-  color: var(--text-muted);
-  white-space: nowrap;
-}
-.schedule-tabs [aria-selected='true'] {
-  background: var(--surface-strong);
-  color: var(--text);
-  box-shadow:
-    0 1px 2px #18331e12,
-    inset 0 0 0 1px var(--hairline);
-}
-.schedule-tabs [aria-selected='true'] strong {
-  color: var(--accent);
-}
-.capture-schedule-picker [data-slot='calendar'] {
-  --cell-size: 34px;
-  margin: 0 auto;
-  padding: 8px 12px 4px;
-}
-.capture-schedule-picker [data-selected-single='true'] {
-  background: var(--accent);
-  color: #fff;
-  border-radius: 7px;
-}
-.schedule-time {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  min-height: 52px;
-  padding: 9px 14px;
-  border-top: 1px solid var(--hairline);
-  color: var(--text-muted);
-  font-size: 12px;
-}
-.schedule-time > span {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-}
-.schedule-time-hint {
-  color: var(--text-subtle);
-  font-size: 11px;
-}
-.schedule-time-controls {
-  display: flex;
-  align-items: center;
-  gap: 3px;
-}
-.schedule-time-controls [data-slot='select-trigger'] {
-  width: 57px;
-  min-width: 57px;
-  height: 30px;
-  min-height: 30px;
-  padding: 0 7px;
-  border-radius: 6px;
-  background: var(--surface-sunken);
-  border: 1px solid var(--hairline);
-  box-shadow: none;
-  font-size: 12px;
-  font-variant-numeric: tabular-nums;
-}
-.schedule-time-controls b {
-  font-weight: 400;
-  color: var(--text-subtle);
+  width: 340px;
 }
 .capture-schedule-picker > .form-error {
   margin: 0;
@@ -384,4 +283,103 @@
 [data-slot='tooltip-content'] > svg {
   background: var(--text);
   fill: var(--text);
+}
+
+.schedule-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 14px 10px;
+  font-size: 13px;
+  color: var(--text);
+}
+.schedule-endpoints {
+  padding: 0 12px 12px;
+}
+.schedule-endpoint {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 9px 0;
+}
+.schedule-endpoint > span {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+.schedule-endpoint > div {
+  display: grid;
+  grid-template-columns: 1fr 94px 28px;
+  gap: 6px;
+}
+.schedule-endpoint [data-slot='button'] {
+  min-width: 0;
+  height: 32px;
+  min-height: 32px;
+  padding: 0 8px;
+  border-radius: 7px;
+  font-size: 12px;
+  gap: 7px;
+  justify-content: flex-start;
+  box-shadow: none;
+}
+.schedule-endpoint [data-size='icon'] {
+  padding: 0;
+  justify-content: center;
+  width: 28px;
+}
+.date-popover[data-slot='popover-content'] {
+  width: 276px;
+  padding: 0;
+  overflow: hidden;
+}
+.date-popover [data-slot='calendar'] {
+  --cell-size: 36px;
+  width: 276px;
+  padding: 12px;
+}
+.date-popover .rdp-month_grid {
+  width: 252px;
+  table-layout: fixed;
+}
+.date-popover .rdp-weekdays,
+.date-popover .rdp-week {
+  width: 252px;
+}
+.date-popover .rdp-weekday,
+.date-popover .rdp-day {
+  width: 36px;
+  flex: 0 0 36px;
+}
+.date-popover [data-selected-single='true'] {
+  background: var(--accent);
+  color: var(--text-on-accent);
+}
+.date-popover [data-range-middle='true'] {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.date-popover [data-range-start='true'],
+.date-popover [data-range-end='true'] {
+  background: var(--accent);
+  color: var(--text-on-accent);
+}
+.time-popover[data-slot='popover-content'] {
+  width: 220px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.time-popover .field {
+  gap: 7px;
+  font-size: 12px;
+}
+.time-columns {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.time-columns [data-slot='select-trigger'] {
+  flex: 1;
+  min-width: 0;
 }

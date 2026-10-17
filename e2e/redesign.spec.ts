@@ -102,6 +102,7 @@ test('view settings stay basic and the calendar zoom is dragged directly', async
   await page.locator('.nav-row', { hasText: '我的工作台' }).click()
   await page.getByRole('button', { name: '视图设置', exact: true }).click()
   await expect(page.locator('#view-name')).toBeVisible()
+  await expect(page.locator('[id^=view-filter], .view-filter-details')).toHaveCount(0)
   await expect(page.getByRole('dialog').getByRole('combobox')).toHaveCount(1)
   await expect(
     page.locator('#view-template,#view-presentation,#view-columns,#view-arrangement'),

@@ -348,12 +348,12 @@ export function Sidebar({
               ))
             )}
           </section>
+          <div className="sidebar-bottom-nav">
+            {sortedViews.filter((view) => view.preset === 'trash').map(renderViewRow)}
+          </div>
         </div>
       </div>
 
-      <div className="sidebar-bottom-nav">
-        {sortedViews.filter((view) => view.preset === 'trash').map(renderViewRow)}
-      </div>
       <div className="sidebar-footer">
         {sync.config.url ? (
           <button

@@ -7,7 +7,7 @@
   --color-popover: var(--popover);
   --color-popover-foreground: var(--text);
   --color-primary: var(--accent);
-  --color-primary-foreground: #fff;
+  --color-primary-foreground: var(--text-on-accent);
   --color-secondary: var(--surface-sunken);
   --color-secondary-foreground: var(--text);
   --color-muted: var(--surface-sunken);

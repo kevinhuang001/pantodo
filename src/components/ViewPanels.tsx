@@ -1,6 +1,8 @@
 import { useState, type CSSProperties, type ReactNode } from 'react'
+import { createPortal } from 'react-dom'
 import {
   DndContext,
+  DragOverlay,
   PointerSensor,
   KeyboardSensor,
   TouchSensor,
@@ -51,7 +53,7 @@ function SortablePanel({
   } = useSortable({ id: panel.id })
   const style = {
     '--panel-span': Math.min(panel.span, columns),
-    transform: CSS.Transform.toString(transform),
+    transform: isDragging ? undefined : CSS.Translate.toString(transform),
     transition,
     zIndex: isDragging ? 2 : undefined,
   } as CSSProperties
@@ -90,6 +92,7 @@ export function ViewPanels({
   context: FilterContext
   lookup: TaskLookup
 }) {
+  const [dragged, setDragged] = useState<{ id: string; width: number; height: number } | null>(null)
   const updateView = useAppStore((s) => s.updateView)
   const [editing, setEditing] = useState<ViewPanel | null>(null),
     [error, setError] = useState(false)
@@ -108,6 +111,60 @@ export function ViewPanels({
     if (from !== to && from >= 0 && to >= 0 && from < panels.length && to < panels.length)
       patch({ panels: arrayMove(panels, from, to) })
   }
+  const renderContent = (panel: ViewPanel, handle: ReactNode) => {
+    const list = sortTasks(
+      tasks.filter((task) => matchesFilter(task, panel.filter, context)),
+      { ...view, sort: panel.sort },
+      context,
+    )
+    return (
+      <>
+        <header>
+          {handle}
+          <span className="panel-emoji" aria-hidden="true">
+            {panel.emoji}
+          </span>
+          <h3>{panel.name}</h3>
+          <span className="panel-count">{list.length}</span>
+          <PresentationPicker
+            value={panel.presentation ?? 'list'}
+            onChange={(presentation) =>
+              patch({
+                panels: panels.map((p) => (p.id === panel.id ? { ...p, presentation } : p)),
+              })
+            }
+          />
+          <button
+            className="icon-button"
+            aria-label={t('panel.edit')}
+            onClick={() => setEditing(panel)}
+          >
+            <Icon name="pencil" size={13} />
+          </button>
+        </header>
+        <div className="panel-meta">
+          <span>
+            <Icon name="sliders" size={11} />
+            {panel.filter.tagIds.length
+              ? panel.filter.tagIds.length + ' ' + t('task.field.tags')
+              : t('panel.all')}
+            {panel.filter.statuses.length
+              ? ' · ' +
+                panel.filter.statuses
+                  .map((s) => t(('task.status.' + s) as 'task.status.todo'))
+                  .join(' / ')
+              : ''}
+          </span>
+        </div>
+        <TaskList
+          tasks={list}
+          lookup={lookup}
+          presentation={panel.presentation ?? 'list'}
+          emptyKey="group.empty"
+        />
+      </>
+    )
+  }
   return (
     <>
       <div className="panel-toolbar">
@@ -125,7 +182,17 @@ export function ViewPanels({
         sensors={sensors}
         collisionDetection={closestCenter}
         accessibility={{ screenReaderInstructions: { draggable: t('panel.dragHint') } }}
+        onDragStart={({ active }) => {
+          const rect = document
+            .querySelector<HTMLElement>(
+              `[data-panel-id="${globalThis.CSS.escape(String(active.id))}"]`,
+            )
+            ?.getBoundingClientRect()
+          if (rect) setDragged({ id: String(active.id), width: rect.width, height: rect.height })
+        }}
+        onDragCancel={() => setDragged(null)}
         onDragEnd={({ active, over }) => {
+          setDragged(null)
           if (over)
             move(
               panels.findIndex((p) => p.id === active.id),
@@ -135,68 +202,33 @@ export function ViewPanels({
       >
         <SortableContext items={panels.map((panel) => panel.id)} strategy={rectSortingStrategy}>
           <div className="composed-panels" style={{ '--panel-columns': columns } as CSSProperties}>
-            {panels.map((panel) => {
-              const list = sortTasks(
-                tasks.filter((task) => matchesFilter(task, panel.filter, context)),
-                { ...view, sort: panel.sort },
-                context,
-              )
-              return (
-                <SortablePanel key={panel.id} panel={panel} columns={columns}>
-                  {(handle) => (
-                    <>
-                      <header>
-                        {handle}
-                        <span className="panel-emoji" aria-hidden="true">
-                          {panel.emoji}
-                        </span>
-                        <h3>{panel.name}</h3>
-                        <span className="panel-count">{list.length}</span>
-                        <PresentationPicker
-                          value={panel.presentation ?? 'list'}
-                          onChange={(presentation) =>
-                            patch({
-                              panels: panels.map((p) =>
-                                p.id === panel.id ? { ...p, presentation } : p,
-                              ),
-                            })
-                          }
-                        />
-                        <button
-                          className="icon-button"
-                          aria-label={t('panel.edit')}
-                          onClick={() => setEditing(panel)}
-                        >
-                          <Icon name="pencil" size={13} />
-                        </button>
-                      </header>
-                      <div className="panel-meta">
-                        <span>
-                          <Icon name="sliders" size={11} />
-                          {panel.filter.tagIds.length
-                            ? panel.filter.tagIds.length + ' ' + t('task.field.tags')
-                            : t('panel.all')}
-                          {panel.filter.statuses.length
-                            ? ' · ' +
-                              panel.filter.statuses
-                                .map((s) => t(('task.status.' + s) as 'task.status.todo'))
-                                .join(' / ')
-                            : ''}
-                        </span>
-                      </div>
-                      <TaskList
-                        tasks={list}
-                        lookup={lookup}
-                        presentation={panel.presentation ?? 'list'}
-                        emptyKey="group.empty"
-                      />
-                    </>
-                  )}
-                </SortablePanel>
-              )
-            })}
+            {panels.map((panel) => (
+              <SortablePanel key={panel.id} panel={panel} columns={columns}>
+                {(handle) => renderContent(panel, handle)}
+              </SortablePanel>
+            ))}
           </div>
         </SortableContext>
+        {createPortal(
+          <DragOverlay adjustScale={false} dropAnimation={null}>
+            {dragged && panels.find((p) => p.id === dragged.id) ? (
+              <section
+                inert
+                aria-hidden="true"
+                className="composed-panel panel-drag-overlay"
+                style={{ width: dragged.width, height: dragged.height }}
+              >
+                {renderContent(
+                  panels.find((p) => p.id === dragged.id)!,
+                  <span className="panel-move">
+                    <Icon name="grip" size={16} />
+                  </span>,
+                )}
+              </section>
+            ) : null}
+          </DragOverlay>,
+          document.body,
+        )}
       </DndContext>
       {!panels.length ? <p className="stats-empty">{t('panel.empty')}</p> : null}
       {editing ? (

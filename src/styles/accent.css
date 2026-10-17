@@ -1,0 +1,62 @@
+:root {
+  --accent-sage: #52734b;
+  --accent-ocean: #346caa;
+  --accent-teal: #26796e;
+  --accent-lavender: #7960a8;
+  --accent-rose: #ac5474;
+  --accent-peach: #a65f32;
+  --accent-amber: #8c701c;
+  --accent-graphite: #5b6473;
+}
+:root[data-theme='dark'] {
+  --accent-sage: #a4c392;
+  --accent-ocean: #88b9ee;
+  --accent-teal: #7cc9b8;
+  --accent-lavender: #bca5e8;
+  --accent-rose: #ec9cba;
+  --accent-peach: #eabb92;
+  --accent-amber: #dfc56f;
+  --accent-graphite: #b2bdcd;
+}
+:root[data-accent='sage'] {
+  --accent: var(--accent-sage);
+}
+:root[data-accent='ocean'] {
+  --accent: var(--accent-ocean);
+}
+:root[data-accent='teal'] {
+  --accent: var(--accent-teal);
+}
+:root[data-accent='lavender'] {
+  --accent: var(--accent-lavender);
+}
+:root[data-accent='rose'] {
+  --accent: var(--accent-rose);
+}
+:root[data-accent='peach'] {
+  --accent: var(--accent-peach);
+}
+:root[data-accent='amber'] {
+  --accent: var(--accent-amber);
+}
+:root[data-accent='graphite'] {
+  --accent: var(--accent-graphite);
+}
+:root[data-accent] {
+  --accent-strong: color-mix(in srgb, var(--accent) 88%, black);
+  --accent-hover: color-mix(in srgb, var(--accent) 82%, black);
+  --accent-soft: color-mix(in srgb, var(--accent) 12%, transparent);
+  --accent-gradient: linear-gradient(
+    145deg,
+    color-mix(in srgb, var(--accent) 80%, white),
+    var(--accent)
+  );
+  --focus: var(--accent);
+  --focus-ring: color-mix(in srgb, var(--accent) 22%, transparent);
+  --text-on-accent: #fff;
+}
+:root[data-accent][data-theme='dark'] {
+  --accent-strong: color-mix(in srgb, var(--accent) 88%, white);
+  --accent-hover: color-mix(in srgb, var(--accent) 82%, white);
+  --text-on-accent: #17221b;
+}

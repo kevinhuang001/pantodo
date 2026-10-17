@@ -1,16 +1,20 @@
 import { useEffect, useRef, useState, type ComponentProps } from 'react'
-import { CalendarIcon } from 'lucide-react'
+import { CalendarIcon, Clock3 } from 'lucide-react'
 import { format } from 'date-fns'
-import { enUS, zhCN, ja } from 'date-fns/locale'
-import { getLocale, t } from '@/i18n'
-import { Calendar } from './ui/calendar'
+import { t } from '@/i18n'
+import { DatePickerPopover, TimePickerPopover } from './DateTimePicker'
 import { Input } from './ui/input'
 import { Button } from './ui/button'
-import { Popover, PopoverTrigger, PopoverContent } from './ui/popover'
-type Props = Omit<ComponentProps<'input'>, 'type'> & { dateOnly?: boolean }
-export function DateTimeField({ value, onChange, className, dateOnly = false, ...props }: Props) {
-  const raw = String(value ?? ''),
-    parsed = raw ? new Date(dateOnly ? raw + 'T00:00' : raw) : undefined
+type Props = Omit<ComponentProps<'input'>, 'type'> & { dateOnly?: boolean; fallback?: string }
+export function DateTimeField({
+  value,
+  onChange,
+  className,
+  dateOnly = false,
+  fallback,
+  ...props
+}: Props) {
+  const raw = String(value ?? '')
   const [draft, setDraft] = useState(raw)
   const inputRef = useRef<HTMLInputElement>(null)
   useEffect(() => setDraft(raw), [raw])
@@ -27,9 +31,6 @@ export function DateTimeField({ value, onChange, className, dateOnly = false, ..
   useEffect(() => {
     inputRef.current?.setCustomValidity(valid ? '' : t('time.invalidRange'))
   }, [valid])
-  const [timeDraft, setTimeDraft] = useState(raw.split('T')[1] || '')
-  useEffect(() => setTimeDraft(raw.split('T')[1] || ''), [raw])
-  const selected = parsed && !Number.isNaN(parsed.getTime()) ? parsed : undefined
   const change = (next: string) => {
     onChange?.({ target: { value: next }, currentTarget: { value: next } } as Parameters<
       NonNullable<Props['onChange']>
@@ -62,54 +63,28 @@ export function DateTimeField({ value, onChange, className, dateOnly = false, ..
             change(normalized)
         }}
       />
-      <Popover>
-        <PopoverTrigger asChild>
+      <DatePickerPopover value={raw} fallback={fallback} dateOnly={dateOnly} onChange={change}>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          aria-label={(props['aria-label'] ?? t('plan.title')) + ' · ' + t('calendar.range')}
+        >
+          <CalendarIcon size={15} />
+        </Button>
+      </DatePickerPopover>
+      {!dateOnly ? (
+        <TimePickerPopover value={raw} fallback={fallback} onChange={change}>
           <Button
             type="button"
             variant="ghost"
             size="icon"
-            aria-label={props['aria-label'] ?? t('plan.title')}
+            aria-label={(props['aria-label'] ?? t('plan.title')) + ' · ' + t('picker.time')}
           >
-            <CalendarIcon size={15} />
+            <Clock3 size={15} />
           </Button>
-        </PopoverTrigger>
-        <PopoverContent className="date-popover" align="start">
-          <Calendar
-            mode="single"
-            locale={{ 'zh-CN': zhCN, en: enUS, ja }[getLocale()]}
-            selected={selected}
-            defaultMonth={selected}
-            onSelect={(date) => {
-              if (date)
-                change(
-                  format(date, 'yyyy-MM-dd') +
-                    (dateOnly ? '' : 'T' + (raw.split('T')[1] || '09:00')),
-                )
-            }}
-          />
-          {!dateOnly ? (
-            <div className="date-time-row">
-              <label>
-                {t('plan.start')}
-                <Input
-                  aria-label={t('plan.start')}
-                  placeholder="HH:mm"
-                  value={timeDraft}
-                  onChange={(e) => {
-                    const time = e.target.value
-                    setTimeDraft(time)
-                    if (/^([01]\d|2[0-3]):[0-5]\d$/.test(time))
-                      change((raw.split('T')[0] || format(new Date(), 'yyyy-MM-dd')) + 'T' + time)
-                  }}
-                />
-              </label>
-              <Button type="button" variant="ghost" onClick={() => change('')}>
-                {t('plan.clear')}
-              </Button>
-            </div>
-          ) : null}
-        </PopoverContent>
-      </Popover>
+        </TimePickerPopover>
+      ) : null}
     </div>
   )
 }

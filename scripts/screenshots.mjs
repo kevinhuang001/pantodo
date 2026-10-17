@@ -151,6 +151,7 @@ try {
   await page.getByRole('button', { name: '添加面板', exact: true }).click()
   await page.locator('#panel-name').fill('论文与深度工作')
   await page.locator('.emoji-trigger').click()
+  await page.locator('em-emoji-picker input[type=search]').fill('books')
   await page.getByRole('button', { name: '📚', exact: true }).click()
   await shot('11-panel-editor')
   await page.getByRole('dialog').getByRole('button', { name: '关闭', exact: true }).click()

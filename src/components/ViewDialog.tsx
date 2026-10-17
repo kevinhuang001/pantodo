@@ -1,17 +1,15 @@
 import { useState } from 'react'
 import { useAppStore } from '@/domain/store'
-import { EMPTY_FILTER, type View } from '@/domain/types'
+import { type View } from '@/domain/types'
 import { t } from '@/i18n'
 import { Modal } from './Modal'
 import { Button } from './ui/button'
 import { Input } from './ui/input'
 import { EmojiPicker } from './EmojiPicker'
-import { FilterFields } from './FilterFields'
 import { SelectField } from './SelectField'
 export function ViewDialog({ view, onClose }: { view: View | null; onClose: () => void }) {
   const [name, setName] = useState(view?.name ?? ''),
     [emoji, setEmoji] = useState(view?.emoji ?? '🧩')
-  const [filter, setFilter] = useState(view?.filter ?? { ...EMPTY_FILTER })
   const [columnCount, setColumnCount] = useState(view?.columnCount ?? 2)
   const [saving, setSaving] = useState(false),
     [error, setError] = useState('')
@@ -21,9 +19,7 @@ export function ViewDialog({ view, onClose }: { view: View | null; onClose: () =
     setError('')
     try {
       if (view)
-        await useAppStore
-          .getState()
-          .updateView(view.id, { name: name.trim(), emoji, filter, columnCount })
+        await useAppStore.getState().updateView(view.id, { name: name.trim(), emoji, columnCount })
       else await useAppStore.getState().createView({ name: name.trim(), emoji })
       onClose()
     } catch {
@@ -105,14 +101,6 @@ export function ViewDialog({ view, onClose }: { view: View | null; onClose: () =
               ))}
             </SelectField>
           </div>
-        ) : null}
-        {view ? (
-          <details className="view-filter-details">
-            <summary>
-              {t('view.field.filterTags')} · {t('panel.text')}
-            </summary>
-            <FilterFields prefix="view-filter" value={filter} onChange={setFilter} />
-          </details>
         ) : null}
         {error ? (
           <p className="form-error" role="alert">

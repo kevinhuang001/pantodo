@@ -9,8 +9,10 @@ body,
   position: relative;
   margin: 0;
   height: 100dvh;
-  border-radius: 14px;
-  clip-path: inset(0 round 14px);
+  --window-radius: 14px;
+  border: 0;
+  border-radius: var(--window-radius);
+  clip-path: inset(0 round var(--window-radius));
   box-shadow: none;
 }
 .sidebar {
@@ -18,7 +20,7 @@ body,
   background: linear-gradient(150deg, #f0f4eb85, #e5edd878);
   backdrop-filter: blur(22px) saturate(135%);
   -webkit-backdrop-filter: blur(22px) saturate(135%);
-  border-radius: 14px 0 0 14px;
+  border-radius: 0;
   padding-top: 44px;
 }
 :root[data-theme='dark'] .sidebar {
@@ -31,7 +33,7 @@ body,
 .main {
   position: relative;
   background: var(--background);
-  border-radius: 0 14px 14px 0;
+  border-radius: 0;
   padding-top: 0;
 }
 /* One compact title row; controls sit alongside content rather than above a second header. */
@@ -458,34 +460,6 @@ body,
   width: 310px;
   padding: 12px;
 }
-.emoji-search {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 10px;
-}
-.emoji-search input {
-  min-width: 0;
-}
-.emoji-grid {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 3px;
-  max-height: 240px;
-  overflow: auto;
-}
-.emoji-grid .emoji-choice {
-  width: 36px;
-  height: 36px;
-  padding: 0;
-  border-radius: 7px;
-  font-size: 23px;
-}
-.emoji-choice[aria-pressed='true'] {
-  background: var(--accent-soft);
-  box-shadow: inset 0 0 0 1px var(--accent);
-}
 .emoji-custom {
   display: flex;
   gap: 8px;
@@ -504,7 +478,7 @@ body,
 }
 .datetime-field > input {
   width: 100%;
-  padding-right: 37px;
+  padding-right: 68px;
   font-size: 12px;
 }
 .datetime-field > button {
@@ -513,20 +487,17 @@ body,
   height: 30px;
   width: 30px;
 }
+.datetime-field > button:nth-of-type(1) {
+  right: 34px;
+}
+.datetime-field > button:only-of-type {
+  right: 3px;
+}
 .date-popover {
   width: auto;
   padding: 0;
 }
-.date-time-row {
-  padding: 12px;
-  display: flex;
-  align-items: flex-end;
-  gap: 8px;
-  border-top: 1px solid var(--border);
-}
-.date-time-row label {
-  font-size: 12px;
-}
+
 .product-dialog.settings-window {
   width: 720px;
   height: auto;

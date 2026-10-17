@@ -509,15 +509,6 @@
 .composed-panel .task-title {
   white-space: normal;
 }
-.view-filter-details summary {
-  cursor: pointer;
-  font-size: 11px;
-  color: var(--text-muted);
-  padding: 7px 0;
-}
-.view-filter-details .filter-fields {
-  padding-top: 15px;
-}
 /* GCal-like navigation and time grid; Todos deliberately never drag. */
 .tt-head-row {
   background: var(--surface);

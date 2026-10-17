@@ -7,7 +7,6 @@ import { paletteFor } from '@/domain/palette'
 import { useAppStore } from '@/domain/store'
 import { applyTheme, resolveTheme, systemPrefersDark } from '@/domain/theme'
 import type { Project, ResolvedTheme, Tag, Task, ThemePreference, View } from '@/domain/types'
-import { nextStatus } from '@/domain/types'
 import { t } from '@/i18n'
 
 import { WindowChrome } from './components/WindowChrome'
@@ -35,6 +34,7 @@ type DialogState =
   | { kind: 'entity'; entityKind: 'project' | 'tag'; entity: Project | Tag | null }
   | { kind: 'view'; view: View | null }
   | { kind: 'confirm-delete'; task: Task }
+  | { kind: 'confirm-complete'; task: Task }
   | { kind: 'confirm-empty-trash' }
   | { kind: 'settings'; pane?: 'sync' }
   | null
@@ -84,6 +84,9 @@ export function App() {
   const [dialog, setDialog] = useState<DialogState>(null)
   const now = useNow()
   const theme = useResolvedTheme(settings.theme)
+  useEffect(() => {
+    document.documentElement.dataset.accent = settings.accentColor
+  }, [settings.accentColor])
   const debouncedSearch = useDebounced(search)
   const context = useFilterContext(now)
   const palette = paletteFor(theme)
@@ -145,8 +148,9 @@ export function App() {
         selectTask(task.id)
         setDialog({ kind: 'task', task })
       },
-      onCycleStatus: (task) => {
-        void setTaskStatus(task.id, nextStatus(task.status))
+      onToggleComplete: (task) => {
+        if (task.status === 'done') void setTaskStatus(task.id, 'todo')
+        else setDialog({ kind: 'confirm-complete', task })
       },
       onEdit: (task) => setDialog({ kind: 'task', task }),
       onDelete: (task) => setDialog({ kind: 'confirm-delete', task }),
@@ -350,6 +354,18 @@ export function App() {
         <SettingsDialog initialPane={dialog.pane} onClose={() => setDialog(null)} />
       ) : null}
 
+      {dialog?.kind === 'confirm-complete' ? (
+        <ConfirmDialog
+          title={t('dialog.completeTitle')}
+          body={t('dialog.completeBody', { name: dialog.task.title })}
+          confirmKey="task.action.complete"
+          onCancel={() => setDialog(null)}
+          onConfirm={async () => {
+            await setTaskStatus(dialog.task.id, 'done')
+            setDialog(null)
+          }}
+        />
+      ) : null}
       {dialog?.kind === 'confirm-delete' ? (
         <ConfirmDialog
           title={t('dialog.deleteTitle')}

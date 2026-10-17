@@ -1,5 +1,5 @@
 import { colorIndexForName, isSameLocalDay, isOverdue, parseIso } from './date'
-import type { Id, Task, TaskStatus, View, ViewFilter } from './types'
+import type { Id, Task, TaskStatus, View, PanelFilter } from './types'
 
 export const COLOR_BUCKETS = 8
 
@@ -30,7 +30,7 @@ function matchesText(task: Task, text: string): boolean {
   return task.title.toLowerCase().includes(needle) || task.notes.toLowerCase().includes(needle)
 }
 
-function matchesTags(task: Task, filter: ViewFilter, context: FilterContext): boolean {
+function matchesTags(task: Task, filter: PanelFilter, context: FilterContext): boolean {
   if (filter.tagIds.length === 0) return true
   const taskTagIds = tagsOf(task, context)
   if (filter.tagMode === 'all') {
@@ -39,7 +39,7 @@ function matchesTags(task: Task, filter: ViewFilter, context: FilterContext): bo
   return filter.tagIds.some((tagId) => taskTagIds.includes(tagId))
 }
 
-export function matchesFilter(task: Task, filter: ViewFilter, context: FilterContext): boolean {
+export function matchesFilter(task: Task, filter: PanelFilter, context: FilterContext): boolean {
   if (task.deletedAt !== null) return false
   if (!matchesText(task, filter.text)) return false
   if (!matchesTags(task, filter, context)) return false
@@ -77,17 +77,9 @@ export function matchesPreset(task: Task, view: View, context: FilterContext): b
   }
 }
 
-/**
- * Tasks surfaced by a view: preset rules first, then the user filter. Deleted tasks are excluded
- * everywhere except the trash view, which shows nothing else — so the trash view deliberately skips
- * the general filter's "deleted tasks never match" rule.
- */
+/** Views select their lifecycle scope; each panel owns its independent filter. */
 export function selectTasks(tasks: readonly Task[], view: View, context: FilterContext): Task[] {
-  const isTrash = view.preset === 'trash'
-  return tasks.filter(
-    (task) =>
-      matchesPreset(task, view, context) && (isTrash || matchesFilter(task, view.filter, context)),
-  )
+  return tasks.filter((task) => matchesPreset(task, view, context))
 }
 
 export function sortTasks(tasks: readonly Task[], view: View, context: FilterContext): Task[] {

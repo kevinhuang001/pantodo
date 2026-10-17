@@ -1,4 +1,3 @@
-import { viewWithDefaults } from '@/domain/views'
 import { applyData, extractData, mergeData } from '@/sync/model'
 import { createSeedWorkspace } from '@/domain/presets'
 import { newId } from '@/domain/ids'
@@ -26,7 +25,7 @@ function readStorage(): Workspace | null {
   const raw = localStorage.getItem(STORAGE_KEY)
   if (!raw) return null
   const workspace = JSON.parse(raw) as Workspace
-  return { ...workspace, views: workspace.views.map(viewWithDefaults) }
+  return workspace
 }
 function writeStorage(workspace: Workspace): void {
   if (typeof localStorage !== 'undefined')

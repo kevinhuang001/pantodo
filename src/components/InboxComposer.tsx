@@ -3,7 +3,7 @@ import { Textarea } from './ui/textarea'
 import { CaptureEntityPicker } from './CaptureEntityPicker'
 import { CaptureEstimatePicker } from './CaptureEstimatePicker'
 import { CaptureSchedulePicker } from './CaptureSchedulePicker'
-import { useEffect, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
 
 import { validatePlan } from '@/domain/calendar'
@@ -24,6 +24,25 @@ export function InboxComposer() {
   useEffect(() => rememberQuote(quote), [quote])
   const [title, setTitle] = useState('')
   const [notes, setNotes] = useState('')
+  const notesRef = useRef<HTMLTextAreaElement>(null)
+  useLayoutEffect(() => {
+    const element = notesRef.current
+    if (!element) return
+    const resize = () => {
+      element.style.height = '0px'
+      element.style.height = Math.max(82, element.scrollHeight + 2) + 'px'
+    }
+    resize()
+    let width = element.clientWidth
+    const observer = new ResizeObserver(() => {
+      if (width !== element.clientWidth) {
+        width = element.clientWidth
+        resize()
+      }
+    })
+    observer.observe(element)
+    return () => observer.disconnect()
+  }, [notes])
   const [projectId, setProjectId] = useState('')
   const [tagIds, setTagIds] = useState<string[]>([])
   const [time, setTime] = useState<ScheduleValues>({ start: '', end: '', due: '', estimate: '' })
@@ -83,6 +102,7 @@ export function InboxComposer() {
             onChange={(event) => setTitle(event.target.value)}
           />
           <Textarea
+            ref={notesRef}
             className="capture-notes"
             aria-label={t('task.field.notes')}
             placeholder={t('create.notes')}

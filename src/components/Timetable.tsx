@@ -10,6 +10,7 @@ import {
   isSameMonth,
   startOfDay,
   startOfMonth,
+  endOfMonth,
   startOfWeek,
 } from 'date-fns'
 import { intersectsDay, placeDay } from '@/domain/calendar'
@@ -155,11 +156,15 @@ export function Timetable({
           </PopoverTrigger>
           <PopoverContent className="date-popover" align="start">
             <Calendar
-              mode="single"
-              selected={anchor}
+              mode="range"
+              weekStartsOn={settings.weekStartsOn}
+              selected={{
+                from: mode === 'month' ? startOfMonth(anchor) : days[0],
+                to: mode === 'month' ? endOfMonth(anchor) : days[days.length - 1],
+              }}
               defaultMonth={anchor}
               locale={{ 'zh-CN': zhCN, en: enUS, ja }[locale]}
-              onSelect={(date) => {
+              onDayClick={(date) => {
                 if (date) {
                   setAnchor(date)
                   setDateOpen(false)

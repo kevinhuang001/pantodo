@@ -1,3 +1,4 @@
+import type { AccentColor } from './accent'
 /** Persisted Todo workspace. Plans live on Todos; actual work is a separate time ledger. */
 
 export type Id = string
@@ -56,7 +57,7 @@ export type HasTime = 'any' | 'scheduled' | 'unscheduled'
 /** Built-in views need dynamic predicates ("today" moves), so they carry a preset marker. */
 export type ViewPreset = 'inbox' | 'today' | 'all' | 'trash'
 
-export interface ViewFilter {
+export interface PanelFilter {
   tagIds: Id[]
   tagMode: TagMatchMode
   projectIds: Id[]
@@ -74,7 +75,7 @@ export interface ViewPanel {
   id: Id
   name: string
   emoji: string
-  filter: ViewFilter
+  filter: PanelFilter
   sort: ViewSort
   span: number
 }
@@ -106,7 +107,6 @@ export interface View extends Entity {
   icon: string
   builtin: boolean
   preset: ViewPreset | null
-  filter: ViewFilter
   arrangement: PanelArrangement
   columnCount: number
   sort: ViewSort
@@ -118,6 +118,7 @@ export type ResolvedTheme = 'light' | 'dark'
 export type LocalePreference = 'system' | 'zh-CN' | 'en' | 'ja'
 
 export interface Settings {
+  accentColor: AccentColor
   theme: ThemePreference
   localePreference: LocalePreference
   /** 0 = Sunday, 1 = Monday. */
@@ -127,7 +128,6 @@ export interface Settings {
   /** Calendar presentation and draggable time-grid scale. */
   calendarMode?: CalendarMode
   calendarHourHeight?: number
-  defaultDurationMinutes?: number
 }
 
 /** The whole workspace, as persisted and as handed to the UI in one shot. */
@@ -142,7 +142,7 @@ export interface Workspace {
   timer: TimerSession | null
 }
 
-export const EMPTY_FILTER: ViewFilter = {
+export const EMPTY_FILTER: PanelFilter = {
   tagIds: [],
   tagMode: 'any',
   projectIds: [],
@@ -162,18 +162,4 @@ export function isOpenTask(task: Task): boolean {
 
 export function isDoneTask(task: Task): boolean {
   return task.status === 'done'
-}
-
-/** Checkbox behaviour: todo → doing → done → todo. */
-export function nextStatus(status: TaskStatus): TaskStatus {
-  switch (status) {
-    case 'todo':
-      return 'doing'
-    case 'doing':
-      return 'done'
-    case 'done':
-    case 'cancelled':
-    default:
-      return 'todo'
-  }
 }

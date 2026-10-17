@@ -31,7 +31,7 @@ test('renders the flush glass frame with the seeded views', async ({ page }) => 
       bottomRight: style.borderBottomRightRadius,
     }
   })
-  expect(sidebarCorners.left).not.toBe('0px')
+  expect(sidebarCorners.left).toBe('0px')
   expect(sidebarCorners.right).toBe('0px')
   expect(sidebarCorners.bottomRight).toBe('0px')
 
@@ -60,14 +60,14 @@ test('captures a task from the inbox composer', async ({ page }) => {
   await expect(page.locator('#pantodo-inbox-input')).toHaveValue('')
 })
 
-test('cycles a task through todo, doing and done', async ({ page }) => {
+test('confirms completion and reopens directly', async ({ page }) => {
   const taskId = await page.locator('.task-row').first().getAttribute('data-task-id')
   expect(taskId).not.toBeNull()
   const row = page.locator(`[data-task-id="${taskId}"]`)
 
   await row.locator('.task-check').click()
-  await expect(row.locator('.task-check')).toHaveClass(/doing/)
-  await row.locator('.task-check').click()
+  await expect(page.getByRole('dialog')).toContainText('确认完成？')
+  await page.getByRole('dialog').getByRole('button', { name: '完成', exact: true }).click()
   await expect(row.locator('.task-check')).toHaveClass(/done/)
   await expect(row).toHaveClass(/done/)
 })
@@ -168,7 +168,7 @@ test('opens the settings window and moves between panes', async ({ page }) => {
   await expect(settings).toBeVisible()
 
   await settings.locator('.settings-nav button', { hasText: '计时' }).click()
-  await expect(settings.locator('input[type="number"]')).toBeVisible()
+  await expect(settings.locator('.settings-timer-note')).toContainText('退出时停止')
 
   await settings.locator('.settings-nav button', { hasText: '关于' }).click()
   await expect(settings.locator('.settings-card')).toContainText('React 19')

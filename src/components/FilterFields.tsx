@@ -4,7 +4,7 @@ import { DateTimeField } from './DateTimeField'
 import { useAppStore } from '@/domain/store'
 import { STATUS_LABEL_KEYS } from '@/domain/display'
 import { TASK_STATUSES } from '@/domain/types'
-import type { ViewFilter } from '@/domain/types'
+import type { PanelFilter } from '@/domain/types'
 import { fromLocalInputValue, toLocalInputValue } from '@/domain/date'
 import { t } from '@/i18n'
 export function FilterFields({
@@ -12,8 +12,8 @@ export function FilterFields({
   onChange,
   prefix,
 }: {
-  value: ViewFilter
-  onChange: (filter: ViewFilter) => void
+  value: PanelFilter
+  onChange: (filter: PanelFilter) => void
   prefix: string
 }) {
   const tags = useAppStore((s) => s.tags).filter((tag) => !tag.deletedAt),
@@ -129,7 +129,7 @@ export function FilterFields({
             id={prefix + '-time'}
             className="select"
             value={value.hasTime}
-            onValueChange={(e) => onChange({ ...value, hasTime: e as ViewFilter['hasTime'] })}
+            onValueChange={(e) => onChange({ ...value, hasTime: e as PanelFilter['hasTime'] })}
           >
             <option value="any">{t('panel.anyTime')}</option>
             <option value="scheduled">{t('panel.scheduled')}</option>

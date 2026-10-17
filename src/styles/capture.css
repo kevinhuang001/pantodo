@@ -82,7 +82,8 @@
   min-height: 82px;
   height: 82px;
   margin-top: 9px;
-  resize: vertical;
+  resize: none;
+  overflow: hidden;
   font-size: 13px;
   line-height: 1.8;
 }

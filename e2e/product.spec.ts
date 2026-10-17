@@ -16,7 +16,10 @@ test('view creation contains only identity fields and supports cancelling an emo
   await expect(dialog.getByRole('combobox')).toHaveCount(0)
   await page.locator('#view-name').fill('论文进度')
   await page.locator('.emoji-trigger').click()
-  await page.getByRole('textbox', { name: '搜索图标…', exact: true }).fill('research')
+  await page.locator('em-emoji-picker input[type=search]').fill('microscope')
+  const popup = await page.locator('.emoji-popover').boundingBox()
+  expect(popup!.y).toBeGreaterThanOrEqual(12)
+  expect(popup!.y + popup!.height).toBeLessThanOrEqual(page.viewportSize()!.height - 11)
   await page.getByRole('button', { name: '🔬', exact: true }).click()
   await page.locator('button[form="pantodo-view-form"]').click()
   await expect(page.locator('.toolbar h1')).toContainText('论文进度')
@@ -82,19 +85,39 @@ test('three second focus transition is automatic, can be cancelled and never req
   await expect(page.locator('.work-timer')).toBeVisible()
 })
 
-test('capture calendar uses localized dates and returns focus after closing', async ({ page }) => {
+test('capture selectors open on demand and the end starts from the selected start', async ({
+  page,
+}) => {
   const trigger = page.getByRole('button', { name: '安排时间', exact: true })
   await trigger.click()
-  await expect(page.locator('[data-slot="calendar"]')).toBeVisible()
-  await page.locator('.capture-schedule-picker button[data-day="2026/10/20"]').click()
-  await expect(page.getByRole('tab', { name: '开始时间', exact: true })).toContainText('10月20日')
-  await page.keyboard.press('Escape')
   await expect(page.locator('[data-slot="calendar"]')).toHaveCount(0)
+  const start = page.locator('[data-endpoint="start"]'),
+    end = page.locator('[data-endpoint="end"]')
+  await start.locator('button').nth(0).click()
+  const popup = page.locator('.date-popover')
+  const bounds = await popup.boundingBox(),
+    calendar = await popup.locator('[data-slot="calendar"]').boundingBox()
+  expect(bounds!.width - calendar!.width).toBeLessThanOrEqual(2)
+  await popup.locator('button[data-day="2026/10/20"]').click()
+  await start.locator('button').nth(1).click()
+  await page.locator('.time-popover input').fill('23:45')
+  await page.locator('.time-popover').getByRole('button', { name: '完成', exact: true }).click()
+  await end.locator('button').nth(0).click()
+  await expect(page.locator('.date-popover button[data-day="2026/10/20"]')).toHaveAttribute(
+    'data-selected-single',
+    'true',
+  )
+  await page.locator('.date-popover button[data-day="2026/10/21"]').click()
+  await end.locator('button').nth(1).click()
+  await expect(page.locator('.time-popover input')).toHaveValue('23:45')
+  await page.locator('.time-popover input').fill('00:15')
+  await page.locator('.time-popover').getByRole('button', { name: '完成', exact: true }).click()
+  await page
+    .locator('.capture-schedule-picker')
+    .getByRole('button', { name: '完成', exact: true })
+    .click()
   await expect(trigger).toBeFocused()
   await expect(trigger).toContainText('10月20日')
-  await expect(
-    page.locator('.capture-card input[type="date"],.capture-card input[type="datetime-local"]'),
-  ).toHaveCount(0)
 })
 
 test('capture estimate offers quick durations and a custom value', async ({ page }) => {
