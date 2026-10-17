@@ -1,3 +1,7 @@
+import { Button } from './ui/button'
+import { SelectField } from './SelectField'
+import { DateTimeField } from './DateTimeField'
+import { Textarea } from './ui/textarea'
 import { useState } from 'react'
 import { subMinutes } from 'date-fns'
 import { fromLocalInputValue, toLocalInputValue } from '@/domain/date'
@@ -45,12 +49,12 @@ export function TimeEntryDialog({
       onClose={onClose}
       footer={
         <>
-          <button className="secondary" onClick={onClose}>
+          <Button className="secondary" variant="outline" onClick={onClose}>
             {t('dialog.cancel')}
-          </button>
-          <button className="primary" type="submit" form="time-entry-form">
+          </Button>
+          <Button className="primary" variant="default" type="submit" form="time-entry-form">
             {t('dialog.save')}
-          </button>
+          </Button>
         </>
       }
     >
@@ -89,11 +93,11 @@ export function TimeEntryDialog({
       >
         <div className="field">
           <label htmlFor="entry-task">Todo</label>
-          <select
+          <SelectField
             id="entry-task"
             className="select"
             value={taskId}
-            onChange={(event) => setTaskId(event.target.value)}
+            onValueChange={(event) => setTaskId(event)}
           >
             <option value="">{t('work.free')}</option>
             {tasks.map((task) => (
@@ -101,15 +105,15 @@ export function TimeEntryDialog({
                 {task.title}
               </option>
             ))}
-          </select>
+          </SelectField>
         </div>
         <div className="form-row">
           <div className="field">
             <label htmlFor="entry-start">{t('plan.start')}</label>
-            <input
+            <DateTimeField
               id="entry-start"
               className="input"
-              type="datetime-local"
+
               value={start}
               required
               onChange={(event) => setStart(event.target.value)}
@@ -117,10 +121,10 @@ export function TimeEntryDialog({
           </div>
           <div className="field">
             <label htmlFor="entry-end">{t('plan.end')}</label>
-            <input
+            <DateTimeField
               id="entry-end"
               className="input"
-              type="datetime-local"
+
               value={end}
               required
               min={start}
@@ -130,7 +134,7 @@ export function TimeEntryDialog({
         </div>
         <div className="field">
           <label htmlFor="entry-note">{t('work.note')}</label>
-          <textarea
+          <Textarea
             id="entry-note"
             className="textarea"
             value={note}

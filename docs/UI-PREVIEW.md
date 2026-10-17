@@ -10,7 +10,8 @@ The paper-desk visual direction now includes functional scheduling, a work timer
 4. **Work timer** — a persistent bar across pages with pause/resume/stop. Planned time is separate from actual work.
 5. **Statistics** — date/project/tag filters, daily bars, category breakdown, per-Todo estimates/actuals, manual entry and correction, CSV and a ledger.
 6. **Composed views** — saved independent panel filters, emoji, panel move handles/buttons, column spans and an editable Eisenhower template.
-7. **Settings** — the only theme/language controls, plus week start, default plan duration and JSON export.
+7. **Focus** — starting a task counts down 3 seconds, then fills the right pane; the sidebar remains available and no OS fullscreen is requested.
+8. **Settings** — the only theme/language controls, plus week start, default plan duration and JSON export.
 
 ## Reproduce captures
 

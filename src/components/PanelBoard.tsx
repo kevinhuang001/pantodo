@@ -1,3 +1,6 @@
+import { Button } from './ui/button'
+import { SelectField } from './SelectField'
+import { Input } from './ui/input'
 import { useState } from 'react'
 import type { CSSProperties } from 'react'
 import { useAppStore } from '@/domain/store'
@@ -45,10 +48,10 @@ export function PanelBoard({
     <>
       <div className="panel-board-toolbar">
         <p className="field-hint">{t('panel.hint')}</p>
-        <button className="secondary" onClick={() => setEditing(newPanel())}>
+        <Button className="secondary" variant="outline" onClick={() => setEditing(newPanel())}>
           <Icon name="plus" size={14} />
           {t('panel.add')}
-        </button>
+        </Button>
       </div>
       {error ? (
         <p className="form-error" role="alert">
@@ -138,16 +141,12 @@ export function PanelBoard({
                   >
                     <Icon name="chevronRight" size={12} />
                   </button>
-                  <select
+                  <SelectField
                     className="compact-select"
                     aria-label={t('panel.width')}
                     value={Math.min(panel.span, columns)}
-                    onChange={(e) =>
-                      save(
-                        panels.map((p) =>
-                          p.id === panel.id ? { ...p, span: Number(e.target.value) } : p,
-                        ),
-                      )
+                    onValueChange={(e) =>
+                      save(panels.map((p) => (p.id === panel.id ? { ...p, span: Number(e) } : p)))
                     }
                   >
                     {Array.from({ length: columns }, (_, i) => (
@@ -155,7 +154,7 @@ export function PanelBoard({
                         {i + 1} / {columns}
                       </option>
                     ))}
-                  </select>
+                  </SelectField>
                 </div>
               </div>
               <TaskList tasks={list} lookup={lookup} emptyKey="group.empty" />
@@ -168,14 +167,15 @@ export function PanelBoard({
         <PanelDialog
           key={editing.id}
           panel={editing}
+          isNew={!panels.some((panel) => panel.id === editing.id)}
           onClose={() => setEditing(null)}
-          onSave={(panel) => {
+          onSave={async (panel) => {
             const current = useAppStore.getState().views.find((v) => v.id === view.id)?.panels ?? []
-            save(
-              current.some((p) => p.id === panel.id)
+            await updateView(view.id, {
+              panels: current.some((p) => p.id === panel.id)
                 ? current.map((p) => (p.id === panel.id ? panel : p))
                 : [...current, panel],
-            )
+            })
             setEditing(null)
           }}
           onDelete={() => {
@@ -192,28 +192,40 @@ function PanelDialog({
   onClose,
   onSave,
   onDelete,
+  isNew,
 }: {
   panel: ViewPanel
   onClose: () => void
-  onSave: (panel: ViewPanel) => void
+  onSave: (panel: ViewPanel) => Promise<void>
   onDelete: () => void
+  isNew: boolean
 }) {
   const [value, setValue] = useState(panel)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState(false)
   return (
     <Modal
-      title={t('panel.edit')}
+      title={t(isNew ? 'panel.add' : 'panel.edit')}
       onClose={onClose}
       footer={
         <>
-          <button className="danger-button" onClick={onDelete}>
-            {t('task.action.delete')}
-          </button>
-          <button className="secondary" onClick={onClose}>
+          {!isNew ? (
+            <Button className="danger-button" variant="destructive" onClick={onDelete}>
+              {t('task.action.delete')}
+            </Button>
+          ) : null}
+          <Button className="secondary" variant="outline" onClick={onClose}>
             {t('dialog.cancel')}
-          </button>
-          <button className="primary" type="submit" form="panel-form">
+          </Button>
+          <Button
+            className="primary"
+            variant="default"
+            type="submit"
+            form="panel-form"
+            disabled={saving || !value.name.trim()}
+          >
             {t('dialog.save')}
-          </button>
+          </Button>
         </>
       }
     >
@@ -222,12 +234,18 @@ function PanelDialog({
         className="stack"
         onSubmit={(e) => {
           e.preventDefault()
-          if (value.name.trim()) onSave({ ...value, name: value.name.trim() })
+          if (!value.name.trim() || saving) return
+          setSaving(true)
+          setError(false)
+          void onSave({ ...value, name: value.name.trim() })
+            .catch(() => setError(true))
+            .finally(() => setSaving(false))
         }}
       >
         <div className="field">
           <label htmlFor="panel-name">{t('task.field.name')}</label>
-          <input
+          <Input
+            autoFocus
             id="panel-name"
             className="input"
             required
@@ -238,24 +256,29 @@ function PanelDialog({
         <EmojiPicker value={value.emoji} onChange={(emoji) => setValue({ ...value, emoji })} />
         <div className="field">
           <label htmlFor="panel-sort">{t('panel.sort')}</label>
-          <select
+          <SelectField
             className="select"
             id="panel-sort"
             value={value.sort}
-            onChange={(e) => setValue({ ...value, sort: e.target.value as ViewSort })}
+            onValueChange={(e) => setValue({ ...value, sort: e as ViewSort })}
           >
             {(['manual', 'due', 'created', 'title'] as const).map((key) => (
               <option key={key} value={key}>
                 {t(('panel.sort.' + key) as 'panel.sort.manual')}
               </option>
             ))}
-          </select>
+          </SelectField>
         </div>
         <FilterFields
           prefix="panel-filter"
           value={value.filter}
           onChange={(filter) => setValue({ ...value, filter })}
         />
+        {error ? (
+          <p className="form-error" role="alert">
+            {t('work.failed')}
+          </p>
+        ) : null}
       </form>
     </Modal>
   )

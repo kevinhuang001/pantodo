@@ -1,3 +1,4 @@
+import { useFocusStore } from './focus'
 import { create } from 'zustand'
 
 import { createBridge } from '@/bridge'
@@ -339,6 +340,10 @@ export const useAppStore = create<AppState>()((set, get) => ({
 
   timeCommand(command) {
     set(bridge.timeCommand(command))
+    if (command.kind === 'start' && get().timer) useFocusStore.getState().prepare()
+    if (!get().timer) useFocusStore.getState().leave()
+    if (command.kind === 'pause' && useFocusStore.getState().countdown !== null)
+      useFocusStore.getState().leave()
   },
   reloadWorkspace() {
     const workspace = bridge.loadSync()

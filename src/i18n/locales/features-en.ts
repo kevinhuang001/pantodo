@@ -1,12 +1,22 @@
 export const featureEn = {
-  'work.focus': 'Fullscreen focus',
+  'emoji.choose': 'Choose icon',
+  'emoji.search': 'Search icons…',
+  'view.createHint': 'Add panels and configure their filters after creating your view.',
+  'window.close': 'Close window',
+  'window.minimize': 'Minimize',
+  'window.maximize': 'Maximize',
+  'window.restore': 'Restore',
+  'panel.setup': 'Set up panels',
+  'panel.apply': 'Add panels',
+  'view.settings': 'View settings',
+
+  'work.focus': 'Focus',
+  'work.entering': 'Entering focus',
   'work.exitFocus': 'Leave focus',
   'work.elapsed': 'Session time',
   'work.focusMessage': 'A little room for the thing in front of you.',
   'work.focusExitHint':
     'Leaving focus keeps the timer running. Pause or stop to end this work segment.',
-  'work.fullscreenFallback':
-    'System fullscreen was unavailable. Try Fullscreen focus again or check browser permissions.',
   'plan.clear': 'Clear planned time',
   'plan.title': 'Schedule',
   'plan.start': 'Start time',

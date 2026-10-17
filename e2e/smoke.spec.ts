@@ -1,3 +1,4 @@
+import { choose } from './helpers'
 import { expect, test } from '@playwright/test'
 
 /**
@@ -78,7 +79,7 @@ test('edits a task through the dialog', async ({ page }) => {
 
   await row.hover()
   await row.locator('button[aria-label="编辑"]').click()
-  await expect(page.locator('dialog.dialog')).toBeVisible()
+  await expect(page.locator('[role="dialog"].dialog')).toBeVisible()
   await page.locator('#task-title').fill(`${title}：改过了`)
   await page.locator('#task-estimate').fill('90')
   await page.locator('button[form="pantodo-task-form"]').click()
@@ -126,13 +127,13 @@ test('switches to the dark theme', async ({ page }) => {
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'light')
 
   await page.getByRole('button', { name: '设置', exact: true }).click()
-  await page.getByRole('combobox', { name: '主题', exact: true }).selectOption('dark')
+  await choose(page, page.getByRole('combobox', { name: '主题', exact: true }), 'dark')
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark')
 })
 
 test('switches language and re-localises built-in views', async ({ page }) => {
   await page.getByRole('button', { name: '设置', exact: true }).click()
-  await page.getByRole('combobox', { name: '语言', exact: true }).selectOption('en')
+  await choose(page, page.getByRole('combobox', { name: '语言', exact: true }), 'en')
 
   await expect(page.locator('.toolbar h1')).toHaveText('All tasks')
   await expect(page.locator('.nav-row', { hasText: 'Create' })).toHaveCount(1)
@@ -165,7 +166,7 @@ test('deletes to the trash and restores from it', async ({ page }) => {
 
 test('opens the settings window and moves between panes', async ({ page }) => {
   await page.locator('.sidebar').getByRole('button', { name: '设置' }).click()
-  const settings = page.locator('dialog.settings-window')
+  const settings = page.locator('[role="dialog"].settings-window')
   await expect(settings).toBeVisible()
 
   await settings.locator('.settings-nav button', { hasText: '计时' }).click()
@@ -204,9 +205,11 @@ test('creates a custom view that joins the views list', async ({ page }) => {
   await viewsSection.getByRole('button', { name: '新建视图' }).click()
 
   await page.locator('#view-name').fill('e2e 自定义视图')
-  await page.locator('#view-mode').selectOption('groups')
-  await page.locator('#view-group').selectOption('tag')
-  await page.locator('#view-arrangement').selectOption('columns')
+  await page.locator('button[form="pantodo-view-form"]').click()
+  await page.getByRole('button', { name: '视图设置', exact: true }).click()
+  await choose(page, page.locator('#view-mode'), 'groups')
+  await choose(page, page.locator('#view-group'), 'tag')
+  await choose(page, page.locator('#view-arrangement'), 'columns')
   await page.locator('button[form="pantodo-view-form"]').click()
 
   await expect(page.locator('.toolbar h1')).toContainText('e2e 自定义视图')

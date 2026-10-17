@@ -1,3 +1,5 @@
+import { Button } from './ui/button'
+import { Input } from './ui/input'
 import { useState } from 'react'
 import type { FormEvent } from 'react'
 
@@ -29,6 +31,8 @@ export function EntityDialog({ kind, entity, onClose }: EntityDialogProps) {
   const [name, setName] = useState(entity?.name ?? '')
   const [color, setColor] = useState<string | null>(entity?.color ?? null)
 
+  const [error, setError] = useState(false)
+  const [saving, setSaving] = useState(false)
   const isEdit = entity !== null
   const title = isEdit
     ? kind === 'project'
@@ -41,16 +45,24 @@ export function EntityDialog({ kind, entity, onClose }: EntityDialogProps) {
   async function submit(event: FormEvent): Promise<void> {
     event.preventDefault()
     const trimmed = name.trim()
-    if (trimmed === '') return
-    if (kind === 'project') {
-      if (entity === null) await createProject(trimmed, color, emoji)
-      else await updateProject(entity.id, { name: trimmed, color, emoji })
-    } else if (entity === null) {
-      await createTag(trimmed, color)
-    } else {
-      await updateTag(entity.id, { name: trimmed, color })
+    if (trimmed === '' || saving) return
+    setSaving(true)
+    setError(false)
+    try {
+      if (kind === 'project') {
+        if (entity === null) await createProject(trimmed, color, emoji)
+        else await updateProject(entity.id, { name: trimmed, color, emoji })
+      } else if (entity === null) {
+        await createTag(trimmed, color)
+      } else {
+        await updateTag(entity.id, { name: trimmed, color })
+      }
+      onClose()
+    } catch {
+      setError(true)
+    } finally {
+      setSaving(false)
     }
-    onClose()
   }
 
   async function remove(): Promise<void> {
@@ -67,25 +79,37 @@ export function EntityDialog({ kind, entity, onClose }: EntityDialogProps) {
       footer={
         <>
           {isEdit ? (
-            <button type="button" className="danger-button" onClick={() => void remove()}>
+            <Button
+              type="button"
+              className="danger-button"
+              variant="destructive"
+              onClick={() => void remove()}
+            >
               {t('task.action.delete')}
-            </button>
+            </Button>
           ) : null}
-          <button type="button" className="secondary" onClick={onClose}>
+          <Button type="button" className="secondary" variant="outline" onClick={onClose}>
             {t('dialog.cancel')}
-          </button>
-          <button type="submit" form="pantodo-entity-form" className="primary">
+          </Button>
+          <Button
+            type="submit"
+            disabled={saving || !name.trim()}
+            form="pantodo-entity-form"
+            className="primary"
+            variant="default"
+          >
             {isEdit ? t('dialog.save') : t('dialog.create')}
-          </button>
+          </Button>
         </>
       }
     >
       <form id="pantodo-entity-form" className="stack" onSubmit={(event) => void submit(event)}>
         <div className="field">
           <label htmlFor="entity-name">{t('task.field.name')}</label>
-          <input
+          <Input
             id="entity-name"
             className="input"
+            required
             value={name}
             autoFocus
             onChange={(event) => setName(event.target.value)}
@@ -115,6 +139,11 @@ export function EntityDialog({ kind, entity, onClose }: EntityDialogProps) {
             ))}
           </div>
         </div>
+        {error ? (
+          <p className="form-error" role="alert">
+            {t('work.failed')}
+          </p>
+        ) : null}
       </form>
     </Modal>
   )

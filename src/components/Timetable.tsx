@@ -1,3 +1,4 @@
+import { DateTimeField } from './DateTimeField'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
 import {
@@ -144,9 +145,9 @@ export function Timetable({
           <Icon name="chevronRight" />
         </button>
         <span className="tt-range">{rangeLabel}</span>
-        <input
+        <DateTimeField
           className="calendar-jump"
-          type="date"
+          dateOnly
           aria-label={t('calendar.range')}
           value={toDateInputValue(anchor.toISOString())}
           onChange={(e) => {

@@ -1,3 +1,7 @@
+import { Popover, PopoverTrigger, PopoverContent } from './ui/popover'
+import { Input } from './ui/input'
+import { Textarea } from './ui/textarea'
+import { SelectField } from './SelectField'
 import { useState } from 'react'
 import type { FormEvent } from 'react'
 
@@ -100,7 +104,7 @@ export function InboxComposer() {
           <label className="visually-hidden" htmlFor="pantodo-inbox-input">
             {t('inbox.placeholder')}
           </label>
-          <input
+          <Input
             id="pantodo-inbox-input"
             className="capture-title"
             value={title}
@@ -108,7 +112,7 @@ export function InboxComposer() {
             placeholder={t('inbox.placeholder')}
             onChange={(event) => setTitle(event.target.value)}
           />
-          <textarea
+          <Textarea
             className="capture-notes"
             aria-label={t('task.field.notes')}
             placeholder={t('create.notes')}
@@ -135,12 +139,12 @@ export function InboxComposer() {
           ) : null}
           <div className="capture-card-bottom">
             <div className="capture-options">
-              <label className="capture-select">
+              <div className="capture-select">
                 <Icon name="folder" size={15} />
-                <select
+                <SelectField
                   aria-label={t('task.field.project')}
                   value={projectId}
-                  onChange={(event) => setProjectId(event.target.value)}
+                  onValueChange={(event) => setProjectId(event)}
                 >
                   <option value="">{t('task.field.project')}</option>
                   {projects.map((project) => (
@@ -148,15 +152,17 @@ export function InboxComposer() {
                       {project.name}
                     </option>
                   ))}
-                </select>
-              </label>
-              <details className="capture-tags">
-                <summary className="capture-select">
-                  <Icon name="tag" size={14} />
-                  {t('task.field.tags')}
-                  {tagIds.length ? ' · ' + tagIds.length : ''}
-                </summary>
-                <div className="capture-tag-options">
+                </SelectField>
+              </div>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <button type="button" className="capture-select">
+                    <Icon name="tag" size={14} />
+                    {t('task.field.tags')}
+                    {tagIds.length ? ' · ' + tagIds.length : ''}
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent className="capture-tag-popover" align="start">
                   {tags.map((tag) => (
                     <button
                       type="button"
@@ -174,8 +180,8 @@ export function InboxComposer() {
                       {tag.name}
                     </button>
                   ))}
-                </div>
-              </details>
+                </PopoverContent>
+              </Popover>
             </div>
             <button type="submit" className="capture-submit" disabled={!title.trim() || saving}>
               {t('create.add')}

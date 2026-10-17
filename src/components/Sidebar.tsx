@@ -1,3 +1,4 @@
+import { Input } from './ui/input'
 import { useMemo } from 'react'
 
 import { viewDisplayName } from '@/domain/display'
@@ -188,7 +189,7 @@ export function Sidebar({
 
         <div className="search">
           <Icon name="search" size={14} />
-          <input
+          <Input
             id="pantodo-search"
             type="search"
             value={search}

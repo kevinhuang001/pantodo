@@ -1,3 +1,4 @@
+import { choose } from './helpers'
 import { test, expect } from '@playwright/test'
 import type { Page } from '@playwright/test'
 import type { Workspace } from '../src/domain/types'
@@ -9,7 +10,7 @@ async function stats(page: Page) {
 }
 async function manual(page: Page, start: string, end: string, note: string, taskId = '') {
   await page.getByRole('button', { name: '补录时间', exact: true }).click()
-  await page.locator('#entry-task').selectOption(taskId)
+  await choose(page, page.locator('#entry-task'), taskId)
   await page.locator('#entry-start').fill(start)
   await page.locator('#entry-end').fill(end)
   await page.locator('#entry-note').fill(note)
@@ -84,6 +85,7 @@ test('pause excludes break time, stop saves records and completed Todos stop tim
   const row = page.locator(`[data-task-id="${id}"]`)
   await row.getByRole('button', { name: '开始工作', exact: true }).click()
   await page.clock.runFor(20_000)
+  await page.locator('.focus-exit').click()
   await page.locator('.work-timer').getByRole('button', { name: '暂停', exact: true }).click()
   await expect(page.locator('.timer-clock')).toHaveText('00:00:20')
   await page.clock.runFor(60_000)
@@ -147,10 +149,10 @@ test('multiple tag filters deduplicate totals and each tag receives full time', 
     task = initial.tasks.find((task) => task.title.startsWith('设计评审'))!
   await stats(page)
   await manual(page, '2026-10-18T10:00', '2026-10-18T11:00', '带多个标签', task.id)
-  await page.locator('.stats-tag-picker summary').click()
-  await page.locator('.stats-tag-menu').getByLabel('重要', { exact: true }).check()
-  await page.locator('.stats-tag-menu').getByLabel('紧急', { exact: true }).check()
-  await page.locator('.stats-tag-picker summary').click()
+  await page.locator('.stats-tag-picker').click()
+  await page.locator('.stats-tag-menu').getByLabel('重要', { exact: true }).click()
+  await page.locator('.stats-tag-menu').getByLabel('紧急', { exact: true }).click()
+  await page.locator('.stats-tag-picker').click()
   await expect(page.getByTestId('stats-total')).toHaveText('1h')
   await page.locator('.category-head').getByRole('button', { name: '按标签', exact: true }).click()
   await expect(page.locator('.category-row', { hasText: '重要' })).toContainText('1h')
@@ -160,6 +162,7 @@ test('multiple tag filters deduplicate totals and each tag receives full time', 
 test('projects and saved views support emoji', async ({ page }) => {
   await page.getByRole('button', { name: '新建项目', exact: true }).click()
   await page.locator('#entity-name').fill('实验项目')
+  await page.locator('.emoji-trigger').click()
   await page.getByRole('button', { name: '🧪', exact: true }).click()
   await page.locator('button[form="pantodo-entity-form"]').click()
   await expect(page.locator('.nav-row', { hasText: '实验项目' }).locator('.nav-emoji')).toHaveText(
@@ -167,23 +170,24 @@ test('projects and saved views support emoji', async ({ page }) => {
   )
   await page.getByRole('button', { name: '新建视图', exact: true }).click()
   await page.locator('#view-name').fill('实验面板')
+  await page.locator('.emoji-trigger').click()
   await page.getByRole('button', { name: '🚀', exact: true }).click()
   await page.locator('button[form="pantodo-view-form"]').click()
   await expect(page.locator('.toolbar h1')).toContainText('🚀 实验面板')
-  await expect(page.locator('.composed-panel')).toHaveCount(1)
+  await expect(page.locator('.composed-panel')).toHaveCount(0)
 })
 
 test('panel filters, width and order persist without Todo dragging', async ({ page }) => {
   await page.locator('.nav-row', { hasText: '我的工作台' }).click()
   await page.getByRole('button', { name: '添加面板', exact: true }).click()
   await page.locator('#panel-name').fill('紧急待办')
-  await page.locator('dialog').getByRole('button', { name: '紧急', exact: true }).first().click()
+  await page.getByRole('dialog').getByRole('button', { name: '紧急', exact: true }).first().click()
   await page.locator('button[form="panel-form"]').click()
   const panel = page.locator('.composed-panel', {
     has: page.getByRole('heading', { name: '紧急待办', exact: true }),
   })
   await expect(panel.locator('.task-row')).toHaveCount(2)
-  await panel.getByRole('combobox', { name: '面板宽度', exact: true }).selectOption('2')
+  await choose(page, panel.getByRole('combobox', { name: '面板宽度', exact: true }), '2')
   const firstId = await page.locator('.composed-panel').first().getAttribute('data-panel-id')
   await page.locator('.composed-panel').first().getByRole('button', { name: '后移面板' }).click()
   expect(await page.locator('.composed-panel').first().getAttribute('data-panel-id')).not.toBe(
@@ -197,13 +201,15 @@ test('panel filters, width and order persist without Todo dragging', async ({ pa
     page
       .locator('.composed-panel', { hasText: '紧急待办' })
       .getByRole('combobox', { name: '面板宽度' }),
-  ).toHaveValue('2')
+  ).toHaveAttribute('data-value', '2')
 })
 
 test('Eisenhower is created as four editable filtered panels', async ({ page }) => {
   await page.getByRole('button', { name: '新建视图', exact: true }).click()
   await page.locator('#view-name').fill('我的四象限')
-  await page.locator('#view-template').selectOption('quadrant')
+  await page.locator('button[form="pantodo-view-form"]').click()
+  await page.getByRole('button', { name: '视图设置', exact: true }).click()
+  await choose(page, page.locator('#view-template'), 'quadrant')
   await page.locator('button[form="pantodo-view-form"]').click()
   await expect(page.locator('.composed-panel')).toHaveCount(4)
   await expect(page.locator('.composed-panel').first().locator('.task-title')).toContainText(
@@ -211,15 +217,20 @@ test('Eisenhower is created as four editable filtered panels', async ({ page }) 
   )
 })
 
-test('fullscreen focus supports pause, resume and stop without showing navigation', async ({
+test('focus automatically fills the right pane after three seconds and supports timer controls', async ({
   page,
 }) => {
   await page.locator('.nav-row', { hasText: '全部任务' }).click()
   await page.locator('.task-start').first().click()
-  await page.locator('.work-timer').getByRole('button', { name: '全屏专注', exact: true }).click()
+  await page.clock.runFor(3000)
   const focus = page.locator('.focus-screen')
   await expect(focus).toBeVisible()
-  await expect.poll(() => page.evaluate(() => Boolean(document.fullscreenElement))).toBe(true)
+  await expect(page.locator('.sidebar')).toBeVisible()
+  const focusBox = await focus.boundingBox(),
+    mainBox = await page.locator('.main').boundingBox()
+  expect(focusBox!.x).toBe(mainBox!.x)
+  expect(focusBox!.width).toBe(mainBox!.width)
+  expect(await page.evaluate(() => document.fullscreenElement)).toBeNull()
   await expect(focus.locator('h1')).not.toBeEmpty()
   await page.clock.runFor(6000)
   await focus.getByRole('button', { name: '暂停', exact: true }).click()
@@ -236,15 +247,15 @@ test('fullscreen focus supports pause, resume and stop without showing navigatio
   expect(entries).toHaveLength(2)
 })
 
-test('leaving fullscreen focus keeps the same work session running', async ({ page }) => {
+test('leaving pane focus keeps the same work session running', async ({ page }) => {
   await page.locator('.nav-row', { hasText: '全部任务' }).click()
   await page.locator('.task-start').first().click()
-  await page.locator('.work-timer').getByRole('button', { name: '全屏专注', exact: true }).click()
+  await page.clock.runFor(3000)
   await expect(page.locator('.focus-screen')).toBeVisible()
   await page.locator('.focus-exit').click()
   await expect(page.locator('.focus-screen')).toHaveCount(0)
   expect((await read(page)).timer?.startedAt).not.toBeNull()
-  await page.locator('.work-timer').getByRole('button', { name: '全屏专注', exact: true }).click()
+  await page.locator('.work-timer').getByRole('button', { name: '专注', exact: true }).click()
   await expect(page.locator('.focus-screen')).toBeVisible()
   await page.keyboard.press('Escape')
   await expect(page.locator('.focus-screen')).toHaveCount(0)

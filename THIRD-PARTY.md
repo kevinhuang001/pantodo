@@ -35,3 +35,7 @@ into `src/styles/tokens.css` and a dark palette was added (Glassmark is light-on
 ## Native power monitor
 
 `src-tauri/vendor/tauri-plugin-power-monitor` is tauri-plugin-power-monitor 0.1.0 from https://github.com/marrionesa/tauri-plugin-power-monitor, under MIT OR Apache-2.0 (license texts included). Pantodo replaces the macOS snapshot destructor with CoreFoundation `CFRelease`, as required by the IOPowerSources Copy API.
+
+## shadcn/ui and Radix
+
+The components in `src/components/ui` originate from the shadcn/ui new-york-v4 registry (https://ui.shadcn.com), MIT licensed, copyright shadcn. Imports, translations and theme tokens are adapted for Pantodo. Radix UI primitives, Tailwind CSS, class-variance-authority, clsx and tailwind-merge are MIT licensed; Lucide icons are ISC licensed; React DayPicker is MIT licensed.

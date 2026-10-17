@@ -1,3 +1,7 @@
+import { Button } from './ui/button'
+import { Input } from './ui/input'
+import { Textarea } from './ui/textarea'
+import { SelectField } from './SelectField'
 import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { fromLocalInputValue, toLocalInputValue } from '@/domain/date'
@@ -71,19 +75,25 @@ export function TaskDialog({ task, onClose }: { task: Task | null; onClose: () =
       onClose={onClose}
       footer={
         <>
-          <button className="secondary" onClick={onClose}>
+          <Button className="secondary" variant="outline" onClick={onClose}>
             {t('dialog.cancel')}
-          </button>
-          <button className="primary" type="submit" form="pantodo-task-form" disabled={saving}>
+          </Button>
+          <Button
+            className="primary"
+            variant="default"
+            type="submit"
+            form="pantodo-task-form"
+            disabled={saving}
+          >
             {task ? t('dialog.save') : t('dialog.create')}
-          </button>
+          </Button>
         </>
       }
     >
       <form id="pantodo-task-form" className="stack" onSubmit={(event) => void submit(event)}>
         <div className="field">
           <label htmlFor="task-title">{t('task.field.title')}</label>
-          <input
+          <Input
             id="task-title"
             className="input"
             value={title}
@@ -94,7 +104,7 @@ export function TaskDialog({ task, onClose }: { task: Task | null; onClose: () =
         </div>
         <div className="field">
           <label htmlFor="task-notes">{t('task.field.notes')}</label>
-          <textarea
+          <Textarea
             id="task-notes"
             className="textarea"
             value={notes}
@@ -104,11 +114,11 @@ export function TaskDialog({ task, onClose }: { task: Task | null; onClose: () =
         <div className="form-row">
           <div className="field">
             <label htmlFor="task-project">{t('task.field.project')}</label>
-            <select
+            <SelectField
               id="task-project"
               className="select"
               value={projectId}
-              onChange={(e) => setProjectId(e.target.value)}
+              onValueChange={(e) => setProjectId(e)}
             >
               <option value="">{t('task.field.none')}</option>
               {projects.map((p) => (
@@ -116,22 +126,22 @@ export function TaskDialog({ task, onClose }: { task: Task | null; onClose: () =
                   {p.emoji} {p.name}
                 </option>
               ))}
-            </select>
+            </SelectField>
           </div>
           <div className="field">
             <label htmlFor="task-status">{t('task.field.status')}</label>
-            <select
+            <SelectField
               id="task-status"
               className="select"
               value={status}
-              onChange={(e) => setStatus(e.target.value as TaskStatus)}
+              onValueChange={(e) => setStatus(e as TaskStatus)}
             >
               {TASK_STATUSES.map((s) => (
                 <option value={s} key={s}>
                   {t(STATUS_LABEL_KEYS[s])}
                 </option>
               ))}
-            </select>
+            </SelectField>
           </div>
         </div>
         <div className="field">

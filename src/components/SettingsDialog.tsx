@@ -1,10 +1,14 @@
-import { useEffect, useRef, useState } from 'react'
+import { SelectField } from './SelectField'
+import { Input } from './ui/input'
+import { Button } from './ui/button'
+import { useState } from 'react'
 
 import { useAppStore } from '@/domain/store'
 import type { Settings } from '@/domain/types'
 import { LOCALES, LOCALE_LABELS, t } from '@/i18n'
 import type { Locale, LocalePreference, MessageKey } from '@/i18n'
 
+import { Dialog, DialogContent, DialogTitle } from './ui/dialog'
 import { Icon } from './Icon'
 import { version } from '../../package.json'
 import { desktop } from '@/platform'
@@ -27,16 +31,10 @@ const PANES: { key: Pane; labelKey: MessageKey }[] = [
  * present; the timer and sync panes state which milestone fills them.
  */
 export function SettingsDialog({ onClose }: SettingsDialogProps) {
-  const ref = useRef<HTMLDialogElement>(null)
   const settings = useAppStore((state) => state.settings)
   const updateSettings = useAppStore((state) => state.updateSettings)
   const notify = useAppStore((state) => state.notify)
   const [pane, setPane] = useState<Pane>('general')
-
-  useEffect(() => {
-    const dialog = ref.current
-    if (dialog !== null && !dialog.open) dialog.showModal()
-  }, [])
 
   function patch(next: Partial<Settings>): void {
     void updateSettings(next)
@@ -65,163 +63,166 @@ export function SettingsDialog({ onClose }: SettingsDialogProps) {
   }
 
   return (
-    <dialog
-      ref={ref}
-      className="dialog settings-window"
-      aria-label={t('toolbar.settings')}
-      onCancel={(event) => {
-        event.preventDefault()
-        onClose()
-      }}
-      onClick={(event) => {
-        if (event.target === ref.current) onClose()
+    <Dialog
+      open
+      onOpenChange={(open) => {
+        if (!open) onClose()
       }}
     >
-      <header className="settings-header">
-        <span className="mark">
-          <Icon name="settings" size={18} />
-        </span>
-        <h2>{t('toolbar.settings')}</h2>
-        <button
-          type="button"
-          className="icon-button"
-          style={{ marginLeft: 'auto' }}
-          aria-label={t('dialog.close')}
-          onClick={onClose}
-        >
-          <Icon name="close" />
-        </button>
-      </header>
+      <DialogContent
+        className="dialog settings-window product-dialog"
+        aria-describedby={undefined}
+        showCloseButton={false}
+      >
+        <header className="settings-header">
+          <span className="mark">
+            <Icon name="settings" size={18} />
+          </span>
+          <DialogTitle>{t('toolbar.settings')}</DialogTitle>
+          <button
+            type="button"
+            className="icon-button"
+            style={{ marginLeft: 'auto' }}
+            aria-label={t('dialog.close')}
+            onClick={onClose}
+          >
+            <Icon name="close" />
+          </button>
+        </header>
 
-      <div className="settings-body">
-        <nav className="settings-nav">
-          {PANES.map((entry) => (
-            <button
-              key={entry.key}
-              type="button"
-              className={entry.key === pane ? 'active' : ''}
-              aria-current={entry.key === pane ? 'true' : undefined}
-              onClick={() => setPane(entry.key)}
-            >
-              {t(entry.labelKey)}
-            </button>
-          ))}
-        </nav>
+        <div className="settings-body">
+          <nav className="settings-nav">
+            {PANES.map((entry) => (
+              <button
+                key={entry.key}
+                type="button"
+                className={entry.key === pane ? 'active' : ''}
+                aria-current={entry.key === pane ? 'true' : undefined}
+                onClick={() => setPane(entry.key)}
+              >
+                {t(entry.labelKey)}
+              </button>
+            ))}
+          </nav>
 
-        <div className="settings-panel">
-          {pane === 'general' ? (
-            <div className="settings-card">
-              <div className="settings-row">
-                <span className="settings-label">{t('toolbar.theme')}</span>
-                <select
-                  className="select"
-                  value={settings.theme}
-                  aria-label={t('toolbar.theme')}
-                  onChange={(event) => patch({ theme: event.target.value as Settings['theme'] })}
-                >
-                  <option value="system">{t('theme.system')}</option>
-                  <option value="light">{t('theme.light')}</option>
-                  <option value="dark">{t('theme.dark')}</option>
-                </select>
+          <div className="settings-panel">
+            {pane === 'general' ? (
+              <div className="settings-card">
+                <div className="settings-row">
+                  <span className="settings-label">{t('toolbar.theme')}</span>
+                  <SelectField
+                    className="select"
+                    value={settings.theme}
+                    aria-label={t('toolbar.theme')}
+                    onValueChange={(event) => patch({ theme: event as Settings['theme'] })}
+                  >
+                    <option value="system">{t('theme.system')}</option>
+                    <option value="light">{t('theme.light')}</option>
+                    <option value="dark">{t('theme.dark')}</option>
+                  </SelectField>
+                </div>
+                <div className="settings-row">
+                  <span className="settings-label">{t('toolbar.language')}</span>
+                  <SelectField
+                    className="select"
+                    value={settings.localePreference}
+                    aria-label={t('toolbar.language')}
+                    onValueChange={(event) =>
+                      patch({ localePreference: event as LocalePreference })
+                    }
+                  >
+                    <option value="system">{t('language.system')}</option>
+                    {LOCALES.map((locale: Locale) => (
+                      <option key={locale} value={locale}>
+                        {LOCALE_LABELS[locale]}
+                      </option>
+                    ))}
+                  </SelectField>
+                </div>
+                <div className="settings-row">
+                  <span className="settings-label">{t('settings.weekStart')}</span>
+                  <SelectField
+                    className="select"
+                    value={settings.weekStartsOn}
+                    aria-label={t('settings.weekStart')}
+                    onValueChange={(event) => patch({ weekStartsOn: Number(event) === 0 ? 0 : 1 })}
+                  >
+                    <option value={1}>{t('settings.monday')}</option>
+                    <option value={0}>{t('settings.sunday')}</option>
+                  </SelectField>
+                </div>
               </div>
-              <div className="settings-row">
-                <span className="settings-label">{t('toolbar.language')}</span>
-                <select
-                  className="select"
-                  value={settings.localePreference}
-                  aria-label={t('toolbar.language')}
-                  onChange={(event) =>
-                    patch({ localePreference: event.target.value as LocalePreference })
-                  }
-                >
-                  <option value="system">{t('language.system')}</option>
-                  {LOCALES.map((locale: Locale) => (
-                    <option key={locale} value={locale}>
-                      {LOCALE_LABELS[locale]}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="settings-row">
-                <span className="settings-label">{t('settings.weekStart')}</span>
-                <select
-                  className="select"
-                  value={settings.weekStartsOn}
-                  aria-label={t('settings.weekStart')}
-                  onChange={(event) =>
-                    patch({ weekStartsOn: Number(event.target.value) === 0 ? 0 : 1 })
-                  }
-                >
-                  <option value={1}>{t('settings.monday')}</option>
-                  <option value={0}>{t('settings.sunday')}</option>
-                </select>
-              </div>
-            </div>
-          ) : null}
+            ) : null}
 
-          {pane === 'timer' ? (
-            <div className="settings-card">
-              <div className="settings-row">
-                <span className="settings-label">{t('calendar.defaultDuration')}</span>
-                <input
-                  type="number"
-                  className="input"
-                  min={5}
-                  max={1440}
-                  step={5}
-                  aria-label={t('calendar.defaultDuration')}
-                  value={settings.defaultDurationMinutes ?? 30}
-                  onChange={(event) =>
-                    patch({
-                      defaultDurationMinutes: Math.min(
-                        1440,
-                        Math.max(5, Number(event.target.value)),
-                      ),
-                    })
-                  }
-                />
+            {pane === 'timer' ? (
+              <div className="settings-card">
+                <div className="settings-row">
+                  <span className="settings-label">{t('calendar.defaultDuration')}</span>
+                  <Input
+                    type="number"
+                    className="input"
+                    min={5}
+                    max={1440}
+                    step={5}
+                    aria-label={t('calendar.defaultDuration')}
+                    value={settings.defaultDurationMinutes ?? 30}
+                    onChange={(event) =>
+                      patch({
+                        defaultDurationMinutes: Math.min(
+                          1440,
+                          Math.max(5, Number(event.target.value)),
+                        ),
+                      })
+                    }
+                  />
+                </div>
+                <p className="settings-timer-note">{t('work.autoStop')}</p>
               </div>
-              <p className="settings-timer-note">{t('work.autoStop')}</p>
-            </div>
-          ) : null}
+            ) : null}
 
-          {pane === 'data' ? (
-            <div className="settings-card">
-              <div className="settings-row">
-                <span className="settings-label">{t('settings.export')}</span>
-                <button type="button" className="secondary" onClick={exportJson}>
-                  {t('settings.export')}
-                </button>
+            {pane === 'data' ? (
+              <div className="settings-card">
+                <div className="settings-row">
+                  <span className="settings-label">{t('settings.export')}</span>
+                  <Button
+                    type="button"
+                    className="secondary"
+                    variant="outline"
+                    onClick={exportJson}
+                  >
+                    {t('settings.export')}
+                  </Button>
+                </div>
               </div>
-            </div>
-          ) : null}
+            ) : null}
 
-          {pane === 'about' ? (
-            <div className="settings-card">
-              <div className="settings-row">
-                <span className="settings-label">{t('app.name')}</span>
-                <span className="count">v{version}</span>
+            {pane === 'about' ? (
+              <div className="settings-card">
+                <div className="settings-row">
+                  <span className="settings-label">{t('app.name')}</span>
+                  <span className="count">v{version}</span>
+                </div>
+                <div className="settings-row">
+                  <span className="settings-label">{t('about.stack')}</span>
+                  <span className="count">
+                    {desktop ? 'Tauri 2 · Rust · React 19' : 'React 19 · TypeScript'}
+                  </span>
+                </div>
+                <div className="settings-row">
+                  <span className="settings-label">{t('about.milestone')}</span>
+                  <span className="count">{desktop ? 'Desktop beta' : 'Web preview'}</span>
+                </div>
               </div>
-              <div className="settings-row">
-                <span className="settings-label">{t('about.stack')}</span>
-                <span className="count">
-                  {desktop ? 'Tauri 2 · Rust · React 19' : 'React 19 · TypeScript'}
-                </span>
-              </div>
-              <div className="settings-row">
-                <span className="settings-label">{t('about.milestone')}</span>
-                <span className="count">{desktop ? 'Desktop beta' : 'Web preview'}</span>
-              </div>
-            </div>
-          ) : null}
+            ) : null}
+          </div>
         </div>
-      </div>
 
-      <footer className="settings-footer">
-        <button type="button" className="primary" onClick={onClose}>
-          {t('dialog.close')}
-        </button>
-      </footer>
-    </dialog>
+        <footer className="settings-footer">
+          <Button type="button" className="primary" variant="default" onClick={onClose}>
+            {t('dialog.close')}
+          </Button>
+        </footer>
+      </DialogContent>
+    </Dialog>
   )
 }

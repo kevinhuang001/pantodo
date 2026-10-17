@@ -1,23 +1,25 @@
 import { create } from 'zustand'
-import { setFullscreen } from '@/platform'
-
 interface FocusState {
   active: boolean
-  fullscreenError: boolean
+  countdown: number | null
   enter: () => void
+  prepare: () => void
+  tick: () => void
   leave: () => void
 }
-
+/** Focus occupies the application's content pane; it never changes OS window state. */
 export const useFocusStore = create<FocusState>()((set) => ({
   active: false,
-  fullscreenError: false,
-  enter() {
-    set({ active: true, fullscreenError: false })
-    // Called directly from the user's click so browser fullscreen has user activation.
-    void setFullscreen(true).catch(() => set({ fullscreenError: true }))
-  },
-  leave() {
-    set({ active: false, fullscreenError: false })
-    void setFullscreen(false).catch(() => undefined)
-  },
+  countdown: null,
+  enter: () => set({ active: true, countdown: null }),
+  prepare: () => set({ active: false, countdown: 3 }),
+  tick: () =>
+    set((state) =>
+      state.countdown === null
+        ? {}
+        : state.countdown <= 1
+          ? { active: true, countdown: null }
+          : { countdown: state.countdown - 1 },
+    ),
+  leave: () => set({ active: false, countdown: null }),
 }))

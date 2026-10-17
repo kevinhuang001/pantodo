@@ -1,3 +1,5 @@
+import { Icon } from './Icon'
+import { SelectField } from './SelectField'
 import { ARRANGEMENT_LABEL_KEYS, viewDisplayName } from '@/domain/display'
 import { useAppStore } from '@/domain/store'
 import type { AppTab, GroupArrangement, View } from '@/domain/types'
@@ -8,10 +10,12 @@ export function Toolbar({
   view,
   total,
   doneCount,
+  onEditView,
 }: {
   tab: AppTab
   view: View | null
   total: number
+  onEditView: () => void
   doneCount: number
 }) {
   const updateView = useAppStore((state) => state.updateView)
@@ -57,6 +61,11 @@ export function Toolbar({
             weekday: 'short',
           }).format(new Date())}
         </span>
+        {tab === 'views' && view?.preset === null ? (
+          <button className="icon-button" aria-label={t('view.settings')} onClick={onEditView}>
+            <Icon name="sliders" size={16} />
+          </button>
+        ) : null}
         {grouped && view ? (
           <>
             <Segmented
@@ -69,18 +78,18 @@ export function Toolbar({
               onChange={(key) => void updateView(view.id, { arrangement: key as GroupArrangement })}
             />
             {view.arrangement !== 'vertical' ? (
-              <select
+              <SelectField
                 className="compact-select"
                 aria-label={t('view.field.columns')}
                 value={view.gridColumns}
-                onChange={(e) => void updateView(view.id, { gridColumns: Number(e.target.value) })}
+                onValueChange={(e) => void updateView(view.id, { gridColumns: Number(e) })}
               >
                 {[1, 2, 3, 4].map((n) => (
                   <option value={n} key={n}>
                     {n} ×
                   </option>
                 ))}
-              </select>
+              </SelectField>
             ) : null}
           </>
         ) : null}

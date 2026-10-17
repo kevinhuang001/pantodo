@@ -21,7 +21,7 @@ Start work from a Todo, pause for a break, resume or stop and save. One timer ru
 
 Actual time is stored separately from planned time. Add, edit and delete time entries from Statistics. **A newly saved manual entry replaces every whole existing entry that overlaps it.** The old entries are retained as superseded records in the workspace export and excluded from statistics; they are not split into fragments.
 
-Choose **Fullscreen focus** from the running timer to enter the system's fullscreen mode. The focus screen shows only the Todo, elapsed time and timer controls. Escape or Leave focus returns to the workspace while keeping the timer running.
+Starting a Todo shows a three-second countdown, then opens Focus across the entire right content pane. Navigation stays available. Escape or Leave focus returns to the workspace while keeping the timer running. Focus never changes the operating system's fullscreen state.
 
 The native Rust process persists the workspace atomically in the system application-data directory, maintains five-second heartbeats while minimized, and stops the timer on window close, application exit or system suspend. Reopening never automatically starts a timer. Native lifecycle cutoffs invalidate pending renderer writes so a delayed save cannot restore a stopped session. Crash recovery ends at the last durable heartbeat. Linux sleep events require systemd-logind; a gap fallback remains available if native events are unavailable.
 
@@ -78,3 +78,7 @@ Install the Playwright browser with `npx playwright install chromium` before UI 
 - [Third-party notices](THIRD-PARTY.md)
 
 GitHub Actions checks type safety, formatting, lint, unit tests and production builds on Linux, macOS and Windows. The browser job runs Playwright and uploads screenshots. Desktop jobs produce macOS Apple Silicon/Intel DMGs, Windows x64 NSIS/MSI installers and Linux x64 AppImage/DEB/RPM packages. npm downloads, Cargo dependencies/build outputs, Tauri packaging tools and Playwright browsers are cached. All checks and all platform builds must pass before a version is published from main; published versions are left unchanged. See [release notes](docs/RELEASE-NOTES.md) for test-build installation details.
+
+### Interface components
+
+Forms use shadcn/ui components (Radix primitives, Tailwind CSS and Lucide). Source components live in `src/components/ui`; `components.json` configures the registry aliases. Selects, calendars, emoji pickers and menus render inside the app, with keyboard navigation and focus handling. Creating a view requires only a name and optional emoji; panels, filters, templates and layout can be configured after creation. The frameless Tauri window provides its own draggable title region and window controls. The sidebar uses a transparent webview over native Sidebar material on macOS and Acrylic on Windows; Linux transparency depends on the compositor.

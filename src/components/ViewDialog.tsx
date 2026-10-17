@@ -1,7 +1,10 @@
+import { Button } from './ui/button'
+import { Input } from './ui/input'
+import { SelectField } from './SelectField'
 import { useState } from 'react'
 import { useAppStore } from '@/domain/store'
 import { ARRANGEMENT_LABEL_KEYS, GROUP_BY_LABEL_KEYS } from '@/domain/display'
-import { newPanel, quadrantPanels } from '@/domain/views'
+import { quadrantPanels } from '@/domain/views'
 import { EMPTY_FILTER } from '@/domain/types'
 import type { GroupArrangement, GroupField, View } from '@/domain/types'
 import { t } from '@/i18n'
@@ -40,7 +43,7 @@ export function ViewDialog({ view, onClose }: { view: View | null; onClose: () =
         mode === 'panels'
           ? template === 'quadrant'
             ? quadrantPanels(important, urgent)
-            : (view?.panels ?? [newPanel(name.trim())])
+            : (view?.panels ?? [])
           : undefined
       const payload = {
         name: name.trim(),
@@ -71,22 +74,29 @@ export function ViewDialog({ view, onClose }: { view: View | null; onClose: () =
       footer={
         <>
           {view ? (
-            <button
+            <Button
               className="danger-button"
+              variant="destructive"
               onClick={() => {
                 void useAppStore.getState().softDeleteView(view.id)
                 onClose()
               }}
             >
               {t('task.action.delete')}
-            </button>
+            </Button>
           ) : null}
-          <button className="secondary" onClick={onClose}>
+          <Button className="secondary" variant="outline" onClick={onClose}>
             {t('dialog.cancel')}
-          </button>
-          <button className="primary" type="submit" form="pantodo-view-form" disabled={saving}>
+          </Button>
+          <Button
+            className="primary"
+            variant="default"
+            type="submit"
+            form="pantodo-view-form"
+            disabled={saving || !name.trim()}
+          >
             {view ? t('dialog.save') : t('dialog.create')}
-          </button>
+          </Button>
         </>
       }
     >
@@ -100,7 +110,7 @@ export function ViewDialog({ view, onClose }: { view: View | null; onClose: () =
       >
         <div className="field">
           <label htmlFor="view-name">{t('task.field.name')}</label>
-          <input
+          <Input
             id="view-name"
             className="input"
             required
@@ -110,128 +120,134 @@ export function ViewDialog({ view, onClose }: { view: View | null; onClose: () =
           />
         </div>
         <EmojiPicker value={emoji} onChange={setEmoji} />
-        <div className="form-row">
-          <div className="field">
-            <label htmlFor="view-mode">{t('panel.mode')}</label>
-            <select
-              id="view-mode"
-              className="select"
-              value={mode}
-              onChange={(e) => setMode(e.target.value)}
-            >
-              <option value="panels">{t('panel.compose')}</option>
-              <option value="groups">{t('panel.simple')}</option>
-            </select>
-          </div>
-          <div className="field">
-            <label htmlFor="view-template">{t('panel.template')}</label>
-            <select
-              id="view-template"
-              className="select"
-              value={template}
-              onChange={(e) => {
-                setTemplate(e.target.value)
-                if (e.target.value === 'tags') {
-                  setMode('groups')
-                  setGroupBy('tag')
-                } else setMode('panels')
-              }}
-            >
-              <option value="blank">{t('panel.template.blank')}</option>
-              <option value="tags">{t('panel.template.tags')}</option>
-              <option value="quadrant">{t('panel.template.quadrant')}</option>
-            </select>
-          </div>
-        </div>
-        {mode === 'panels' && template === 'quadrant' ? (
-          <div className="form-row">
-            <div className="field">
-              <label htmlFor="view-important">{t('panel.important')}</label>
-              <select
-                id="view-important"
-                className="select"
-                value={important}
-                onChange={(e) => setImportant(e.target.value)}
-              >
-                <option value="">—</option>
-                {tags.map((tag) => (
-                  <option key={tag.id} value={tag.id}>
-                    {tag.name}
-                  </option>
-                ))}
-              </select>
+        {view ? (
+          <>
+            <div className="form-row">
+              <div className="field">
+                <label htmlFor="view-mode">{t('panel.mode')}</label>
+                <SelectField
+                  id="view-mode"
+                  className="select"
+                  value={mode}
+                  onValueChange={(e) => setMode(e)}
+                >
+                  <option value="panels">{t('panel.compose')}</option>
+                  <option value="groups">{t('panel.simple')}</option>
+                </SelectField>
+              </div>
+              <div className="field">
+                <label htmlFor="view-template">{t('panel.template')}</label>
+                <SelectField
+                  id="view-template"
+                  className="select"
+                  value={template}
+                  onValueChange={(e) => {
+                    setTemplate(e)
+                    if (e === 'tags') {
+                      setMode('groups')
+                      setGroupBy('tag')
+                    } else setMode('panels')
+                  }}
+                >
+                  <option value="blank">{t('panel.template.blank')}</option>
+                  <option value="tags">{t('panel.template.tags')}</option>
+                  <option value="quadrant">{t('panel.template.quadrant')}</option>
+                </SelectField>
+              </div>
             </div>
-            <div className="field">
-              <label htmlFor="view-urgent">{t('panel.urgent')}</label>
-              <select
-                id="view-urgent"
-                className="select"
-                value={urgent}
-                onChange={(e) => setUrgent(e.target.value)}
-              >
-                <option value="">—</option>
-                {tags.map((tag) => (
-                  <option key={tag.id} value={tag.id}>
-                    {tag.name}
-                  </option>
-                ))}
-              </select>
+            {mode === 'panels' && template === 'quadrant' ? (
+              <div className="form-row">
+                <div className="field">
+                  <label htmlFor="view-important">{t('panel.important')}</label>
+                  <SelectField
+                    id="view-important"
+                    className="select"
+                    value={important}
+                    onValueChange={(e) => setImportant(e)}
+                  >
+                    <option value="">—</option>
+                    {tags.map((tag) => (
+                      <option key={tag.id} value={tag.id}>
+                        {tag.name}
+                      </option>
+                    ))}
+                  </SelectField>
+                </div>
+                <div className="field">
+                  <label htmlFor="view-urgent">{t('panel.urgent')}</label>
+                  <SelectField
+                    id="view-urgent"
+                    className="select"
+                    value={urgent}
+                    onValueChange={(e) => setUrgent(e)}
+                  >
+                    <option value="">—</option>
+                    {tags.map((tag) => (
+                      <option key={tag.id} value={tag.id}>
+                        {tag.name}
+                      </option>
+                    ))}
+                  </SelectField>
+                </div>
+              </div>
+            ) : null}
+            <div className="form-row">
+              {mode === 'groups' ? (
+                <div className="field">
+                  <label htmlFor="view-group">{t('view.field.groupBy')}</label>
+                  <SelectField
+                    id="view-group"
+                    className="select"
+                    value={groupBy}
+                    onValueChange={(e) => setGroupBy(e as GroupField)}
+                  >
+                    {(['none', 'tag', 'project', 'status'] as const).map((key) => (
+                      <option key={key} value={key}>
+                        {t(GROUP_BY_LABEL_KEYS[key])}
+                      </option>
+                    ))}
+                  </SelectField>
+                </div>
+              ) : null}
+              <div className="field">
+                <label htmlFor="view-arrangement">{t('toolbar.arrangement')}</label>
+                <SelectField
+                  id="view-arrangement"
+                  className="select"
+                  value={arrangement}
+                  onValueChange={(e) => setArrangement(e as GroupArrangement)}
+                >
+                  {(['vertical', 'columns', 'grid'] as const).map((key) => (
+                    <option key={key} value={key}>
+                      {t(ARRANGEMENT_LABEL_KEYS[key])}
+                    </option>
+                  ))}
+                </SelectField>
+              </div>
+              <div className="field">
+                <label htmlFor="view-columns">{t('view.field.columns')}</label>
+                <Input
+                  id="view-columns"
+                  className="input"
+                  type="number"
+                  min={1}
+                  max={4}
+                  required
+                  value={gridColumns}
+                  onChange={(e) => setGridColumns(Math.min(4, Math.max(1, Number(e.target.value))))}
+                />
+              </div>
             </div>
-          </div>
-        ) : null}
-        <div className="form-row">
-          {mode === 'groups' ? (
-            <div className="field">
-              <label htmlFor="view-group">{t('view.field.groupBy')}</label>
-              <select
-                id="view-group"
-                className="select"
-                value={groupBy}
-                onChange={(e) => setGroupBy(e.target.value as GroupField)}
-              >
-                {(['none', 'tag', 'project', 'status'] as const).map((key) => (
-                  <option key={key} value={key}>
-                    {t(GROUP_BY_LABEL_KEYS[key])}
-                  </option>
-                ))}
-              </select>
-            </div>
-          ) : null}
-          <div className="field">
-            <label htmlFor="view-arrangement">{t('toolbar.arrangement')}</label>
-            <select
-              id="view-arrangement"
-              className="select"
-              value={arrangement}
-              onChange={(e) => setArrangement(e.target.value as GroupArrangement)}
-            >
-              {(['vertical', 'columns', 'grid'] as const).map((key) => (
-                <option key={key} value={key}>
-                  {t(ARRANGEMENT_LABEL_KEYS[key])}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="field">
-            <label htmlFor="view-columns">{t('view.field.columns')}</label>
-            <input
-              id="view-columns"
-              className="input"
-              type="number"
-              min={1}
-              max={4}
-              required
-              value={gridColumns}
-              onChange={(e) => setGridColumns(Math.min(4, Math.max(1, Number(e.target.value))))}
-            />
-          </div>
-        </div>
-        <details className="view-filter-details">
-          <summary>
-            {t('view.field.filterTags')} · {t('panel.text')}
-          </summary>
-          <FilterFields prefix="view-filter" value={filter} onChange={setFilter} />
-        </details>
+            <details className="view-filter-details">
+              <summary>
+                {t('view.field.filterTags')} · {t('panel.text')}
+              </summary>
+              <FilterFields prefix="view-filter" value={filter} onChange={setFilter} />
+            </details>
+          </>
+        ) : (
+          <p className="field-hint">{t('view.createHint')}</p>
+        )}
         {error ? (
           <p role="alert" className="form-error">
             {error}

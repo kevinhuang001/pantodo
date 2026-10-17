@@ -3,14 +3,17 @@ import { useAppStore } from '@/domain/store'
 import { useFocusStore } from '@/domain/focus'
 import { clockLabel, elapsedSeconds } from '@/domain/time'
 import { useNow } from '@/hooks'
-import { onFullscreenExit } from '@/platform'
 import { t } from '@/i18n'
-import { PaperFriend } from './PaperFriend'
 import { Icon } from './Icon'
 
 export function FocusScreen() {
   const active = useFocusStore((state) => state.active)
-  const fullscreenError = useFocusStore((state) => state.fullscreenError)
+  const countdown = useFocusStore((state) => state.countdown)
+  useEffect(() => {
+    if (countdown === null) return
+    const timeout = window.setTimeout(() => useFocusStore.getState().tick(), 1000)
+    return () => window.clearTimeout(timeout)
+  }, [countdown])
   const leave = useFocusStore((state) => state.leave)
   const timer = useAppStore((state) => state.timer)
   const tasks = useAppStore((state) => state.tasks)
@@ -33,41 +36,29 @@ export function FocusScreen() {
         event.preventDefault()
         leave()
       }
-      if (event.key === 'Tab') {
-        const buttons = Array.from(
-          document.querySelectorAll<HTMLButtonElement>('.focus-screen button'),
-        )
-        const first = buttons[0],
-          last = buttons.at(-1)
-        if (event.shiftKey && document.activeElement === first) {
-          event.preventDefault()
-          last?.focus()
-        } else if (!event.shiftKey && document.activeElement === last) {
-          event.preventDefault()
-          first?.focus()
-        }
-      }
     }
     document.addEventListener('keydown', key)
-    let disposed = false
-    let unlisten: (() => void) | undefined
-    void onFullscreenExit(leave).then((fn) => {
-      if (disposed) fn()
-      else unlisten = fn
-    })
     return () => {
-      disposed = true
-      unlisten?.()
       document.removeEventListener('keydown', key)
       before?.focus()
     }
   }, [active, hasTimer, leave])
 
-  if (!active || !timer) return null
+  if (!timer || (!active && countdown === null)) return null
+  if (countdown !== null)
+    return (
+      <section className="focus-screen focus-countdown" aria-label={t('work.entering')}>
+        <span>{t('work.entering')}</span>
+        <output aria-live="polite">{countdown}</output>
+        <button className="secondary" onClick={leave}>
+          {t('dialog.cancel')}
+        </button>
+      </section>
+    )
   const task = tasks.find((item) => item.id === timer.taskId)
   const project = projects.find((item) => item.id === task?.projectId)
   return (
-    <div className="focus-screen" role="dialog" aria-modal="true" aria-labelledby="focus-title">
+    <section className="focus-screen" role="region" aria-labelledby="focus-title">
       <header className="focus-header">
         <span className="little-label">Pantodo · {t('work.focus')}</span>
         <button ref={exit} className="secondary focus-exit" onClick={leave}>
@@ -75,8 +66,7 @@ export function FocusScreen() {
           {t('work.exitFocus')} <kbd>esc</kbd>
         </button>
       </header>
-      <main className="focus-content">
-        <PaperFriend />
+      <div className="focus-content">
         <span className="little-label">
           {timer.startedAt ? t('work.running') : t('work.paused')}
         </span>
@@ -109,9 +99,8 @@ export function FocusScreen() {
             {t('work.stop')}
           </button>
         </div>
-        {fullscreenError ? <p className="focus-hint">{t('work.fullscreenFallback')}</p> : null}
-      </main>
+      </div>
       <footer className="focus-footer">{t('work.focusExitHint')}</footer>
-    </div>
+    </section>
   )
 }

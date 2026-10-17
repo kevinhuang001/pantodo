@@ -1,3 +1,7 @@
+import { Popover, PopoverTrigger, PopoverContent } from './ui/popover'
+import { Checkbox } from './ui/checkbox'
+import { DateTimeField } from './DateTimeField'
+import { SelectField } from './SelectField'
 import { useMemo, useState } from 'react'
 import { addDays, startOfDay, startOfMonth, subDays } from 'date-fns'
 import { buildStatistics, csvCell } from '@/domain/statistics'
@@ -8,7 +12,6 @@ import type { TimeEntry } from '@/domain/types'
 import { useNow } from '@/hooks'
 import { getLocale, t } from '@/i18n'
 import { Icon } from './Icon'
-import { PaperFriend } from './PaperFriend'
 import { TimeEntryDialog } from './TimeEntryDialog'
 import { ConfirmDialog } from './ConfirmDialog'
 
@@ -125,17 +128,6 @@ export function Statistics() {
   }
   return (
     <div className="statistics">
-      <div className="page-intro">
-        <div>
-          <span className="little-label">{t('nav.statistics')}</span>
-          <h2>
-            {t('stats.title')}
-            <span className="heading-spark">✳</span>
-          </h2>
-          <p>{t('stats.subtitle')}</p>
-        </div>
-        <PaperFriend small />
-      </div>
       <div className="stats-controls">
         <div className="layout-pills" role="group" aria-label={t('stats.period')}>
           {(['today', 'week', 'month', 'custom'] as const).map((key) => (
@@ -162,28 +154,28 @@ export function Statistics() {
       <div className="stats-filters">
         {period === 'custom' ? (
           <>
-            <input
+            <DateTimeField
               aria-label={t('stats.from')}
               className="input"
-              type="date"
+              dateOnly
               value={from}
               onChange={(e) => setFrom(e.target.value)}
             />
             <span>—</span>
-            <input
+            <DateTimeField
               aria-label={t('stats.to')}
               className="input"
-              type="date"
+              dateOnly
               value={to}
               onChange={(e) => setTo(e.target.value)}
             />
           </>
         ) : null}
-        <select
+        <SelectField
           className="select"
           aria-label={t('task.field.project')}
           value={projectId}
-          onChange={(e) => setProjectId(e.target.value)}
+          onValueChange={(e) => setProjectId(e)}
         >
           <option value="">{t('stats.allProjects')}</option>
           {projects
@@ -193,22 +185,23 @@ export function Statistics() {
                 {p.emoji} {p.name}
               </option>
             ))}
-        </select>
-        <details className="stats-tag-picker">
-          <summary className="secondary">
-            {t('stats.allTags')}
-            {tagIds.length ? ' · ' + tagIds.length : ''}
-            <Icon name="chevronDown" size={13} />
-          </summary>
-          <div className="stats-tag-menu">
+        </SelectField>
+        <Popover>
+          <PopoverTrigger asChild>
+            <button className="secondary stats-tag-picker" type="button">
+              {t('stats.allTags')}
+              {tagIds.length ? ' · ' + tagIds.length : ''}
+              <Icon name="chevronDown" size={13} />
+            </button>
+          </PopoverTrigger>
+          <PopoverContent className="stats-tag-menu product-tag-menu" align="end">
             {tags
               .filter((p) => !p.deletedAt)
               .map((tag) => (
                 <label key={tag.id}>
-                  <input
-                    type="checkbox"
+                  <Checkbox
                     checked={tagIds.includes(tag.id)}
-                    onChange={() =>
+                    onCheckedChange={() =>
                       setTagIds((current) =>
                         current.includes(tag.id)
                           ? current.filter((id) => id !== tag.id)
@@ -222,8 +215,8 @@ export function Statistics() {
             <button className="text-button" onClick={() => setTagIds([])}>
               {t('panel.all')}
             </button>
-          </div>
-        </details>
+          </PopoverContent>
+        </Popover>
       </div>
       {!valid ? (
         <p role="alert" className="form-error">

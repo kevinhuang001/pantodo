@@ -1,3 +1,6 @@
+import { SelectField } from './SelectField'
+import { Input } from './ui/input'
+import { DateTimeField } from './DateTimeField'
 import { useAppStore } from '@/domain/store'
 import { STATUS_LABEL_KEYS } from '@/domain/display'
 import { TASK_STATUSES } from '@/domain/types'
@@ -40,15 +43,15 @@ export function FilterFields({
               {tag.name}
             </button>
           ))}
-          <select
+          <SelectField
             className="compact-select"
             aria-label={t('view.field.filterTags')}
             value={value.tagMode}
-            onChange={(e) => onChange({ ...value, tagMode: e.target.value as 'any' | 'all' })}
+            onValueChange={(e) => onChange({ ...value, tagMode: e as 'any' | 'all' })}
           >
             <option value="any">{t('view.tags.any')}</option>
             <option value="all">{t('view.tags.all')}</option>
-          </select>
+          </SelectField>
         </div>
       </div>
       <div className="field">
@@ -99,15 +102,15 @@ export function FilterFields({
       <div className="form-row">
         <div className="field">
           <label htmlFor={prefix + '-project'}>{t('task.field.project')}</label>
-          <select
+          <SelectField
             id={prefix + '-project'}
             className="select"
             value={value.projectMode === 'none' ? '__none' : (value.projectIds[0] ?? '')}
-            onChange={(e) =>
+            onValueChange={(e) =>
               onChange({
                 ...value,
-                projectMode: e.target.value === '__none' ? 'none' : 'any',
-                projectIds: e.target.value && e.target.value !== '__none' ? [e.target.value] : [],
+                projectMode: e === '__none' ? 'none' : 'any',
+                projectIds: e && e !== '__none' ? [e] : [],
               })
             }
           >
@@ -118,27 +121,25 @@ export function FilterFields({
                 {project.emoji} {project.name}
               </option>
             ))}
-          </select>
+          </SelectField>
         </div>
         <div className="field">
           <label htmlFor={prefix + '-time'}>{t('plan.title')}</label>
-          <select
+          <SelectField
             id={prefix + '-time'}
             className="select"
             value={value.hasTime}
-            onChange={(e) =>
-              onChange({ ...value, hasTime: e.target.value as ViewFilter['hasTime'] })
-            }
+            onValueChange={(e) => onChange({ ...value, hasTime: e as ViewFilter['hasTime'] })}
           >
             <option value="any">{t('panel.anyTime')}</option>
             <option value="scheduled">{t('panel.scheduled')}</option>
             <option value="unscheduled">{t('panel.unscheduled')}</option>
-          </select>
+          </SelectField>
         </div>
       </div>
       <div className="field">
         <label htmlFor={prefix + '-text'}>{t('panel.text')}</label>
-        <input
+        <Input
           id={prefix + '-text'}
           className="input"
           value={value.text}
@@ -150,10 +151,10 @@ export function FilterFields({
           <label htmlFor={prefix + '-from'}>
             {t('task.field.due')} · {t('stats.from')}
           </label>
-          <input
+          <DateTimeField
             id={prefix + '-from'}
             className="input"
-            type="datetime-local"
+
             value={value.dueFrom ? toLocalInputValue(value.dueFrom) : ''}
             onChange={(e) =>
               onChange({
@@ -167,10 +168,10 @@ export function FilterFields({
           <label htmlFor={prefix + '-to'}>
             {t('task.field.due')} · {t('stats.to')}
           </label>
-          <input
+          <DateTimeField
             id={prefix + '-to'}
             className="input"
-            type="datetime-local"
+
             value={value.dueTo ? toLocalInputValue(value.dueTo) : ''}
             onChange={(e) =>
               onChange({

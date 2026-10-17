@@ -1,3 +1,6 @@
+import { DateTimeField } from './DateTimeField'
+import { Input } from './ui/input'
+import { Button } from './ui/button'
 import { addMinutes } from 'date-fns'
 import { toLocalInputValue } from '@/domain/date'
 import { useAppStore } from '@/domain/store'
@@ -25,10 +28,10 @@ export function ScheduleFields({
       <div className="form-row">
         <div className="field">
           <label htmlFor={prefix + '-start'}>{t('plan.start')}</label>
-          <input
+          <DateTimeField
             id={prefix + '-start'}
             className="input"
-            type="datetime-local"
+
             value={value.start}
             onChange={(event) => {
               const start = event.target.value
@@ -45,10 +48,10 @@ export function ScheduleFields({
         </div>
         <div className="field">
           <label htmlFor={prefix + '-end'}>{t('plan.end')}</label>
-          <input
+          <DateTimeField
             id={prefix + '-end'}
             className="input"
-            type="datetime-local"
+
             value={value.end}
             min={value.start || undefined}
             onChange={(event) => patch('end', event.target.value)}
@@ -58,17 +61,17 @@ export function ScheduleFields({
       <div className="form-row">
         <div className="field">
           <label htmlFor={prefix + '-due'}>{t('task.field.due')}</label>
-          <input
+          <DateTimeField
             id={prefix + '-due'}
             className="input"
-            type="datetime-local"
+
             value={value.due}
             onChange={(event) => patch('due', event.target.value)}
           />
         </div>
         <div className="field">
           <label htmlFor={prefix + '-estimate'}>{t('task.field.estimate')}</label>
-          <input
+          <Input
             id={prefix + '-estimate'}
             className="input"
             type="number"
@@ -81,13 +84,14 @@ export function ScheduleFields({
         </div>
       </div>
       <p className="field-hint">{t('plan.hint')}</p>
-      <button
+      <Button
         type="button"
         className="text-button"
+        variant="ghost"
         onClick={() => onChange({ ...value, start: '', end: '' })}
       >
         {t('plan.clear')}
-      </button>
+      </Button>
     </fieldset>
   )
 }

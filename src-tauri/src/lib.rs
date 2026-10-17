@@ -44,6 +44,39 @@ mod desktop {
         }
     }
 
+    // Clip the native Acrylic material too; CSS only clips WebView contents.
+    #[cfg(target_os = "windows")]
+    fn configure_corners(window: &tauri::WebviewWindow) {
+        use std::ffi::c_void;
+        #[link(name = "dwmapi")]
+        unsafe extern "system" {
+            fn DwmSetWindowAttribute(
+                hwnd: *mut c_void,
+                attribute: u32,
+                value: *const c_void,
+                size: u32,
+            ) -> i32;
+        }
+        if let Ok(hwnd) = window.hwnd() {
+            let rounded: u32 = 2;
+            let no_border: u32 = 0xfffffffe;
+            unsafe {
+                DwmSetWindowAttribute(
+                    hwnd.0 as *mut c_void,
+                    33,
+                    &rounded as *const _ as *const c_void,
+                    4,
+                );
+                DwmSetWindowAttribute(
+                    hwnd.0 as *mut c_void,
+                    34,
+                    &no_border as *const _ as *const c_void,
+                    4,
+                );
+            }
+        }
+    }
+
     pub fn run() {
         tauri::Builder::default()
             .plugin(tauri_plugin_single_instance::init(|app, _, _| {
@@ -55,6 +88,11 @@ mod desktop {
             .plugin(tauri_plugin_power_monitor::init())
             .invoke_handler(tauri::generate_handler![load_workspace, save_workspace])
             .setup(|app| {
+                #[cfg(target_os = "windows")]
+                if let Some(window) = app.get_webview_window("main") {
+                    configure_corners(&window);
+                }
+
                 let path = app.path().app_data_dir()?.join("workspace.json");
                 app.manage(Mutex::new(
                     WorkspaceStore::open(path).map_err(std::io::Error::other)?,

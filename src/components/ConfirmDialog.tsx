@@ -1,3 +1,4 @@
+import { Button } from './ui/button'
 import { t } from '@/i18n'
 
 import { Modal } from './Modal'
@@ -23,12 +24,12 @@ export function ConfirmDialog({
       onClose={onCancel}
       footer={
         <>
-          <button type="button" className="secondary" onClick={onCancel}>
+          <Button type="button" className="secondary" variant="outline" onClick={onCancel}>
             {t('dialog.cancel')}
-          </button>
-          <button type="button" className="danger-button" onClick={onConfirm}>
+          </Button>
+          <Button type="button" className="danger-button" variant="destructive" onClick={onConfirm}>
             {t(confirmKey)}
-          </button>
+          </Button>
         </>
       }
     >
