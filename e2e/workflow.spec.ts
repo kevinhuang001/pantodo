@@ -194,11 +194,15 @@ test('panel filters, width and order persist without Todo dragging', async ({ pa
   const firstId = await page.locator('.composed-panel').first().getAttribute('data-panel-id')
   await page.locator('.composed-panel').first().locator('.panel-move').focus()
   await page.keyboard.press('Space')
+  await expect(page.locator('.composed-panel').first()).toHaveAttribute('data-dragging', 'true')
+  // dnd-kit attaches its keyboard listener in a zero-delay timer after activation.
+  await page.clock.runFor(100)
   await page.keyboard.press('ArrowRight')
+  await page.clock.runFor(100)
   await page.keyboard.press('Space')
-  expect(await page.locator('.composed-panel').first().getAttribute('data-panel-id')).not.toBe(
-    firstId,
-  )
+  await expect
+    .poll(() => page.locator('.composed-panel').first().getAttribute('data-panel-id'))
+    .not.toBe(firstId)
   await expect(page.locator('.task-row[draggable],.task-row [draggable]')).toHaveCount(0)
   await page.goto('/')
   await page.locator('.nav-row', { hasText: '我的工作台' }).click()
