@@ -24,7 +24,8 @@ export const featureJa = {
   'repeat.invalid': '間隔・開始日・終了条件を確認してください。',
   'repeat.monthHint': '毎月 {day} 日に繰り返します。該当日がない月はスキップします。',
   'repeat.seriesHint':
-    '内容と予定は全体に適用されます。各回の状態は日付ごとに記録され、繰り返しで確認できます。',
+    '内容はシリーズで共有されます。記録済みの回は日時と状態を保持し、予定の変更は今後の回に適用されます。',
+  'repeat.template': '予定テンプレート',
   'repeat.deleteHint': 'この回だけ削除しますか？シリーズ全体をごみ箱に移動しますか？',
   'repeat.deleteOne': 'この回だけ削除',
   'repeat.deleteAll': 'シリーズを削除',

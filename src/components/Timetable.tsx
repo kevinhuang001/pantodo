@@ -352,7 +352,11 @@ export function Timetable({
                 {days.map((day) => (
                   <div key={dateKey(day)}>
                     {untimedOn(day).map((task) => (
-                      <button type="button" key={task.id} onClick={() => onEdit(task)}>
+                      <button
+                        type="button"
+                        key={task.id + (task.occurrenceKey ?? '')}
+                        onClick={() => onEdit(task)}
+                      >
                         {task.title}
                       </button>
                     ))}

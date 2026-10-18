@@ -71,6 +71,7 @@ export function FocusScreen() {
           {timer.startedAt ? t('work.running') : t('work.paused')}
         </span>
         <h1 id="focus-title">{task?.title ?? t('work.deleted')}</h1>
+        {timer.occurrenceKey ? <p className="focus-occurrence">{timer.occurrenceKey}</p> : null}
         {project ? (
           <span className="focus-project">
             {project.emoji} {project.name}

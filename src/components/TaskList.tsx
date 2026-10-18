@@ -1,3 +1,4 @@
+import { taskInstanceId, localDate } from '@/domain/recurrence'
 import type { MessageKey } from '@/i18n'
 import { getLocale, t } from '@/i18n'
 import { formatDateTime, formatMinutes } from '@/domain/date'
@@ -50,7 +51,9 @@ export function TaskRow({
     return (
       <div
         className={'task-row compact-task' + (task.status === 'done' ? ' done' : '')}
-        data-task-id={task.id}
+        data-task-id={taskInstanceId(task)}
+        data-series-id={task.id}
+        data-occurrence={task.occurrenceKey}
       >
         <div
           className="task-body"
@@ -71,6 +74,13 @@ export function TaskRow({
             ) : null}
           </span>
           {task.notes ? <span className="task-description">{task.notes}</span> : null}
+          {task.occurrenceKey ? (
+            <time className="task-occurrence-date" dateTime={task.occurrenceKey}>
+              {new Intl.DateTimeFormat(locale, { dateStyle: 'medium' }).format(
+                localDate(task.occurrenceKey),
+              )}
+            </time>
+          ) : null}
         </div>
       </div>
     )
@@ -80,11 +90,13 @@ export function TaskRow({
       className={[
         'task-row',
         task.status === 'done' ? 'done' : '',
-        lookup.selectedTaskId === task.id ? 'selected' : '',
+        lookup.selectedTaskId === taskInstanceId(task) ? 'selected' : '',
       ]
         .filter(Boolean)
         .join(' ')}
-      data-task-id={task.id}
+      data-task-id={taskInstanceId(task)}
+      data-series-id={task.id}
+      data-occurrence={task.occurrenceKey}
     >
       <button
         type="button"
@@ -117,6 +129,13 @@ export function TaskRow({
         </span>
         {task.notes ? <span className="task-description">{task.notes}</span> : null}
         <span className="task-meta">
+          {task.occurrenceKey ? (
+            <time className="chip" dateTime={task.occurrenceKey}>
+              {new Intl.DateTimeFormat(locale, { dateStyle: 'medium' }).format(
+                localDate(task.occurrenceKey),
+              )}
+            </time>
+          ) : null}
           <span className="chip task-status">{t(STATUS_LABEL_KEYS[task.status])}</span>
           {project === null ? null : (
             <span className="chip">
@@ -261,7 +280,7 @@ export function TaskList({
       data-presentation={presentation}
     >
       {tasks.map((task) => (
-        <TaskRow key={task.id} task={task} lookup={lookup} compact={compact} />
+        <TaskRow key={taskInstanceId(task)} task={task} lookup={lookup} compact={compact} />
       ))}
     </div>
   )

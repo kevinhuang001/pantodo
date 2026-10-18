@@ -36,6 +36,7 @@ fn end_timer(workspace: &mut Value, end_ms: i64) -> bool {
                 .to_rfc3339_opts(SecondsFormat::Millis, true);
             let record = json!({
                 "id": Uuid::new_v4().to_string(), "taskId": timer["taskId"],
+                "occurrenceKey": timer["occurrenceKey"],
                 "startedAt": timer["startedAt"], "endedAt": stamp,
                 "source": "timer", "note": "", "createdAt": stamp, "updatedAt": stamp, "deletedAt": null
             });

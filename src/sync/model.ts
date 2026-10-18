@@ -1,4 +1,4 @@
-import { validRecurrence } from '@/domain/recurrence'
+import { validRecurrence, validDate } from '@/domain/recurrence'
 import type { Project, Tag, Task, TimeEntry, View, Workspace } from '@/domain/types'
 
 export interface SyncedTask {
@@ -63,6 +63,64 @@ export function extractData(workspace: Workspace, base = emptyData()): SyncData 
   }
   return data
 }
+/** Merge independent dates without discarding another device's cycle changes. */
+function mergeOccurrenceTask(
+  base: SyncedTask | null | undefined,
+  local: SyncedTask | null | undefined,
+  remote: SyncedTask | null | undefined,
+): SyncedTask | null {
+  if (
+    !base ||
+    !local ||
+    !remote ||
+    local.task.deletedAt ||
+    remote.task.deletedAt ||
+    (!local.task.recurrence && !local.task.occurrences)
+  )
+    return null
+  const metadata = (value: SyncedTask) => {
+    const task = { ...value.task }
+    delete task.occurrences
+    delete task.occurrencesThrough
+    // Updated timestamps are envelopes, not shared task content.
+    return { ...value, task: { ...task, updatedAt: '' } }
+  }
+  const b = fingerprint(metadata(base)),
+    l = fingerprint(metadata(local)),
+    r = fingerprint(metadata(remote))
+  const chosen = l === r || r === b ? local : l === b ? remote : null
+  if (!chosen) return null
+  const records: NonNullable<Task['occurrences']> = {}
+  const keys = new Set([
+    ...Object.keys(base.task.occurrences ?? {}),
+    ...Object.keys(local.task.occurrences ?? {}),
+    ...Object.keys(remote.task.occurrences ?? {}),
+  ])
+  for (const key of keys) {
+    const b = base.task.occurrences?.[key],
+      l = local.task.occurrences?.[key],
+      r = remote.task.occurrences?.[key]
+    const bh = fingerprint(b),
+      lh = fingerprint(l),
+      rh = fingerprint(r)
+    if (lh !== rh && rh !== bh && lh !== bh) return null
+    const value = lh === rh || rh === bh ? l : r
+    if (value) records[key] = value
+  }
+  const through = [local.task.occurrencesThrough, remote.task.occurrencesThrough]
+    .filter((v): v is string => !!v)
+    .sort()
+    .at(-1)
+  return {
+    ...chosen,
+    task: {
+      ...chosen.task,
+      occurrences: records,
+      occurrencesThrough: through,
+      updatedAt: [local.task.updatedAt, remote.task.updatedAt].sort().at(-1)!,
+    },
+  }
+}
 export function mergeData(
   base: SyncData,
   local: SyncData,
@@ -86,9 +144,18 @@ export function mergeData(
         remoteHash = fingerprint(r),
         baseHash = fingerprint(b)
       const key = collection + ':' + id
+      const occurrenceMerge =
+        collection === 'tasks'
+          ? mergeOccurrenceTask(
+              b as SyncedTask | null,
+              l as SyncedTask | null,
+              r as SyncedTask | null,
+            )
+          : null
       let result: unknown
       if (localHash === remoteHash || remoteHash === baseHash) result = l
       else if (localHash === baseHash) result = r
+      else if (occurrenceMerge) result = occurrenceMerge
       else if (choices[key]) result = choices[key] === 'local' ? l : r
       else {
         const entity = l ?? r ?? b
@@ -214,14 +281,29 @@ function valid(collection: (typeof COLLECTIONS)[number], value: unknown, id: str
     const v = value.task
     return (
       (v.recurrence == null || validRecurrence(v.recurrence)) &&
+      (v.occurrencesThrough === undefined || validDate(v.occurrencesThrough)) &&
+      (v.occurrences === undefined ||
+        (record(v.occurrences) &&
+          Object.entries(v.occurrences).every(
+            ([key, state]) =>
+              validDate(key) &&
+              record(state) &&
+              ['todo', 'doing', 'done', 'cancelled'].includes(String(state.status)) &&
+              ['startAt', 'endAt', 'dueAt', 'completedAt', 'deletedAt'].every((field) =>
+                nullableInstant(state[field]),
+              ) &&
+              ((state.startAt === null && state.endAt === null) ||
+                (instant(state.startAt) &&
+                  instant(state.endAt) &&
+                  Date.parse(String(state.endAt)) > Date.parse(String(state.startAt)))),
+          ))) &&
       (v.skippedOccurrences === undefined ||
-        (strings(v.skippedOccurrences) &&
-          v.skippedOccurrences.every((d) => /^\d{4}-\d{2}-\d{2}$/.test(d)))) &&
+        (strings(v.skippedOccurrences) && v.skippedOccurrences.every(validDate))) &&
       (v.occurrenceStates === undefined ||
         (record(v.occurrenceStates) &&
           Object.entries(v.occurrenceStates).every(
             ([key, state]) =>
-              /^\d{4}-\d{2}-\d{2}$/.test(key) &&
+              validDate(key) &&
               record(state) &&
               ['todo', 'doing', 'done', 'cancelled'].includes(String(state.status)) &&
               nullableInstant(state.completedAt),
@@ -254,6 +336,7 @@ function valid(collection: (typeof COLLECTIONS)[number], value: unknown, id: str
   if (collection === 'timeEntries')
     return (
       nullableString(value.taskId) &&
+      (value.occurrenceKey == null || validDate(value.occurrenceKey)) &&
       instant(value.startedAt) &&
       instant(value.endedAt) &&
       Date.parse(String(value.endedAt)) > Date.parse(String(value.startedAt)) &&

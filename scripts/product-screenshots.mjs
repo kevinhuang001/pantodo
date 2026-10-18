@@ -183,6 +183,26 @@ try {
   })
   await nav('My workbench')
   await shot('dark')
+  await page.evaluate(async () => {
+    const { useAppStore } = await import('/src/domain/store.ts')
+    const state = useAppStore.getState()
+    await state.updateSettings({ theme: 'light', accentColor: 'ocean' })
+    await state.createProject('Daily notes', '📔')
+    const project = useAppStore.getState().projects.find((p) => p.name === 'Daily notes')
+    const id = await state.createTask({
+      title: 'A moment to reflect',
+      notes: 'Write one thing learned, one small win, and a thought for tomorrow.',
+      projectId: project.id,
+      startAt: new Date('2026-10-15T09:00:00+08:00').toISOString(),
+      endAt: new Date('2026-10-15T09:30:00+08:00').toISOString(),
+      dueAt: new Date('2026-10-15T18:00:00+08:00').toISOString(),
+      recurrence: { frequency: 'daily', interval: 1, startDate: '2026-10-15', weekdays: [4] },
+    })
+    await state.setTaskStatus(id, 'done', '2026-10-15')
+    await state.setTaskStatus(id, 'doing', '2026-10-16')
+  })
+  await nav('Daily notes')
+  await shot('repeat-history')
   if (errors.length) throw new Error(errors.join('\n'))
 } finally {
   await browser?.close()

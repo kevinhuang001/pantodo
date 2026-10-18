@@ -38,12 +38,23 @@ export interface RecurrenceRule {
   weekdays: number[]
   until?: string | null
   count?: number | null
+  /** Schedule changes apply from this local day; recorded history is immutable. */
+  effectiveFrom?: string
+}
+
+export interface TaskOccurrence {
+  startAt: IsoDateTime | null
+  endAt: IsoDateTime | null
+  dueAt: IsoDateTime | null
+  status: TaskStatus
+  completedAt: IsoDateTime | null
+  deletedAt: IsoDateTime | null
 }
 
 export interface Task extends Entity {
   recurrence?: RecurrenceRule | null
-  skippedOccurrences?: string[]
-  occurrenceStates?: Record<string, { status: TaskStatus; completedAt: IsoDateTime | null }>
+  occurrences?: Record<string, TaskOccurrence>
+  occurrencesThrough?: string
   /** Render-only date key. Never persisted or used as a task ID. */
   occurrenceKey?: string
   title: string
@@ -90,6 +101,7 @@ export interface ViewPanel {
 }
 
 export interface TimeEntry extends Entity {
+  occurrenceKey?: string | null
   taskId: Id | null
   startedAt: IsoDateTime
   endedAt: IsoDateTime

@@ -1,4 +1,5 @@
-import { validateRecurrence } from './recurrence'
+import { addDays } from 'date-fns'
+import { validateRecurrence, materializeTask, occurrenceRecord, dateKey } from './recurrence'
 import { useFocusStore } from './focus'
 import { create } from 'zustand'
 
@@ -83,6 +84,7 @@ export interface AppState {
   notify: (key: MessageKey) => void
   dismissToast: () => void
 
+  refreshOccurrences: () => Promise<void>
   createTask: (input: NewTaskInput) => Promise<Id>
   updateTask: (id: Id, patch: Partial<Task>) => Promise<void>
   setTaskStatus: (id: Id, status: TaskStatus, occurrenceKey?: string) => Promise<void>
@@ -227,13 +229,23 @@ export const useAppStore = create<AppState>()((set, get) => ({
     set({ toast: null })
   },
 
+  async refreshOccurrences() {
+    for (const task of get().tasks) {
+      if (get().tasks.find((t) => t.id === task.id) !== task) continue
+      const next = materializeTask(task, new Date())
+      if (next === task) continue
+      set({ tasks: upsert(get().tasks, next) })
+      await bridge.upsertTask(next)
+    }
+  },
+
   async createTask(input) {
     const state = get()
     const now = nowIso()
     if (!input.title.trim()) throw new Error('task.invalidTitle')
     validatePlan(input.startAt ?? null, input.endAt ?? null)
     validateRecurrence(input.recurrence)
-    const task: Task = {
+    let task: Task = {
       id: newId(),
       createdAt: now,
       updatedAt: now,
@@ -251,6 +263,7 @@ export const useAppStore = create<AppState>()((set, get) => ({
       archivedAt: null,
       sortOrder: state.tasks.length,
     }
+    task = materializeTask(task, new Date())
     const tagIds = input.tagIds ?? []
 
     set({
@@ -267,11 +280,35 @@ export const useAppStore = create<AppState>()((set, get) => ({
   async updateTask(id, patch) {
     const current = get().tasks.find((task) => task.id === id)
     if (current === undefined) return
-    const next = withUpdated(current, patch)
+    const prepared = materializeTask(current, new Date())
+    let next = withUpdated(
+      prepared,
+      patch.occurrences
+        ? { ...patch, occurrences: { ...prepared.occurrences, ...patch.occurrences } }
+        : patch,
+    )
     if (patch.recurrence && !current.recurrence) {
       next.status = 'todo'
       next.completedAt = null
+      next.occurrencesThrough = undefined
     }
+    if (current.recurrence && patch.recurrence) {
+      const keys = ['frequency', 'interval', 'startDate', 'weekdays', 'until', 'count'] as const
+      if (
+        keys.some(
+          (key) =>
+            JSON.stringify(current.recurrence![key]) !== JSON.stringify(patch.recurrence![key]),
+        )
+      ) {
+        const today = dateKey(new Date())
+        next.occurrencesThrough = dateKey(addDays(new Date(), -1))
+        next.recurrence = {
+          ...patch.recurrence,
+          effectiveFrom: today > patch.recurrence.startDate ? today : patch.recurrence.startDate,
+        }
+      }
+    }
+    next = materializeTask(next, new Date())
     delete next.occurrenceKey
     validatePlan(next.startAt, next.endAt)
     validateRecurrence(next.recurrence)
@@ -287,7 +324,7 @@ export const useAppStore = create<AppState>()((set, get) => ({
 
   async setTaskStatus(id, status, key) {
     const task = get().tasks.find((t) => t.id === id)
-    if (task?.recurrence && key) {
+    if ((task?.recurrence || task?.occurrences) && key) {
       if (
         get().timer?.taskId === id &&
         get().timer?.occurrenceKey === key &&
@@ -295,20 +332,27 @@ export const useAppStore = create<AppState>()((set, get) => ({
       )
         get().timeCommand({ kind: 'stop' })
       await get().updateTask(id, {
-        occurrenceStates: {
-          ...task.occurrenceStates,
-          [key]: { status, completedAt: status === 'done' ? nowIso() : null },
+        occurrences: {
+          ...task.occurrences,
+          [key]: {
+            ...occurrenceRecord(task, key),
+            status,
+            completedAt: status === 'done' ? nowIso() : null,
+          },
         },
       })
     } else await get().updateTask(id, { status })
   },
   async skipOccurrence(id, key) {
     const task = get().tasks.find((t) => t.id === id)
-    if (!task?.recurrence) return
+    if (!task || (!task.recurrence && !task.occurrences)) return
     if (get().timer?.taskId === id && get().timer?.occurrenceKey === key)
       get().timeCommand({ kind: 'stop' })
     await get().updateTask(id, {
-      skippedOccurrences: [...new Set([...(task.skippedOccurrences ?? []), key])],
+      occurrences: {
+        ...task.occurrences,
+        [key]: { ...occurrenceRecord(task, key), deletedAt: nowIso() },
+      },
     })
   },
 
@@ -379,7 +423,7 @@ export const useAppStore = create<AppState>()((set, get) => ({
         ? {}
         : { activeViewId: workspace.views.find((view) => view.preset === 'all')?.id ?? null }),
       selectedTaskId: workspace.tasks.some(
-        (task) => task.id === get().selectedTaskId && !task.deletedAt,
+        (task) => task.id === get().selectedTaskId?.split('::')[0] && !task.deletedAt,
       )
         ? get().selectedTaskId
         : null,

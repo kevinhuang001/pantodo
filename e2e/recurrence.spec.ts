@@ -41,17 +41,18 @@ test('stores one custom repeating task and computes calendar cycles, single dele
   await expect(blocks).toHaveCount(1)
   w = await read(page)
   expect(w.tasks).toHaveLength(initial + 1)
-  expect(w.tasks.find((t) => t.id === source.id)!.skippedOccurrences).toEqual(['2026-10-19'])
+  expect(
+    w.tasks.find((t) => t.id === source.id)!.occurrences!['2026-10-19']!.deletedAt,
+  ).toBeTruthy()
+  await page.clock.setSystemTime(new Date('2026-10-21T09:00:00+08:00'))
   await page.goto('/')
   await page.locator('.nav-row', { hasText: '全部任务' }).click()
-  const row = page.locator(`[data-task-id="${source.id}"]`)
+  const row = page.locator(`[data-series-id="${source.id}"][data-occurrence="2026-10-21"]`)
   await row.getByRole('checkbox').click()
   await page.getByRole('button', { name: '完成', exact: true }).click()
   w = await read(page)
   expect(w.tasks.find((t) => t.id === source.id)!.status).toBe('todo')
-  expect(w.tasks.find((t) => t.id === source.id)!.occurrenceStates!['2026-10-21']!.status).toBe(
-    'done',
-  )
+  expect(w.tasks.find((t) => t.id === source.id)!.occurrences!['2026-10-21']!.status).toBe('done')
   await row.locator('.task-body').click()
   const editor = page.locator('.task-editor')
   await expect(editor.locator('#task-status')).toHaveAttribute('data-status', 'done')
@@ -73,8 +74,7 @@ test('stores one custom repeating task and computes calendar cycles, single dele
   await editor.locator('#task-title').fill('每周实验记录更新')
   await page.locator('button[form="pantodo-task-form"]').click()
   expect(
-    (await read(page)).tasks.find((t) => t.id === source.id)!.occurrenceStates!['2026-10-21']!
-      .status,
+    (await read(page)).tasks.find((t) => t.id === source.id)!.occurrences!['2026-10-21']!.status,
   ).toBe('done')
   await row.getByRole('button', { name: '删除', exact: true }).click()
   await page.getByRole('button', { name: '删除整个系列', exact: true }).click()
@@ -115,4 +115,50 @@ test('an unconfigured Repeat uses the same borderless appearance as other captur
   await choose(page, page.getByRole('combobox', { name: '重复频率', exact: true }), 'weekly')
   await page.locator('.repeat-popover').getByRole('button', { name: '完成', exact: true }).click()
   await expect(repeat).toHaveAttribute('data-filled', 'true')
+})
+
+test('shows all saved cycles, catches up after restart and midnight, and isolates work and completion', async ({
+  page,
+}) => {
+  await page.locator('#pantodo-inbox-input').fill('每日复盘')
+  await page.locator('.capture-options').getByRole('button', { name: '重复', exact: true }).click()
+  await choose(page, page.getByRole('combobox', { name: '重复频率', exact: true }), 'daily')
+  await page.locator('.repeat-popover').getByRole('button', { name: '完成', exact: true }).click()
+  await page.getByRole('button', { name: '记下来', exact: true }).click()
+  const source = (await read(page)).tasks.find((t) => t.title === '每日复盘')!
+  await page.clock.setSystemTime(new Date('2026-10-22T09:00:00+08:00'))
+  await page.goto('/')
+  await page.locator('.nav-row', { hasText: '全部任务' }).click()
+  const rows = page.locator(`[data-series-id="${source.id}"]`)
+  await expect(rows).toHaveCount(4)
+  const w = await read(page)
+  expect(Object.keys(w.tasks.find((t) => t.id === source.id)!.occurrences!)).toHaveLength(4)
+  expect(w.tasks.filter((t) => t.id === source.id)).toHaveLength(1)
+  const old = rows.filter({ has: page.locator('[datetime="2026-10-21"]') })
+  await old.getByRole('button', { name: '开始工作', exact: true }).click()
+  await page.locator('.focus-countdown button').click()
+  await page.clock.runFor(1000)
+  const previous = page.locator(`[data-series-id="${source.id}"][data-occurrence="2026-10-20"]`)
+  await previous.getByRole('checkbox').click()
+  await page.getByRole('button', { name: '完成', exact: true }).click()
+  expect((await read(page)).timer?.occurrenceKey).toBe('2026-10-21')
+  await page.getByRole('button', { name: '停止并保存', exact: true }).click()
+  const after = await read(page)
+  const records = after.tasks.find((t) => t.id === source.id)!.occurrences!
+  expect(records['2026-10-20']!.status).toBe('done')
+  expect(records['2026-10-21']!.status).toBe('doing')
+  expect(records['2026-10-22']!.status).toBe('todo')
+  expect(
+    after.timeEntries.some((e) => e.taskId === source.id && e.occurrenceKey === '2026-10-21'),
+  ).toBe(true)
+  await page.clock.setSystemTime(new Date('2026-10-23T00:00:10+08:00'))
+  await page.clock.runFor(60000)
+  await expect(rows).toHaveCount(5)
+  await page.goto('/')
+  await page.locator('.nav-row', { hasText: '全部任务' }).click()
+  await expect(rows).toHaveCount(5)
+  expect((await read(page)).tasks.filter((t) => t.id === source.id)).toHaveLength(1)
+  await page.locator('.nav-row', { hasText: '今天' }).first().click()
+  await expect(rows).toHaveCount(1)
+  await expect(rows).toHaveAttribute('data-occurrence', '2026-10-23')
 })

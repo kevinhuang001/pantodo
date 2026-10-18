@@ -1,3 +1,4 @@
+import { materializeTask, occurrenceRecord } from './recurrence'
 import { newId } from './ids'
 import type { Task, TimeEntry, TimerSession, Workspace } from './types'
 
@@ -72,7 +73,7 @@ export function applyTimeCommand(
 ): TimeState {
   let entries = [...workspace.timeEntries]
   let timer = workspace.timer ? { ...workspace.timer } : null
-  let tasks = [...workspace.tasks]
+  let tasks = workspace.tasks.map((task) => materializeTask(task, now))
   const stamp = now.toISOString()
   const flush = (end = stamp): void => {
     if (!timer?.startedAt) return
@@ -82,6 +83,7 @@ export function applyTimeCommand(
       entries.push({
         id: entryId,
         taskId: timer.taskId,
+        occurrenceKey: timer.occurrenceKey,
         startedAt: timer.startedAt,
         endedAt: end,
         source: 'timer',
@@ -114,7 +116,11 @@ export function applyTimeCommand(
         !item.deletedAt &&
         !item.archivedAt &&
         item.status !== 'done' &&
-        item.status !== 'cancelled',
+        item.status !== 'cancelled' &&
+        (!command.occurrenceKey ||
+          (!!item.occurrences?.[command.occurrenceKey] &&
+            !item.occurrences[command.occurrenceKey]!.deletedAt &&
+            !['done', 'cancelled'].includes(item.occurrences[command.occurrenceKey]!.status))),
     )
     if (!task) throw new Error('time.unavailableTask')
     if (
@@ -139,12 +145,16 @@ export function applyTimeCommand(
     }
     tasks = tasks.map((item) =>
       item.id === task.id
-        ? task.recurrence && command.occurrenceKey
+        ? (task.recurrence || task.occurrences) && command.occurrenceKey
           ? {
               ...item,
-              occurrenceStates: {
-                ...item.occurrenceStates,
-                [command.occurrenceKey]: { status: 'doing', completedAt: null },
+              occurrences: {
+                ...item.occurrences,
+                [command.occurrenceKey]: {
+                  ...occurrenceRecord(item, command.occurrenceKey),
+                  status: 'doing',
+                  completedAt: null,
+                },
               },
               updatedAt: stamp,
             }
@@ -154,6 +164,7 @@ export function applyTimeCommand(
   } else if (command.kind === 'pause') flush()
   else if (command.kind === 'resume') {
     if (timer && !timer.startedAt) {
+      const occurrenceKey = timer.occurrenceKey
       if (
         !tasks.some(
           (item) =>
@@ -161,7 +172,11 @@ export function applyTimeCommand(
             !item.deletedAt &&
             !item.archivedAt &&
             item.status !== 'done' &&
-            item.status !== 'cancelled',
+            item.status !== 'cancelled' &&
+            (!occurrenceKey ||
+              (!!item.occurrences?.[occurrenceKey] &&
+                !item.occurrences[occurrenceKey]!.deletedAt &&
+                !['done', 'cancelled'].includes(item.occurrences[occurrenceKey]!.status))),
         )
       )
         throw new Error('time.unavailableTask')

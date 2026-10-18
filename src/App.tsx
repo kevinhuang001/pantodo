@@ -1,5 +1,5 @@
 import { RepeatDeleteDialog } from './components/RepeatDeleteDialog'
-import { listTasks } from '@/domain/recurrence'
+import { listTasks, taskInstanceId, dateKey } from '@/domain/recurrence'
 import { startAutoSync } from '@/sync/store'
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
 
@@ -87,6 +87,10 @@ export function App() {
 
   const [dialog, setDialog] = useState<DialogState>(null)
   const now = useNow()
+  const today = dateKey(now)
+  useEffect(() => {
+    if (ready) void useAppStore.getState().refreshOccurrences()
+  }, [tasks, today, ready])
   const theme = useResolvedTheme(settings.theme)
   useEffect(() => {
     document.documentElement.dataset.accent = settings.accentColor
@@ -151,7 +155,7 @@ export function App() {
       palette,
       selectedTaskId,
       onSelect: (task) => {
-        selectTask(task.id)
+        selectTask(taskInstanceId(task))
         setDialog({ kind: 'task', task })
       },
       onToggleComplete: (task) => {
@@ -333,7 +337,18 @@ export function App() {
             onOpen={() => {
               const timer = useAppStore.getState().timer
               const task = tasks.find((task) => task.id === timer?.taskId)
-              if (task) setDialog({ kind: 'task', task })
+              if (task)
+                setDialog({
+                  kind: 'task',
+                  task: timer?.occurrenceKey
+                    ? {
+                        ...task,
+                        ...task.occurrences?.[timer.occurrenceKey],
+                        deletedAt: task.deletedAt,
+                        occurrenceKey: timer.occurrenceKey,
+                      }
+                    : task,
+                })
             }}
           />
           <FocusScreen />
@@ -372,7 +387,7 @@ export function App() {
           }}
         />
       ) : null}
-      {dialog?.kind === 'confirm-delete' && dialog.task.recurrence ? (
+      {dialog?.kind === 'confirm-delete' && (dialog.task.recurrence || dialog.task.occurrences) ? (
         <RepeatDeleteDialog task={dialog.task} onClose={() => setDialog(null)} />
       ) : dialog?.kind === 'confirm-delete' ? (
         <ConfirmDialog

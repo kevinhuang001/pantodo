@@ -116,3 +116,7 @@ npm run dev
 ![任务内容与计划分栏编辑](docs/images/task-editor.jpg)
 ![面板展示与白名单筛选](docs/images/panel-editor.jpg)
 ![自定义重复规则](docs/images/repeat-rule.jpg)
+
+列表会展示所有历史周期和今天的周期，底层仍只有一个 Todo。各次 occurrence 的时间、状态和删除记录都保存在这条任务中。跨日自动补齐，关闭后重新打开也会补齐；未来日历为实时预览。修改计划模板不会改写历史。
+
+![一条 Todo，完整周期历史](docs/images/repeat-history.jpg)

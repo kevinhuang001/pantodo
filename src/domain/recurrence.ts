@@ -1,6 +1,5 @@
 import {
   addDays,
-  addYears,
   differenceInCalendarDays,
   differenceInCalendarMonths,
   differenceInCalendarYears,
@@ -8,7 +7,7 @@ import {
   startOfDay,
   startOfWeek,
 } from 'date-fns'
-import type { Task, RecurrenceRule } from './types'
+import type { Task, TaskOccurrence, RecurrenceRule } from './types'
 
 export function dateKey(date: Date): string {
   return format(date, 'yyyy-MM-dd')
@@ -17,7 +16,7 @@ export function localDate(key: string): Date {
   const [y, m, d] = key.split('-').map(Number)
   return new Date(y!, m! - 1, d!)
 }
-const validDate = (value: unknown): value is string =>
+export const validDate = (value: unknown): value is string =>
   typeof value === 'string' &&
   /^\d{4}-\d{2}-\d{2}$/.test(value) &&
   dateKey(localDate(value)) === value
@@ -30,6 +29,7 @@ export function validRecurrence(value: unknown): value is RecurrenceRule {
     r.interval >= 1 &&
     r.interval <= 999 &&
     validDate(r.startDate) &&
+    (r.effectiveFrom === undefined || validDate(r.effectiveFrom)) &&
     Array.isArray(r.weekdays) &&
     r.weekdays.length <= 7 &&
     r.weekdays.every((d) => Number.isInteger(d) && d >= 0 && d <= 6) &&
@@ -43,8 +43,8 @@ export function validateRecurrence(rule: RecurrenceRule | null | undefined): voi
   if (rule != null && !validRecurrence(rule)) throw new Error('repeat.invalid')
 }
 
-/** Expand only the requested window. Generated occurrences never enter workspace storage. */
-export function occurrences(task: Task, from: Date, to: Date, limit = 1000): Task[] {
+/** Compute previews without creating separate Todos. */
+function computedOccurrences(task: Task, from: Date, to: Date, limit = 1000): Task[] {
   const rule = task.recurrence
   if (!rule || !validRecurrence(rule)) return []
   const first = localDate(rule.startDate),
@@ -93,14 +93,15 @@ export function occurrences(task: Task, from: Date, to: Date, limit = 1000): Tas
       const key = dateKey(day)
       if ((rule.until && key > rule.until) || (rule.count && ordinal >= rule.count)) return result
       ordinal++
-      if (day < start || day >= stop || task.skippedOccurrences?.includes(key)) continue
-      const state = task.occurrenceStates?.[key]
+      if (day < start || day >= stop || (rule.effectiveFrom && key < rule.effectiveFrom)) continue
+      const state = task.occurrences?.[key]
+      if (state?.deletedAt) continue
       result.push({
         ...task,
         occurrenceKey: key,
-        startAt: shift(task.startAt, day),
-        endAt: shift(task.endAt, day),
-        dueAt: shift(task.dueAt, day),
+        startAt: state ? state.startAt : shift(task.startAt, day),
+        endAt: state ? state.endAt : shift(task.endAt, day),
+        dueAt: state ? state.dueAt : shift(task.dueAt, day),
         status: state?.status ?? (task.status === 'cancelled' ? 'cancelled' : 'todo'),
         completedAt: state?.completedAt ?? null,
       })
@@ -110,42 +111,147 @@ export function occurrences(task: Task, from: Date, to: Date, limit = 1000): Tas
   }
   return result
 }
-export function expandTasks(tasks: Task[], from: Date, to: Date): Task[] {
-  return tasks.flatMap((task) =>
-    task.recurrence && !task.deletedAt
-      ? (() => {
-          const origin = startOfDay(
-            new Date(task.startAt ?? task.dueAt ?? localDate(task.recurrence.startDate)),
-          )
-          const offsets = [task.startAt, task.endAt, task.dueAt]
-            .filter((d): d is string => !!d)
-            .map((d) => differenceInCalendarDays(new Date(d), origin))
-          return occurrences(
-            task,
-            addDays(from, -Math.max(0, ...offsets)),
-            addDays(to, -Math.min(0, ...offsets)),
-          )
-        })()
-      : [task],
+/** A dated snapshot belongs to the one source Todo, never to the top-level task collection. */
+export function occurrenceRecord(task: Task, key: string): TaskOccurrence {
+  const existing = task.occurrences?.[key]
+  if (existing) return existing
+  const anchor = startOfDay(
+    new Date(task.startAt ?? task.dueAt ?? localDate(task.recurrence?.startDate ?? key)),
   )
+  const shift = (value: string | null) =>
+    value
+      ? addDays(new Date(value), differenceInCalendarDays(localDate(key), anchor)).toISOString()
+      : null
+  return {
+    startAt: shift(task.startAt),
+    endAt: shift(task.endAt),
+    dueAt: shift(task.dueAt),
+    status: 'todo',
+    completedAt: null,
+    deletedAt: null,
+  }
 }
-/** Lists show today's occurrence or the next non-deleted cycle; calendars expand their visible range. */
-export function listTasks(tasks: Task[], now: Date): Task[] {
-  return tasks.flatMap((task) => {
-    if (!task.recurrence || task.deletedAt || task.archivedAt) return [task]
-    const next = occurrences(
-      task,
-      startOfDay(now),
-      addYears(now, Math.max(8, task.recurrence.interval * 8)),
-      1,
+
+/** Catch up through today once per local day; existing snapshots are never overwritten. */
+export function materializeTask(task: Task, now: Date): Task {
+  if (!task.recurrence || task.deletedAt || task.archivedAt) return task
+  const old = task as Task & {
+    occurrenceStates?: Record<string, { status: Task['status']; completedAt: string | null }>
+    skippedOccurrences?: string[]
+  }
+  const upgrading = old.occurrenceStates !== undefined || old.skippedOccurrences !== undefined
+  const today = dateKey(now)
+  if (!upgrading && task.occurrencesThrough === today) return task
+  const records = { ...task.occurrences }
+  for (const [key, state] of Object.entries(old.occurrenceStates ?? {})) {
+    if (
+      validDate(key) &&
+      ['todo', 'doing', 'done', 'cancelled'].includes(state.status) &&
+      (state.completedAt === null || Number.isFinite(Date.parse(state.completedAt))) &&
+      !records[key]
     )
-    if (next.length) return next
-    const previous = occurrences(
+      records[key] = { ...occurrenceRecord(task, key), ...state }
+  }
+  for (const key of old.skippedOccurrences ?? []) {
+    if (validDate(key))
+      records[key] = {
+        ...(records[key] ?? occurrenceRecord(task, key)),
+        deletedAt: records[key]?.deletedAt ?? now.toISOString(),
+      }
+  }
+  const from = task.occurrencesThrough
+    ? addDays(localDate(task.occurrencesThrough), 1)
+    : localDate(task.recurrence.effectiveFrom ?? task.recurrence.startDate)
+  for (const row of computedOccurrences(
+    { ...task, occurrences: records },
+    from,
+    addDays(startOfDay(now), 1),
+    Infinity,
+  )) {
+    const key = row.occurrenceKey!
+    if (!records[key]) records[key] = occurrenceRecord(task, key)
+  }
+  const next: typeof old = {
+    ...task,
+    occurrences: records,
+    occurrencesThrough: today,
+    updatedAt: now.toISOString(),
+  }
+  delete next.occurrenceStates
+  delete next.skippedOccurrences
+  return next
+}
+
+/** Saved cycles survive future schedule changes; future cycles remain computed previews. */
+export function occurrences(task: Task, from: Date, to: Date, limit = 1000): Task[] {
+  const rows = new Map(
+    computedOccurrences(task, from, to, limit).map((row) => [row.occurrenceKey!, row]),
+  )
+  const first = dateKey(startOfDay(from)),
+    last = dateKey(startOfDay(to))
+  for (const [key, state] of Object.entries(task.occurrences ?? {})) {
+    if (key < first || key >= last) continue
+    if (state.deletedAt) rows.delete(key)
+    else rows.set(key, { ...task, ...state, deletedAt: task.deletedAt, occurrenceKey: key })
+  }
+  return [...rows.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .slice(0, limit)
+    .map(([, row]) => row)
+}
+export function expandTasks(tasks: Task[], from: Date, to: Date): Task[] {
+  return tasks.flatMap((task) => {
+    if ((!task.recurrence && !task.occurrences) || task.deletedAt) return [task]
+    const origin = startOfDay(
+      new Date(
+        task.startAt ??
+          task.dueAt ??
+          localDate(
+            task.recurrence?.startDate ?? Object.keys(task.occurrences ?? {})[0] ?? dateKey(from),
+          ),
+      ),
+    )
+    const offsets = [task.startAt, task.endAt, task.dueAt]
+      .filter((d): d is string => !!d)
+      .map((d) => differenceInCalendarDays(new Date(d), origin))
+    const rows = occurrences(
       task,
-      localDate(task.recurrence.startDate),
-      addDays(now, 1),
-      10000,
-    ).at(-1)
-    return previous ? [previous] : [task]
+      addDays(from, -Math.max(0, ...offsets)),
+      addDays(to, -Math.min(0, ...offsets)),
+      Infinity,
+    )
+    const keys = new Set(rows.map((row) => row.occurrenceKey))
+    for (const [key, state] of Object.entries(task.occurrences ?? {})) {
+      if (state.deletedAt || keys.has(key)) continue
+      if (
+        (state.startAt &&
+          state.endAt &&
+          new Date(state.startAt) < to &&
+          new Date(state.endAt) > from) ||
+        (state.dueAt && new Date(state.dueAt) >= from && new Date(state.dueAt) < to)
+      )
+        rows.push({ ...task, ...state, deletedAt: task.deletedAt, occurrenceKey: key })
+    }
+    return rows
   })
+}
+/** Lists include every saved historical and current cycle, never future previews. */
+export function listTasks(tasks: Task[], now: Date): Task[] {
+  const today = dateKey(now)
+  return tasks.flatMap((task) => {
+    if ((!task.recurrence && !task.occurrences) || task.deletedAt || task.archivedAt) return [task]
+    const source = materializeTask(task, now)
+    return Object.entries(source.occurrences ?? {})
+      .filter(([key, state]) => key <= today && !state.deletedAt)
+      .sort(([a], [b]) => b.localeCompare(a))
+      .map(([key, state]) => ({
+        ...source,
+        ...state,
+        deletedAt: source.deletedAt,
+        occurrenceKey: key,
+      }))
+  })
+}
+export function taskInstanceId(task: Task): string {
+  return task.id + (task.occurrenceKey ? '::' + task.occurrenceKey : '')
 }

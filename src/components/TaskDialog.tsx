@@ -37,8 +37,8 @@ export function TaskDialog({
   const [title, setTitle] = useState(task?.title ?? '')
   const [notes, setNotes] = useState(task?.notes ?? '')
   const status =
-    occurrenceKey && task?.recurrence
-      ? (task.occurrenceStates?.[occurrenceKey]?.status ?? 'todo')
+    occurrenceKey && (task?.recurrence || task?.occurrences)
+      ? (task.occurrences?.[occurrenceKey]?.status ?? 'todo')
       : (task?.status ?? 'todo')
   const [projectId, setProjectId] = useState(task?.projectId ?? '')
   const [tagIds, setTagIds] = useState(task ? (taskTags[task.id] ?? []) : [])
@@ -105,7 +105,7 @@ export function TaskDialog({
       onClose={onClose}
       footer={
         <>
-          {task?.recurrence ? (
+          {task?.recurrence || task?.occurrences ? (
             <Button
               className="danger-button"
               variant="destructive"
@@ -217,7 +217,11 @@ export function TaskDialog({
           </div>
         </div>
         <aside className="editor-aside">
-          <ScheduleFields value={time} onChange={setTime} />
+          <ScheduleFields
+            value={time}
+            onChange={setTime}
+            legend={occurrenceKey ? t('repeat.template') : undefined}
+          />
           <div className="editor-repeat">
             <RecurrenceFields
               source={task ?? undefined}

@@ -118,3 +118,7 @@ Set a custom daily, weekly, monthly or yearly rule, an interval, selected weekda
 ![Task editing with separate content and schedule](docs/images/task-editor.jpg)
 ![Panel display settings and inclusion filters](docs/images/panel-editor.jpg)
 ![Custom recurrence rules](docs/images/repeat-rule.jpg)
+
+All past cycles and today appear separately in lists, while the workspace still stores a single Todo. Each dated cycle keeps its own times, status and deletion record. Pantodo catches up missing days on launch; future calendar entries remain previews. Changes to the plan template preserve recorded history.
+
+![One Todo, complete cycle history](docs/images/repeat-history.jpg)

@@ -71,6 +71,7 @@ export function TimeEntryDialog({
               entry: {
                 id: entry?.id ?? newId(),
                 taskId: taskId || null,
+                occurrenceKey: entry?.taskId === taskId ? entry.occurrenceKey : undefined,
                 startedAt: fromLocalInputValue(start),
                 endedAt: fromLocalInputValue(end),
                 source: 'manual',

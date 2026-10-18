@@ -4,7 +4,13 @@ import { addYears, startOfDay } from 'date-fns'
 import { STATUS_LABEL_KEYS } from '@/domain/display'
 import { Repeat2 } from 'lucide-react'
 import { useMemo, useRef, useState } from 'react'
-import { dateKey, localDate, validRecurrence, occurrences } from '@/domain/recurrence'
+import {
+  dateKey,
+  localDate,
+  validRecurrence,
+  occurrences,
+  occurrenceRecord,
+} from '@/domain/recurrence'
 import type { RecurrenceRule, Task } from '@/domain/types'
 import { getLocale, t } from '@/i18n'
 import { SelectField } from './SelectField'
@@ -29,31 +35,24 @@ export function RecurrenceFields({
   const heading = useRef<HTMLDivElement>(null)
   const now = useNow()
   const records = useMemo(() => {
-    if (!source || !value || !validRecurrence(value)) return []
+    if (!source || (value && !validRecurrence(value))) return []
     const today = dateKey(now)
-    const future = occurrences(
-      { ...source, recurrence: value },
-      startOfDay(now),
-      addYears(now, Math.max(8, value.interval * 8)),
-      6,
-    ).map((task) => task.occurrenceKey!)
-    const history = [
-      ...new Set([
-        ...Object.keys(source.occurrenceStates ?? {}),
-        ...(source.skippedOccurrences ?? []),
-      ]),
-    ]
-      .filter((key) => key <= today)
-      .sort()
-      .slice(-4)
+    const future = value
+      ? occurrences(
+          { ...source, recurrence: value },
+          startOfDay(now),
+          addYears(now, Math.max(8, value.interval * 8)),
+          6,
+        ).map((task) => task.occurrenceKey!)
+      : []
+    const history = Object.keys(source.occurrences ?? {}).filter((key) => key <= today)
     return [...new Set([...history, ...future, ...(selectedDate ? [selectedDate] : [])])]
       .sort()
-      .map((key) => ({
-        key,
-        status: source.skippedOccurrences?.includes(key)
-          ? ('skipped' as const)
-          : (source.occurrenceStates?.[key]?.status ?? 'todo'),
-      }))
+      .map((key) => {
+        const slot =
+          source.occurrences?.[key] ?? occurrenceRecord({ ...source, recurrence: value }, key)
+        return { key, slot, status: slot.deletedAt ? ('skipped' as const) : slot.status }
+      })
   }, [source, value, now, selectedDate])
   const anchor = start ? new Date(start) : new Date()
   const rule: RecurrenceRule = value ?? {
@@ -201,7 +200,7 @@ export function RecurrenceFields({
               ) : null}
             </>
           ) : null}
-          {value && records.length ? (
+          {records.length ? (
             <section className="repeat-records" aria-label={t('repeat.records')}>
               <h4>{t('repeat.records')}</h4>
               <ul>
@@ -211,6 +210,21 @@ export function RecurrenceFields({
                       {new Intl.DateTimeFormat(getLocale(), { dateStyle: 'medium' }).format(
                         localDate(record.key),
                       )}
+                      {record.slot.startAt ? (
+                        <small className="repeat-record-time">
+                          {new Intl.DateTimeFormat(getLocale(), {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          }).format(new Date(record.slot.startAt))}
+                          {record.slot.endAt
+                            ? '–' +
+                              new Intl.DateTimeFormat(getLocale(), {
+                                hour: '2-digit',
+                                minute: '2-digit',
+                              }).format(new Date(record.slot.endAt))
+                            : ''}
+                        </small>
+                      ) : null}
                     </time>
                     <span className="occurrence-status" data-status={record.status}>
                       {record.status === 'skipped'

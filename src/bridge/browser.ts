@@ -100,7 +100,17 @@ export function createBrowserBridge(recoverGaps = true): Bridge {
         const merged = mergeData(previous, current, data, choices).data
         const running = workspace.timer?.taskId
         const active = running ? merged.tasks[running]?.task : undefined
-        if (running && (!active || !isOpenTask(active))) {
+        const occurrence = workspace.timer?.occurrenceKey
+          ? active?.occurrences?.[workspace.timer.occurrenceKey]
+          : undefined
+        if (
+          running &&
+          (!active ||
+            !isOpenTask(active) ||
+            occurrence?.deletedAt ||
+            occurrence?.status === 'done' ||
+            occurrence?.status === 'cancelled')
+        ) {
           Object.assign(
             workspace,
             applyTimeCommand(workspace, { kind: 'stop' }, new Date(), ownerId, recoverGaps),

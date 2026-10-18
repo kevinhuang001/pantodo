@@ -13,14 +13,16 @@ export function ScheduleFields({
   value,
   onChange,
   prefix = 'task',
+  legend,
 }: {
   value: ScheduleValues
   onChange: (value: ScheduleValues) => void
   prefix?: string
+  legend?: string
 }) {
   return (
     <fieldset className="schedule-fields">
-      <legend>{t('plan.title')}</legend>
+      <legend>{legend ?? t('plan.title')}</legend>
       <div className="field">
         <label htmlFor={prefix + '-start'}>{t('plan.start')}</label>
         <DateTimeField

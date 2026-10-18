@@ -10,8 +10,11 @@ import {
   expandTasks,
   listTasks,
   validRecurrence,
+  occurrenceRecord,
+  materializeTask,
+  taskInstanceId,
 } from './recurrence'
-import { extractData, parseDocument, applyData } from '@/sync/model'
+import { extractData, parseDocument, applyData, mergeData } from '@/sync/model'
 import type { Task, RecurrenceRule } from './types'
 const rule = (patch: Partial<RecurrenceRule> = {}): RecurrenceRule => ({
   frequency: 'daily',
@@ -48,7 +51,12 @@ describe('single-source recurring tasks', () => {
   it('supports selected weekdays, multi-week intervals and occurrence limits', () => {
     const t = task({
       recurrence: rule({ frequency: 'weekly', interval: 2, weekdays: [1, 3, 5], count: 5 }),
-      skippedOccurrences: ['2026-10-21'],
+      occurrences: {
+        '2026-10-21': {
+          ...occurrenceRecord(task(), '2026-10-21'),
+          deletedAt: new Date().toISOString(),
+        },
+      },
     })
     expect(dates(t, '2026-10-01', '2026-12-01')).toEqual([
       '2026-10-19',
@@ -76,7 +84,12 @@ describe('single-source recurring tasks', () => {
   it('treats until as inclusive and preserves other cycles after deleting one', () => {
     const t = task({
       recurrence: rule({ until: '2026-10-22' }),
-      skippedOccurrences: ['2026-10-20'],
+      occurrences: {
+        '2026-10-20': {
+          ...occurrenceRecord(task(), '2026-10-20'),
+          deletedAt: new Date().toISOString(),
+        },
+      },
     })
     expect(dates(t, '2026-10-19', '2026-11-01')).toEqual(['2026-10-19', '2026-10-21', '2026-10-22'])
   })
@@ -93,8 +106,12 @@ describe('single-source recurring tasks', () => {
   })
   it('records completion and work against one task, without completing later cycles', () => {
     const t = task({
-      occurrenceStates: {
-        '2026-10-19': { status: 'done', completedAt: new Date(2026, 9, 19, 12).toISOString() },
+      occurrences: {
+        '2026-10-19': {
+          ...occurrenceRecord(task(), '2026-10-19'),
+          status: 'done',
+          completedAt: new Date(2026, 9, 19, 12).toISOString(),
+        },
       },
     })
     expect(
@@ -108,7 +125,7 @@ describe('single-source recurring tasks', () => {
       new Date(2026, 9, 20, 10),
     )
     expect(next.tasks).toHaveLength(1)
-    expect(next.tasks[0]!.occurrenceStates!['2026-10-20']!.status).toBe('doing')
+    expect(next.tasks[0]!.occurrences!['2026-10-20']!.status).toBe('doing')
     expect(next.tasks[0]!.status).toBe(t.status)
     expect(
       buildStatistics(
@@ -123,15 +140,22 @@ describe('single-source recurring tasks', () => {
     expect(occurrences(t, localDate('2099-01-01'), localDate('2099-01-03'))).toHaveLength(2)
     expect(
       listTasks([task({ recurrence: rule({ count: 2 }) })], localDate('2026-11-01')),
-    ).toHaveLength(1)
+    ).toHaveLength(2)
   })
   it('round-trips only one source task and its exceptions through WebDAV', () => {
     const w = createSeedWorkspace({ withDemoData: false })
     w.tasks = [
       task({
-        skippedOccurrences: ['2026-10-20'],
-        occurrenceStates: {
-          '2026-10-19': { status: 'done', completedAt: new Date(2026, 9, 19, 12).toISOString() },
+        occurrences: {
+          '2026-10-20': {
+            ...occurrenceRecord(task(), '2026-10-20'),
+            deletedAt: new Date().toISOString(),
+          },
+          '2026-10-19': {
+            ...occurrenceRecord(task(), '2026-10-19'),
+            status: 'done',
+            completedAt: new Date(2026, 9, 19, 12).toISOString(),
+          },
         },
       }),
     ]
@@ -153,5 +177,82 @@ describe('single-source recurring tasks', () => {
     expect(validRecurrence(rule({ startDate: '2026-02-30' }))).toBe(false)
     expect(validRecurrence(rule({ until: '2026-10-18' }))).toBe(false)
     expect(dateKey(addDays(localDate('2026-12-31'), 1))).toBe('2027-01-01')
+  })
+})
+
+describe('durable dated cycles in one Todo', () => {
+  it('catches up all past days, remains idempotent, and snapshots times before future edits', () => {
+    const original = task()
+    const saved = materializeTask(original, new Date(2026, 9, 22, 10))
+    expect(Object.keys(saved.occurrences!)).toEqual([
+      '2026-10-19',
+      '2026-10-20',
+      '2026-10-21',
+      '2026-10-22',
+    ])
+    expect(materializeTask(saved, new Date(2026, 9, 22, 18))).toBe(saved)
+    const changed = materializeTask(
+      {
+        ...saved,
+        startAt: new Date(2026, 9, 19, 15).toISOString(),
+        endAt: new Date(2026, 9, 19, 16).toISOString(),
+      },
+      new Date(2026, 9, 23, 10),
+    )
+    expect(new Date(changed.occurrences!['2026-10-19']!.startAt!).getHours()).toBe(10)
+    expect(new Date(changed.occurrences!['2026-10-23']!.startAt!).getHours()).toBe(15)
+    expect(changed.occurrences!['2026-10-24']).toBeUndefined()
+    const rows = listTasks([changed], new Date(2026, 9, 23))
+    expect(rows).toHaveLength(5)
+    expect(new Set(rows.map(taskInstanceId)).size).toBe(5)
+    expect(new Set(rows.map((row) => row.id)).size).toBe(1)
+  })
+  it('upgrades sparse legacy exceptions without losing completion or deletion', () => {
+    const old = {
+      ...task(),
+      occurrenceStates: {
+        '2026-10-19': {
+          status: 'done' as const,
+          completedAt: new Date(2026, 9, 19, 12).toISOString(),
+        },
+      },
+      skippedOccurrences: ['2026-10-20'],
+    }
+    const saved = materializeTask(old, new Date(2026, 9, 21))
+    expect(saved.occurrences!['2026-10-19']!.status).toBe('done')
+    expect(saved.occurrences!['2026-10-20']!.deletedAt).toBeTruthy()
+    expect(saved).not.toHaveProperty('occurrenceStates')
+    expect(saved).not.toHaveProperty('skippedOccurrences')
+    expect(listTasks([saved], new Date(2026, 9, 21))).toHaveLength(2)
+  })
+  it('retains history when a rule changes or repeat is disabled', () => {
+    const saved = materializeTask(task(), new Date(2026, 9, 21))
+    const changed = {
+      ...saved,
+      recurrence: rule({ frequency: 'weekly', weekdays: [5], effectiveFrom: '2026-10-22' }),
+    }
+    expect(dates(changed, '2026-10-19', '2026-10-26')).toEqual([
+      '2026-10-19',
+      '2026-10-20',
+      '2026-10-21',
+      '2026-10-23',
+    ])
+    expect(listTasks([{ ...saved, recurrence: null }], new Date(2026, 9, 25))).toHaveLength(3)
+  })
+  it('merges changes to different dates but surfaces conflicting changes to the same date', () => {
+    const w = createSeedWorkspace({ withDemoData: false })
+    const t = materializeTask(task(), new Date(2026, 9, 21))
+    w.tasks = [t]
+    const base = extractData(w),
+      local = structuredClone(base),
+      remote = structuredClone(base)
+    local.tasks[t.id]!.task.occurrences!['2026-10-19']!.status = 'done'
+    remote.tasks[t.id]!.task.occurrences!['2026-10-20']!.status = 'doing'
+    const merged = mergeData(base, local, remote)
+    expect(merged.conflicts).toHaveLength(0)
+    expect(merged.data.tasks[t.id]!.task.occurrences!['2026-10-19']!.status).toBe('done')
+    expect(merged.data.tasks[t.id]!.task.occurrences!['2026-10-20']!.status).toBe('doing')
+    remote.tasks[t.id]!.task.occurrences!['2026-10-19']!.deletedAt = new Date().toISOString()
+    expect(mergeData(base, local, remote).conflicts).toHaveLength(1)
   })
 })

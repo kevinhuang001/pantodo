@@ -24,7 +24,8 @@ export const featureEn = {
   'repeat.invalid': 'Choose a valid repeat interval, start and end.',
   'repeat.monthHint': 'Repeats on day {day}. Months without this date are skipped.',
   'repeat.seriesHint':
-    'Content and schedule changes apply to the series. Each occurrence’s status is recorded by date and shown under Repeat.',
+    'Content is shared across the series. Recorded cycles keep their times and status; schedule changes apply to future cycles.',
+  'repeat.template': 'Plan template',
   'repeat.deleteHint': 'Delete only this occurrence, or move the entire series to Trash?',
   'repeat.deleteOne': 'Delete this occurrence',
   'repeat.deleteAll': 'Delete entire series',

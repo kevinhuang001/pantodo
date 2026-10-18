@@ -116,3 +116,7 @@ npm run dev
 ![タスク編集](docs/images/task-editor.jpg)
 ![パネル編集とタグの絞り込み](docs/images/panel-editor.jpg)
 ![繰り返しルール](docs/images/repeat-rule.jpg)
+
+過去と今日の回を個別に表示しながら、保存する Todo は1件だけです。各回の日時・状態・削除記録をその Todo 内に保持します。日付の変更と起動時に不足分を補い、将来の予定はプレビューとして計算します。予定テンプレートの変更は履歴を書き換えません。
+
+![1件の Todo にすべての履歴](docs/images/repeat-history.jpg)

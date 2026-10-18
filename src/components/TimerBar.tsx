@@ -49,7 +49,10 @@ export function TimerBar({ onOpen }: { onOpen: () => void }) {
       <span className={timer.startedAt ? 'timer-pulse' : 'timer-pulse paused'} />
       <button className="timer-task" onClick={onOpen}>
         <small>{timer.startedAt ? t('work.running') : t('work.paused')}</small>
-        <strong>{task?.title ?? t('work.deleted')}</strong>
+        <strong>
+          {task?.title ?? t('work.deleted')}
+          {timer.occurrenceKey ? ' · ' + timer.occurrenceKey : ''}
+        </strong>
       </button>
       <output className="timer-clock">{clockLabel(elapsedSeconds(timer, now))}</output>
       <button className="secondary" onClick={() => useFocusStore.getState().enter()}>
