@@ -1,3 +1,4 @@
+import { occurrences } from '@/domain/recurrence'
 import { useSyncExternalStore } from 'react'
 import type { EChartsOption } from 'echarts'
 import type { buildStatistics } from '@/domain/statistics'
@@ -227,7 +228,17 @@ export function StatisticsCharts({
       {
         name: t('plan.duration'),
         type: 'bar',
-        data: ranking.slice(0, 5).map(([id]) => minutes(planned(taskById.get(id)) * 60)),
+        data: ranking
+          .slice(0, 5)
+          .map(([id]) =>
+            minutes(
+              planned(taskById.get(id)) *
+                (taskById.get(id)?.recurrence
+                  ? occurrences(taskById.get(id)!, start, end, 10000).length
+                  : 1) *
+                60,
+            ),
+          ),
         barMaxWidth: 22,
         itemStyle: { borderRadius: [3, 3, 0, 0] },
       },

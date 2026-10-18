@@ -1,3 +1,4 @@
+import { listTasks } from '@/domain/recurrence'
 import { useSyncStore } from '@/sync/store'
 import { beginWindowDrag } from '@/window'
 import { Input } from './ui/input'
@@ -82,31 +83,36 @@ export function Sidebar({
   const palette = paletteFor(theme)
   const context = useMemo(() => ({ taskTags, now }), [taskTags, now])
 
+  const displayedTasks = useMemo(() => listTasks(tasks, now), [tasks, now])
   const viewCounts = useMemo(() => {
     const counts = new Map<string, number>()
-    for (const view of views) counts.set(view.id, selectTasks(tasks, view, context).length)
+    for (const view of views)
+      counts.set(
+        view.id,
+        selectTasks(view.preset === 'trash' ? tasks : displayedTasks, view, context).length,
+      )
     return counts
-  }, [views, tasks, context])
+  }, [views, tasks, displayedTasks, context])
 
   const projectCounts = useMemo(() => {
     const counts = new Map<string, number>()
-    for (const task of tasks) {
+    for (const task of displayedTasks) {
       if (!isOpenTask(task) || task.projectId === null) continue
       counts.set(task.projectId, (counts.get(task.projectId) ?? 0) + 1)
     }
     return counts
-  }, [tasks])
+  }, [displayedTasks])
 
   const tagCounts = useMemo(() => {
     const counts = new Map<string, number>()
-    for (const task of tasks) {
+    for (const task of displayedTasks) {
       if (!isOpenTask(task)) continue
       for (const tagId of taskTags[task.id] ?? []) {
         counts.set(tagId, (counts.get(tagId) ?? 0) + 1)
       }
     }
     return counts
-  }, [tasks, taskTags])
+  }, [displayedTasks, taskTags])
 
   const sortedViews = views
     .filter((view) => view.deletedAt === null)

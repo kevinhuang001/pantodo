@@ -1,3 +1,4 @@
+import { dateKey } from './recurrence'
 import { colorIndexForName, isSameLocalDay, isOverdue, parseIso } from './date'
 import type { Id, Task, TaskStatus, View, PanelFilter } from './types'
 
@@ -20,9 +21,6 @@ export function isScheduledOn(task: Task, day: Date): boolean {
   to.setDate(to.getDate() + 1)
   return new Date(task.startAt) < to && new Date(task.endAt) > from
 }
-export function hasSchedule(task: Task): boolean {
-  return task.startAt !== null && task.endAt !== null
-}
 
 function matchesText(task: Task, text: string): boolean {
   if (text.trim() === '') return true
@@ -43,18 +41,11 @@ export function matchesFilter(task: Task, filter: PanelFilter, context: FilterCo
   if (task.deletedAt !== null) return false
   if (!matchesText(task, filter.text)) return false
   if (!matchesTags(task, filter, context)) return false
-  if ((filter.excludeTagIds ?? []).some((id) => tagsOf(task, context).includes(id))) return false
   if (filter.projectMode === 'none' && task.projectId !== null) return false
-  if (filter.dueFrom && (task.dueAt === null || new Date(task.dueAt) < new Date(filter.dueFrom)))
-    return false
-  if (filter.dueTo && (task.dueAt === null || new Date(task.dueAt) >= new Date(filter.dueTo)))
-    return false
   if (filter.projectIds.length > 0) {
     if (task.projectId === null || !filter.projectIds.includes(task.projectId)) return false
   }
   if (filter.statuses.length > 0 && !filter.statuses.includes(task.status)) return false
-  if (filter.hasTime === 'scheduled' && !hasSchedule(task)) return false
-  if (filter.hasTime === 'unscheduled' && hasSchedule(task)) return false
   return true
 }
 
@@ -67,6 +58,7 @@ export function matchesPreset(task: Task, view: View, context: FilterContext): b
       return task.deletedAt === null && task.archivedAt === null && task.projectId === null
     case 'today': {
       if (task.deletedAt !== null || task.archivedAt !== null) return false
+      if (task.occurrenceKey === dateKey(context.now)) return true
       const dueToday = task.dueAt !== null && isSameLocalDay(task.dueAt, context.now)
       return dueToday || isScheduledOn(task, context.now)
     }

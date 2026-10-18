@@ -16,7 +16,7 @@ A custom view contains panels. Creating it requires only a name and optional emo
 
 The compact 44px title row switches between vertical and column panel arrangements. Each panel independently switches between List and Gallery using localized hover/focus tooltips. Built-in Today, All and Trash use List or Gallery directly.
 
-Each panel stores name, emoji, list/gallery presentation, filter, sort and column span. Filters support included/excluded tags, any/all matching, status, project or unassigned project, planned/unplanned time, deadline bounds and title/notes text. Search and sidebar filters apply before each panel’s filter. A Todo may appear in several panels.
+Each panel stores name, emoji, list/gallery presentation, filter, sort and column span. Filters support included tags with any/all matching, status, project or unassigned project and title/notes text. Search and sidebar filters apply before each panel’s filter. A Todo may appear in several panels.
 
 Add panels directly. Column count is edited only in View settings; panel spans are edited in the panel dialog. Pointer, touch and keyboard sorting operate only on panel handles and persist order. The dragged overlay retains its original size; displaced panels translate without scaling. Gallery cards fit their contents without minimum body/card heights; empty metadata and timing sections take no space. Small windows collapse to one column without changing saved spans.
 
@@ -79,3 +79,7 @@ Device preferences include startup page, default block minutes, panel task heigh
 Panel filter summaries are omitted. List uses separated text rows; Gallery uses two-column cards, collapsing to one below a 340px panel width. Day and week headings and body share column/gutter geometry, including scrollbar compensation. Deadline markers and plan blocks use shared overlap lanes.
 
 Statistics use modular Apache ECharts with SVG, accessible descriptions, responsive resize and disposal. Six charts use filtered actual records. Hourly distributions clip at period boundaries and split local hours, preserving total duration across midnight. Cumulative focus, average goal progress, active days and goal days derive from the same selected date range.
+
+## Repeating tasks
+
+A Todo optionally stores a recurrence rule (frequency, interval, first local date, selected weekdays, inclusive until date or occurrence count), skipped date keys and per-occurrence status/completion exceptions. It never stores generated Todo copies. Day/week/month calendar views expand only their visible date window, including offsets for multiday plans and deadlines. Task lists resolve the current/next occurrence and retain the last cycle of ended rules. Content and schedule edits affect the source series; completion and single-occurrence deletion affect only their date key. WebDAV validates and carries these source fields, while render-only occurrence keys never enter persistence. Work records remain attached to the source ID; live timers carry the active date key.

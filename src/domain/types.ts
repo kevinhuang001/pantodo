@@ -31,7 +31,21 @@ export interface Tag extends Entity {
   sortOrder: number
 }
 
+export interface RecurrenceRule {
+  frequency: 'daily' | 'weekly' | 'monthly' | 'yearly'
+  interval: number
+  startDate: string
+  weekdays: number[]
+  until?: string | null
+  count?: number | null
+}
+
 export interface Task extends Entity {
+  recurrence?: RecurrenceRule | null
+  skippedOccurrences?: string[]
+  occurrenceStates?: Record<string, { status: TaskStatus; completedAt: IsoDateTime | null }>
+  /** Render-only date key. Never persisted or used as a task ID. */
+  occurrenceKey?: string
   title: string
   notes: string
   status: TaskStatus
@@ -52,7 +66,6 @@ export type AppTab = 'views' | 'timetable' | 'statistics'
 export type CalendarMode = 'day' | 'week' | 'month'
 export type TagMatchMode = 'any' | 'all'
 export type ViewSort = 'manual' | 'due' | 'created' | 'title'
-export type HasTime = 'any' | 'scheduled' | 'unscheduled'
 
 /** Built-in views need dynamic predicates ("today" moves), so they carry a preset marker. */
 export type ViewPreset = 'inbox' | 'today' | 'all' | 'trash'
@@ -62,11 +75,7 @@ export interface PanelFilter {
   tagMode: TagMatchMode
   projectIds: Id[]
   statuses: TaskStatus[]
-  hasTime: HasTime
   text: string
-  excludeTagIds?: Id[]
-  dueFrom?: string
-  dueTo?: string
   projectMode?: 'any' | 'none'
 }
 
@@ -91,6 +100,7 @@ export interface TimeEntry extends Entity {
 
 /** Segments are committed on pause/stop; only the active segment remains open. */
 export interface TimerSession {
+  occurrenceKey?: string
   taskId: Id
   startedAt: IsoDateTime | null
   elapsedSeconds: number
@@ -154,7 +164,6 @@ export const EMPTY_FILTER: PanelFilter = {
   tagMode: 'any',
   projectIds: [],
   statuses: [],
-  hasTime: 'any',
   text: '',
 }
 

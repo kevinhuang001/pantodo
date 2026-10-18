@@ -1,3 +1,4 @@
+import { expandTasks, dateKey } from '@/domain/recurrence'
 import { Flag } from 'lucide-react'
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from './ui/tooltip'
 import { useCalendarZoom } from '@/useCalendarZoom'
@@ -72,11 +73,6 @@ export function Timetable({
   useEffect(() => setHourHeight(settings.calendarHourHeight ?? 76), [settings.calendarHourHeight])
   const palette = paletteFor(theme),
     locale = getLocale()
-  const visible = useMemo(
-    () =>
-      tasks.filter((task) => !task.deletedAt && !task.archivedAt && task.status !== 'cancelled'),
-    [tasks],
-  )
   const week = startOfWeek(anchor, { weekStartsOn: settings.weekStartsOn })
   const monthStart = startOfWeek(startOfMonth(anchor), { weekStartsOn: settings.weekStartsOn })
   const days =
@@ -86,6 +82,19 @@ export function Timetable({
         ? [startOfDay(anchor)]
         : Array.from({ length: 7 }, (_, i) => addDays(week, i))
   const gridDays = mode === 'day' ? 1 : 7
+  const rangeStart = days[0]!.getTime(),
+    rangeEnd = addDays(days[days.length - 1]!, 1).getTime()
+  const visible = useMemo(
+    () =>
+      expandTasks(
+        tasks.filter((task) => !task.deletedAt && !task.archivedAt && task.status !== 'cancelled'),
+        new Date(rangeStart),
+        new Date(rangeEnd),
+      ).filter((task) => task.status !== 'cancelled'),
+    [tasks, rangeStart, rangeEnd],
+  )
+  const untimedOn = (day: Date) =>
+    visible.filter((t) => !t.startAt && !t.dueAt && t.occurrenceKey === dateKey(day))
   const dueOn = (task: Task, day: Date) => !!task.dueAt && isSameDay(new Date(task.dueAt), day)
   const taskColor = (task: Task) => {
     const tag = tags.find((tag) => tag.id === (taskTags[task.id] ?? [])[0])
@@ -130,6 +139,8 @@ export function Timetable({
         const rows: { task: Task; deadline: boolean; at: string }[] = []
         if (intersectsDay(task, day)) rows.push({ task, deadline: false, at: task.startAt! })
         if (dueOn(task, day)) rows.push({ task, deadline: true, at: task.dueAt! })
+        if (!task.startAt && !task.dueAt && task.occurrenceKey === dateKey(day))
+          rows.push({ task, deadline: false, at: day.toISOString() })
         return rows
       })
       .sort((a, b) => Date.parse(a.at) - Date.parse(b.at))
@@ -262,7 +273,7 @@ export function Timetable({
                   {rows.slice(0, 3).map((row) => (
                     <button
                       type="button"
-                      key={row.task.id + String(row.deadline)}
+                      key={row.task.id + row.task.occurrenceKey + String(row.deadline)}
                       onClick={() => onEdit(row.task)}
                       className={row.deadline ? 'month-event deadline-event' : 'month-event'}
                       title={
@@ -281,7 +292,9 @@ export function Timetable({
                       ) : (
                         <span className="dot" />
                       )}
-                      <span className="month-event-time">{clock(row.at)}</span>
+                      <span className="month-event-time">
+                        {!row.task.startAt && !row.task.dueAt ? t('repeat.allDay') : clock(row.at)}
+                      </span>
                       <span>{row.task.title}</span>
                     </button>
                   ))}
@@ -332,6 +345,22 @@ export function Timetable({
               ))}
             </div>
           </div>
+          {days.some((day) => untimedOn(day).length) ? (
+            <div className="tt-allday-row">
+              <span>{t('repeat.allDay')}</span>
+              <div className="tt-allday-days">
+                {days.map((day) => (
+                  <div key={dateKey(day)}>
+                    {untimedOn(day).map((task) => (
+                      <button type="button" key={task.id} onClick={() => onEdit(task)}>
+                        {task.title}
+                      </button>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : null}
           <div
             className="tt-scroll"
             ref={scrollRef}
@@ -369,7 +398,7 @@ export function Timetable({
                           return (
                             <div
                               className="tt-deadline"
-                              key={'due-' + item.task.id}
+                              key={'due-' + item.task.id + item.task.occurrenceKey}
                               style={position}
                             >
                               <span className="deadline-dot" />
@@ -407,7 +436,7 @@ export function Timetable({
                         return (
                           <button
                             type="button"
-                            key={item.task.id}
+                            key={item.task.id + (item.task.occurrenceKey ?? '')}
                             data-todo-id={item.task.id}
                             className={
                               'tt-block' +

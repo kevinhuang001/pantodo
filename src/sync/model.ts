@@ -1,3 +1,4 @@
+import { validRecurrence } from '@/domain/recurrence'
 import type { Project, Tag, Task, TimeEntry, View, Workspace } from '@/domain/types'
 
 export interface SyncedTask {
@@ -202,11 +203,7 @@ function filter(value: unknown) {
     value.statuses.every((status) =>
       ['todo', 'doing', 'done', 'cancelled'].includes(String(status)),
     ) &&
-    ['any', 'scheduled', 'unscheduled'].includes(String(value.hasTime)) &&
     string(value.text) &&
-    (value.excludeTagIds === undefined || strings(value.excludeTagIds)) &&
-    (value.dueFrom === undefined || string(value.dueFrom)) &&
-    (value.dueTo === undefined || string(value.dueTo)) &&
     (value.projectMode === undefined || ['any', 'none'].includes(String(value.projectMode)))
   )
 }
@@ -216,6 +213,19 @@ function valid(collection: (typeof COLLECTIONS)[number], value: unknown, id: str
     if (!record(value) || !strings(value.tagIds) || !entity(value.task, id)) return false
     const v = value.task
     return (
+      (v.recurrence == null || validRecurrence(v.recurrence)) &&
+      (v.skippedOccurrences === undefined ||
+        (strings(v.skippedOccurrences) &&
+          v.skippedOccurrences.every((d) => /^\d{4}-\d{2}-\d{2}$/.test(d)))) &&
+      (v.occurrenceStates === undefined ||
+        (record(v.occurrenceStates) &&
+          Object.entries(v.occurrenceStates).every(
+            ([key, state]) =>
+              /^\d{4}-\d{2}-\d{2}$/.test(key) &&
+              record(state) &&
+              ['todo', 'doing', 'done', 'cancelled'].includes(String(state.status)) &&
+              nullableInstant(state.completedAt),
+          ))) &&
       string(v.title) &&
       string(v.notes) &&
       ['todo', 'doing', 'done', 'cancelled'].includes(String(v.status)) &&

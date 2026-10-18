@@ -267,11 +267,22 @@ function PanelDialog({
   onDelete: () => void
   isNew: boolean
 }) {
-  const [value, setValue] = useState(panel)
+  const [value, setValue] = useState<ViewPanel>(() => ({
+    ...panel,
+    filter: {
+      tagIds: panel.filter.tagIds,
+      tagMode: panel.filter.tagMode,
+      statuses: panel.filter.statuses,
+      projectIds: panel.filter.projectIds,
+      projectMode: panel.filter.projectMode,
+      text: panel.filter.text,
+    },
+  }))
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(false)
   return (
     <Modal
+      className="panel-editor modern-editor"
       title={t(isNew ? 'panel.add' : 'panel.edit')}
       onClose={onClose}
       footer={
@@ -298,7 +309,7 @@ function PanelDialog({
     >
       <form
         id="panel-form"
-        className="stack"
+        className="stack panel-editor-form"
         onSubmit={(e) => {
           e.preventDefault()
           if (!value.name.trim() || saving) return
@@ -309,67 +320,68 @@ function PanelDialog({
             .finally(() => setSaving(false))
         }}
       >
-        <div className="field">
-          <label htmlFor="panel-name">{t('task.field.name')}</label>
-          <Input
-            autoFocus
-            id="panel-name"
-            className="input"
-            required
-            value={value.name}
-            onChange={(e) => setValue({ ...value, name: e.target.value })}
-          />
-        </div>
-        <EmojiPicker value={value.emoji} onChange={(emoji) => setValue({ ...value, emoji })} />
-        <div className="field">
-          <label htmlFor="panel-presentation">{t('panel.cards')}</label>
-          <SelectField
-            id="panel-presentation"
-            value={value.presentation ?? 'list'}
-            onValueChange={(presentation) =>
-              setValue({ ...value, presentation: presentation as 'list' | 'gallery' })
-            }
-          >
-            <option value="list">{t('view.list')}</option>
-            <option value="gallery">{t('view.gallery')}</option>
-          </SelectField>
-        </div>
-        <div className="field">
-          <label htmlFor="panel-sort">{t('panel.sort')}</label>
-          <SelectField
-            className="select"
-            id="panel-sort"
-            value={value.sort}
-            onValueChange={(e) => setValue({ ...value, sort: e as ViewSort })}
-          >
-            {(['manual', 'due', 'created', 'title'] as const).map((key) => (
-              <option key={key} value={key}>
-                {t(('panel.sort.' + key) as 'panel.sort.manual')}
-              </option>
-            ))}
-          </SelectField>
-        </div>
-        {columns > 1 ? (
-          <div className="field">
-            <label htmlFor="panel-span">{t('panel.width')}</label>
-            <SelectField
-              id="panel-span"
-              value={Math.min(value.span, columns)}
-              onValueChange={(span) => setValue({ ...value, span: Number(span) })}
-            >
-              {Array.from({ length: columns }, (_, i) => (
-                <option key={i + 1} value={i + 1}>
-                  {i + 1} / {columns}
-                </option>
-              ))}
-            </SelectField>
+        <div className="panel-identity">
+          <EmojiPicker value={value.emoji} onChange={(emoji) => setValue({ ...value, emoji })} />
+          <div className="field editor-title-field">
+            <label htmlFor="panel-name">{t('task.field.name')}</label>
+            <Input
+              autoFocus
+              id="panel-name"
+              className="input"
+              required
+              value={value.name}
+              onChange={(e) => setValue({ ...value, name: e.target.value })}
+            />
           </div>
-        ) : null}
-        <FilterFields
-          prefix="panel-filter"
-          value={value.filter}
-          onChange={(filter) => setValue({ ...value, filter })}
-        />
+        </div>
+        <fieldset className="editor-section">
+          <legend>{t('panel.cards')}</legend>
+          <PresentationPicker
+            value={value.presentation ?? 'list'}
+            onChange={(presentation) => setValue({ ...value, presentation })}
+          />
+          <div className="form-row">
+            <div className="field">
+              <label htmlFor="panel-sort">{t('panel.sort')}</label>
+              <SelectField
+                className="select"
+                id="panel-sort"
+                value={value.sort}
+                onValueChange={(e) => setValue({ ...value, sort: e as ViewSort })}
+              >
+                {(['manual', 'due', 'created', 'title'] as const).map((key) => (
+                  <option key={key} value={key}>
+                    {t(('panel.sort.' + key) as 'panel.sort.manual')}
+                  </option>
+                ))}
+              </SelectField>
+            </div>
+            {columns > 1 ? (
+              <div className="field">
+                <label htmlFor="panel-span">{t('panel.width')}</label>
+                <SelectField
+                  id="panel-span"
+                  value={Math.min(value.span, columns)}
+                  onValueChange={(span) => setValue({ ...value, span: Number(span) })}
+                >
+                  {Array.from({ length: columns }, (_, i) => (
+                    <option key={i + 1} value={i + 1}>
+                      {i + 1} / {columns}
+                    </option>
+                  ))}
+                </SelectField>
+              </div>
+            ) : null}
+          </div>
+        </fieldset>
+        <fieldset className="editor-section panel-filter-section">
+          <legend>{t('editor.filters')}</legend>
+          <FilterFields
+            prefix="panel-filter"
+            value={value.filter}
+            onChange={(filter) => setValue({ ...value, filter })}
+          />
+        </fieldset>
         {error ? (
           <p className="form-error" role="alert">
             {t('work.failed')}

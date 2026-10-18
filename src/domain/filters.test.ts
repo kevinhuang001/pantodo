@@ -95,17 +95,11 @@ describe('matchesFilter', () => {
     )
   })
 
-  it('filters on whether a task occupies the timetable', () => {
-    const ctx = context()
-    expect(
-      matchesFilter(
-        makeTask('scheduled', { startAt: at(10), endAt: at(11) }),
-        makeFilter({ hasTime: 'scheduled' }),
-        ctx,
-      ),
-    ).toBe(true)
-    expect(matchesFilter(makeTask('free'), makeFilter({ hasTime: 'scheduled' }), ctx)).toBe(false)
-    expect(matchesFilter(makeTask('free'), makeFilter({ hasTime: 'unscheduled' }), ctx)).toBe(true)
+  it('tag inclusion does not depend on a task plan or deadline', () => {
+    const filter = makeFilter({ tagIds: ['t1'] })
+    const ctx = context({ a: ['t1'] })
+    for (const values of [{}, { startAt: at(10), endAt: at(11) }, { dueAt: at(9) }])
+      expect(matchesFilter(makeTask('a', values), filter, ctx)).toBe(true)
   })
 
   it('never matches a deleted task', () => {

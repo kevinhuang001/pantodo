@@ -329,11 +329,11 @@
   border: 1px solid var(--border);
   border-radius: 10px;
   box-shadow: none;
-  background: color-mix(in srgb, var(--accent) 6%, var(--surface-strong));
+  background: transparent;
   padding: 13px 14px;
 }
 .panel-tasks .task-list:not(.task-gallery) .compact-task:hover {
-  background: var(--accent-soft);
+  background: transparent;
   transform: none;
   border-color: var(--accent);
 }

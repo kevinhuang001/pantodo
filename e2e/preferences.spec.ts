@@ -31,10 +31,9 @@ test('list and gallery have distinct panel layouts without filter summaries', as
   await expect(panel.locator('.panel-meta')).toHaveCount(0)
   await expect(panel.locator('.task-list')).toHaveCSS('display', 'flex')
   const row = panel.locator('.compact-task').first()
-  expect(await row.evaluate((e) => getComputedStyle(e).backgroundColor)).not.toBe(
-    'rgba(0, 0, 0, 0)',
-  )
+  expect(await row.evaluate((e) => getComputedStyle(e).backgroundColor)).toBe('rgba(0, 0, 0, 0)')
   await expect(row).toHaveCSS('border-radius', '10px')
+  await expect(row).toHaveCSS('border-top-width', '1px')
   await panel.getByRole('button', { name: '画廊', exact: true }).click()
   await expect(panel.locator('.task-gallery')).toHaveCSS('display', 'grid')
   const columns = await panel
@@ -137,4 +136,39 @@ test('statistics project filter opens a themed application menu and filters resu
   await trigger.click()
   await menu.getByRole('option').first().click()
   await expect(trigger).toHaveAttribute('data-value', '')
+})
+
+test('panel editor saves only inclusion filters and task editor remains usable in a small window', async ({
+  page,
+}) => {
+  await page.locator('.nav-row', { hasText: '我的工作台' }).click()
+  await page.getByRole('button', { name: '添加面板', exact: true }).click()
+  const dialog = page.locator('.panel-editor')
+  await expect(
+    dialog.locator('#panel-filter-time, #panel-filter-from, #panel-filter-to'),
+  ).toHaveCount(0)
+  await expect(dialog.getByText('排除标签', { exact: true })).toHaveCount(0)
+  await page.locator('#panel-name').fill('标签工作台')
+  await dialog
+    .getByRole('group', { name: '过滤标签', exact: true })
+    .getByRole('button', { name: '紧急', exact: true })
+    .click()
+  await dialog.getByRole('button', { name: '画廊', exact: true }).click()
+  await page.locator('button[form="panel-form"]').click()
+  const panel = page.locator('.composed-panel', {
+    has: page.getByRole('heading', { name: '标签工作台', exact: true }),
+  })
+  await expect(panel.locator('.task-row')).toHaveCount(2)
+  await expect(panel.locator('.task-gallery')).toBeVisible()
+  await page.goto('/')
+  await page.locator('.nav-row', { hasText: '我的工作台' }).click()
+  await panel.locator('.task-body').first().click()
+  await expect(page.locator('.task-editor')).toBeVisible()
+  await page.setViewportSize({ width: 640, height: 650 })
+  expect(await page.locator('.task-editor').evaluate((e) => e.scrollWidth <= e.clientWidth)).toBe(
+    true,
+  )
+  await page.locator('#task-title').fill('现代编辑器保存')
+  await page.locator('button[form="pantodo-task-form"]').click()
+  await expect(panel).toContainText('现代编辑器保存')
 })

@@ -231,3 +231,40 @@
 .calendar-day .tt-block-time {
   font-size: 11px;
 }
+.tt-allday-row {
+  display: grid;
+  grid-template-columns: var(--tt-gutter-width, 60px) minmax(0, 1fr);
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-strong);
+  flex-shrink: 0;
+}
+.tt-allday-row > span {
+  padding: 8px 6px;
+  font-size: 10px;
+  color: var(--text-muted);
+}
+.tt-allday-days {
+  display: grid;
+  grid-template-columns: repeat(var(--tt-days), minmax(0, 1fr));
+  max-height: 140px;
+  overflow: auto;
+}
+.tt-allday-days > div {
+  min-width: 0;
+  border-left: 1px solid var(--border);
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.tt-allday-days button {
+  text-align: left;
+  padding: 5px 7px;
+  border-radius: 5px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 11px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+}

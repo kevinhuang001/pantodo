@@ -5,11 +5,13 @@ export function Modal({
   onClose,
   children,
   footer,
+  className,
 }: {
   title: string
   onClose: () => void
   children: ReactNode
   footer?: ReactNode
+  className?: string
 }) {
   return (
     <Dialog
@@ -18,7 +20,10 @@ export function Modal({
         if (!open) onClose()
       }}
     >
-      <DialogContent className="dialog product-dialog" aria-describedby={undefined}>
+      <DialogContent
+        className={['dialog product-dialog', className].filter(Boolean).join(' ')}
+        aria-describedby={undefined}
+      >
         <DialogHeader className="dialog-header">
           <DialogTitle>{title}</DialogTitle>
         </DialogHeader>

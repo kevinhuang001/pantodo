@@ -1,3 +1,7 @@
+import { localDate } from '@/domain/recurrence'
+import { getLocale } from '@/i18n'
+import { RepeatDeleteDialog } from './RepeatDeleteDialog'
+import { RecurrenceFields } from './RecurrenceFields'
 import { Button } from './ui/button'
 import { Input } from './ui/input'
 import { Textarea } from './ui/textarea'
@@ -16,13 +20,25 @@ import { Modal } from './Modal'
 import { ScheduleFields } from './ScheduleFields'
 import type { ScheduleValues } from '@/domain/planning'
 
-export function TaskDialog({ task, onClose }: { task: Task | null; onClose: () => void }) {
+export function TaskDialog({
+  task: selectedTask,
+  onClose,
+}: {
+  task: Task | null
+  onClose: () => void
+}) {
+  const task = selectedTask?.occurrenceKey
+    ? (useAppStore.getState().tasks.find((t) => t.id === selectedTask.id) ?? selectedTask)
+    : selectedTask
+  const [recurrence, setRecurrence] = useState(task?.recurrence ?? null)
+  const occurrenceKey = selectedTask?.occurrenceKey
+  const [deleting, setDeleting] = useState(false)
   const projects = useAppStore((state) => state.projects).filter((item) => !item.deletedAt)
   const tags = useAppStore((state) => state.tags).filter((item) => !item.deletedAt)
   const taskTags = useAppStore((state) => state.taskTags)
   const [title, setTitle] = useState(task?.title ?? '')
   const [notes, setNotes] = useState(task?.notes ?? '')
-  const [status, setStatus] = useState<TaskStatus>(task?.status ?? 'todo')
+  const [status, setStatus] = useState<TaskStatus>(selectedTask?.status ?? 'todo')
   const [projectId, setProjectId] = useState(task?.projectId ?? '')
   const [tagIds, setTagIds] = useState(task ? (taskTags[task.id] ?? []) : [])
   const local = (value: string | null | undefined) => (value ? toLocalInputValue(value) : '')
@@ -49,7 +65,8 @@ export function TaskDialog({ task, onClose }: { task: Task | null; onClose: () =
       const patch = {
         title: title.trim(),
         notes,
-        status,
+        status: recurrence && occurrenceKey ? task!.status : status,
+        recurrence,
         projectId: projectId || null,
         startAt,
         endAt,
@@ -60,11 +77,13 @@ export function TaskDialog({ task, onClose }: { task: Task | null; onClose: () =
       if (task) {
         await store.updateTask(task.id, patch)
         await store.setTaskTags(task.id, tagIds)
+        if (recurrence && occurrenceKey) await store.setTaskStatus(task.id, status, occurrenceKey)
       } else await store.createTask({ ...patch, tagIds })
       onClose()
     } catch (error) {
       setError(
-        error instanceof Error && ['time.invalidRange', 'task.invalidTitle'].includes(error.message)
+        error instanceof Error &&
+          ['time.invalidRange', 'task.invalidTitle', 'repeat.invalid'].includes(error.message)
           ? t(error.message as MessageKey)
           : t('work.failed'),
       )
@@ -72,12 +91,31 @@ export function TaskDialog({ task, onClose }: { task: Task | null; onClose: () =
       setSaving(false)
     }
   }
+  if (deleting && selectedTask)
+    return (
+      <RepeatDeleteDialog
+        task={selectedTask}
+        onClose={onClose}
+        onCancel={() => setDeleting(false)}
+      />
+    )
   return (
     <Modal
+      className="task-editor modern-editor"
       title={task ? t('dialog.editTask') : t('dialog.newTask')}
       onClose={onClose}
       footer={
         <>
+          {task?.recurrence ? (
+            <Button
+              className="danger-button"
+              variant="destructive"
+              disabled={saving}
+              onClick={() => setDeleting(!deleting)}
+            >
+              {t('task.action.delete')}
+            </Button>
+          ) : null}
           <Button className="secondary" variant="outline" onClick={onClose}>
             {t('dialog.cancel')}
           </Button>
@@ -93,84 +131,111 @@ export function TaskDialog({ task, onClose }: { task: Task | null; onClose: () =
         </>
       }
     >
-      <form id="pantodo-task-form" className="stack" onSubmit={(event) => void submit(event)}>
-        <div className="field">
-          <label htmlFor="task-title">{t('task.field.title')}</label>
-          <Input
-            id="task-title"
-            className="input"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            autoFocus
-            required
-          />
-        </div>
-        <div className="field">
-          <label htmlFor="task-notes">{t('task.field.notes')}</label>
-          <Textarea
-            id="task-notes"
-            className="textarea"
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-          />
-        </div>
-        <div className="form-row">
-          <div className="field">
-            <label htmlFor="task-project">{t('task.field.project')}</label>
-            <SelectField
-              id="task-project"
-              className="select"
-              value={projectId}
-              onValueChange={(e) => setProjectId(e)}
-            >
-              <option value="">{t('task.field.none')}</option>
-              {projects.map((p) => (
-                <option value={p.id} key={p.id}>
-                  {p.emoji} {p.name}
-                </option>
-              ))}
-            </SelectField>
+      <form
+        id="pantodo-task-form"
+        className="task-editor-grid"
+        onSubmit={(event) => void submit(event)}
+      >
+        {occurrenceKey ? (
+          <div className="occurrence-banner">
+            {t('repeat.occurrence', {
+              date: new Intl.DateTimeFormat(getLocale(), { dateStyle: 'medium' }).format(
+                localDate(occurrenceKey),
+              ),
+            })}
+          </div>
+        ) : null}
+        <div className="editor-main stack">
+          <div className="field editor-title-field">
+            <label htmlFor="task-title">{t('task.field.title')}</label>
+            <Input
+              id="task-title"
+              className="input"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              autoFocus
+              required
+            />
           </div>
           <div className="field">
-            <label htmlFor="task-status">{t('task.field.status')}</label>
-            <SelectField
-              id="task-status"
-              className="select"
-              value={status}
-              onValueChange={(e) => setStatus(e as TaskStatus)}
-            >
-              {TASK_STATUSES.map((s) => (
-                <option value={s} key={s}>
-                  {t(STATUS_LABEL_KEYS[s])}
-                </option>
-              ))}
-            </SelectField>
+            <label htmlFor="task-notes">{t('task.field.notes')}</label>
+            <Textarea
+              id="task-notes"
+              className="textarea editor-notes"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+            />
           </div>
-        </div>
-        <div className="field">
-          <label>{t('task.field.tags')}</label>
-          <div className="chip-row">
-            {tags.map((tag) => (
-              <button
-                className={tagIds.includes(tag.id) ? 'chip selectable selected' : 'chip selectable'}
-                type="button"
-                key={tag.id}
-                aria-pressed={tagIds.includes(tag.id)}
-                onClick={() =>
-                  setTagIds((current) =>
-                    current.includes(tag.id)
-                      ? current.filter((id) => id !== tag.id)
-                      : [...current, tag.id],
-                  )
-                }
+          <div className="form-row">
+            <div className="field">
+              <label htmlFor="task-project">{t('task.field.project')}</label>
+              <SelectField
+                id="task-project"
+                className="select"
+                value={projectId}
+                onValueChange={(e) => setProjectId(e)}
               >
-                <span className="dot" style={{ background: tag.color ?? 'var(--accent)' }} />
-                {tag.name}
-              </button>
-            ))}
+                <option value="">{t('task.field.none')}</option>
+                {projects.map((p) => (
+                  <option value={p.id} key={p.id}>
+                    {p.emoji} {p.name}
+                  </option>
+                ))}
+              </SelectField>
+            </div>
+            <div className="field">
+              <label htmlFor="task-status">{t('task.field.status')}</label>
+              <SelectField
+                id="task-status"
+                className="select"
+                value={status}
+                onValueChange={(e) => setStatus(e as TaskStatus)}
+              >
+                {TASK_STATUSES.map((s) => (
+                  <option value={s} key={s}>
+                    {t(STATUS_LABEL_KEYS[s])}
+                  </option>
+                ))}
+              </SelectField>
+            </div>
+          </div>
+          <div className="field">
+            <label>{t('task.field.tags')}</label>
+            <div className="chip-row">
+              {tags.map((tag) => (
+                <button
+                  className={
+                    tagIds.includes(tag.id) ? 'chip selectable selected' : 'chip selectable'
+                  }
+                  type="button"
+                  key={tag.id}
+                  aria-pressed={tagIds.includes(tag.id)}
+                  onClick={() =>
+                    setTagIds((current) =>
+                      current.includes(tag.id)
+                        ? current.filter((id) => id !== tag.id)
+                        : [...current, tag.id],
+                    )
+                  }
+                >
+                  <span className="dot" style={{ background: tag.color ?? 'var(--accent)' }} />
+                  {tag.name}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
-        <ScheduleFields value={time} onChange={setTime} />
+        <aside className="editor-aside">
+          <ScheduleFields value={time} onChange={setTime} />
+          <div className="editor-repeat">
+            <RecurrenceFields
+              value={recurrence}
+              onChange={setRecurrence}
+              start={time.start || time.due}
+            />
+            <p className="field-hint">{t('repeat.seriesHint')}</p>
+          </div>
+        </aside>
         {error ? (
           <p role="alert" className="form-error">
             {error}

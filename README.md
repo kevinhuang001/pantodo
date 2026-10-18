@@ -36,7 +36,7 @@ Choose the start date and time, then a block duration. Use a preset or choose Cu
 
 ### Your views, your way
 
-Create a view, add panels, and choose which tasks belong in each one. Filter by project, tags, status, dates or text. Panels show just the task name and description; click a task to open its full details. Long collections scroll inside the panel, so the whole workspace stays manageable.
+Create a view, add panels, and choose which tasks belong in each one. Filter by project, included tags, status or text. Panels show just the task name and description; click a task to open its full details. Long collections scroll inside the panel, so the whole workspace stays manageable.
 
 Use List or Gallery within each panel. Arrange panels vertically or in columns, then drag their handles to reorder them. Column counts live in View settings.
 
@@ -110,3 +110,11 @@ npm run dev
 ```
 
 [User guide](docs/USER-GUIDE.md) · [Development and desktop builds](docs/DEVELOPMENT.md) · [Product specification](docs/SPEC.md) · [Third-party notices](THIRD-PARTY.md) · [Report an issue](https://github.com/kevinhuang001/pantodo/issues)
+
+### Repeat without clutter
+
+Set a custom daily, weekly, monthly or yearly rule, an interval, selected weekdays and an optional end date or count. Pantodo stores one source task and computes calendar occurrences live. Delete a single occurrence or the entire series; completing one cycle keeps future cycles open. Untimed repeats appear in the all-day area.
+
+![Task editing with separate content and schedule](docs/images/task-editor.jpg)
+![Panel display settings and inclusion filters](docs/images/panel-editor.jpg)
+![Custom recurrence rules](docs/images/repeat-rule.jpg)

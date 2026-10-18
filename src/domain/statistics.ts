@@ -63,7 +63,14 @@ export function buildStatistics(workspace: Workspace, filter: StatisticsFilter, 
     const taskId = entry.taskId ?? ''
     byTask.set(taskId, (byTask.get(taskId) ?? 0) + seconds)
   }
-  const completed = workspace.tasks.filter(
+  const completedTasks = workspace.tasks.flatMap((task) =>
+    task.recurrence
+      ? Object.entries(task.occurrenceStates ?? {})
+          .filter(([key]) => !task.skippedOccurrences?.includes(key))
+          .map(([, state]) => ({ ...task, ...state }))
+      : [task],
+  )
+  const completed = completedTasks.filter(
     (task) =>
       !task.deletedAt &&
       task.status === 'done' &&

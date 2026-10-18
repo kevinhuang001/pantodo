@@ -1,3 +1,5 @@
+import { RepeatDeleteDialog } from './components/RepeatDeleteDialog'
+import { listTasks } from '@/domain/recurrence'
 import { startAutoSync } from '@/sync/store'
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
 
@@ -115,7 +117,11 @@ export function App() {
 
   const filtered = useMemo(() => {
     if (activeView === null) return []
-    let list = selectTasks(tasks, activeView, context)
+    let list = selectTasks(
+      activeView.preset === 'trash' ? tasks : listTasks(tasks, now),
+      activeView,
+      context,
+    )
     const needle = debouncedSearch.trim().toLowerCase()
     if (needle !== '') {
       list = list.filter(
@@ -130,7 +136,7 @@ export function App() {
       list = list.filter((task) => task.projectId === projectFilterId)
     }
     return sortTasks(list, activeView, context)
-  }, [activeView, tasks, context, debouncedSearch, tagFilterId, projectFilterId, taskTags])
+  }, [activeView, tasks, now, context, debouncedSearch, tagFilterId, projectFilterId, taskTags])
 
   const lookup = useMemo<TaskLookup>(() => {
     const projectsById = new Map(projects.map((project) => [project.id, project]))
@@ -149,7 +155,7 @@ export function App() {
         setDialog({ kind: 'task', task })
       },
       onToggleComplete: (task) => {
-        if (task.status === 'done') void setTaskStatus(task.id, 'todo')
+        if (task.status === 'done') void setTaskStatus(task.id, 'todo', task.occurrenceKey)
         else setDialog({ kind: 'confirm-complete', task })
       },
       onEdit: (task) => setDialog({ kind: 'task', task }),
@@ -361,12 +367,14 @@ export function App() {
           confirmKey="task.action.complete"
           onCancel={() => setDialog(null)}
           onConfirm={async () => {
-            await setTaskStatus(dialog.task.id, 'done')
+            await setTaskStatus(dialog.task.id, 'done', dialog.task.occurrenceKey)
             setDialog(null)
           }}
         />
       ) : null}
-      {dialog?.kind === 'confirm-delete' ? (
+      {dialog?.kind === 'confirm-delete' && dialog.task.recurrence ? (
+        <RepeatDeleteDialog task={dialog.task} onClose={() => setDialog(null)} />
+      ) : dialog?.kind === 'confirm-delete' ? (
         <ConfirmDialog
           title={t('dialog.deleteTitle')}
           body={t('dialog.deleteBody', { name: dialog.task.title })}

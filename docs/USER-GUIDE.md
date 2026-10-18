@@ -8,9 +8,9 @@ Open Create, enter a task name and an optional description. Project and tag pick
 
 Today and All tasks show the full task summary, dates and work controls. Click a task to edit its details. Checking an unfinished task asks for confirmation; reopening a completed task happens immediately. Trash supports restoring tasks or permanently deleting them.
 
-Create a view with a name and optional emoji, then add independently filtered panels. Panels can filter by project, tags, status, planned time, deadline range and text. Choose List or Gallery, change sorting and set the panel’s column span in its editor. Choose Vertical or Columns in the view controls, and change the column count in View settings.
+Create a view with a name and optional emoji, then add independently filtered panels. Panels can filter by project, included tags (any or all), status and text. No selected tags means all tags. Choose List or Gallery, change sorting and set the panel’s column span in its editor. Choose Vertical or Columns in the view controls, and change the column count in View settings.
 
-Panel tasks show only names and descriptions. Click or focus a task and press Enter to edit its full information. Each panel’s task region grows with its contents up to the configurable height (480px by default) or 65% of the window height, whichever is smaller; further tasks scroll inside it. The region is keyboard-focusable. Drag handles reorder panels with pointer, touch or keyboard; tasks themselves do not drag.
+List tasks have transparent backgrounds and individual borders; Gallery adapts its column count to the available panel width. Panel tasks show only names and descriptions. Click or focus a task and press Enter to edit its full information. Each panel’s task region grows with its contents up to the configurable height (480px by default) or 65% of the window height, whichever is smaller; further tasks scroll inside it. The region is keyboard-focusable. Drag handles reorder panels with pointer, touch or keyboard; tasks themselves do not drag.
 
 ## Timetable
 
@@ -47,3 +47,9 @@ Settings includes light/dark/system themes, eight accent palettes, English/Simpl
 General settings include startup page, default block duration and panel task-region height. Timer settings control automatic Focus and the countdown, including immediate entry. Statistics settings choose a daily focus goal and a default week/month/year period. Goals are indicators, not timer limits.
 
 ECharts reports include daily minutes and cumulative time, project/tag shares, weekday/hour focus distribution, task rankings, planned versus recorded minutes and average daily goal progress. Active days, longest session and days meeting the goal use the same date/project/tag filters as the work ledger. Heatmap records are clipped to the selected period and split at local hour boundaries, including overnight sessions. Tags receive full time per tag and may add up to more than the deduplicated total. Charts resize with the window and follow the accent/theme; statistics code loads when the page is opened.
+
+## Repeating tasks
+
+Use Repeat in Create or the task editor. Configure daily/weekly/monthly/yearly frequency, a positive interval, first date and selected weekdays for weekly rules. End never, on an inclusive date, or after a number of occurrences (including skipped occurrences). Monthly/yearly rules keep their original date and skip months without that date; leap-day yearly tasks skip non-leap years. Rules follow the device's local calendar and preserve wall-clock times through daylight-saving changes.
+
+There is only one stored task per series. Calendar day/week/month views compute visible occurrences live, including overnight plans and independently shifted deadlines. Untimed repeats appear in the all-day area. Task lists and panels show today's occurrence or the next cycle; an ended series retains its final occurrence. Title, description, schedule, tags and rule edits apply to the series. Status applies to the selected occurrence. Delete offers this occurrence (a skipped date) or the whole series (Trash). Completion statuses and skipped dates are saved on the source task and synchronized with it. Work time stays linked to that task; repeated completions are included in statistics. Deleting the whole series and restoring it preserves its exceptions.

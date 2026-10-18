@@ -1,3 +1,4 @@
+import { validateRecurrence } from './recurrence'
 import { useFocusStore } from './focus'
 import { create } from 'zustand'
 
@@ -27,6 +28,7 @@ export const workspaceBridge = createBridge()
 const bridge = workspaceBridge
 
 export interface NewTaskInput {
+  recurrence?: Task['recurrence']
   title: string
   notes?: string
   projectId?: Id | null
@@ -83,7 +85,8 @@ export interface AppState {
 
   createTask: (input: NewTaskInput) => Promise<Id>
   updateTask: (id: Id, patch: Partial<Task>) => Promise<void>
-  setTaskStatus: (id: Id, status: TaskStatus) => Promise<void>
+  setTaskStatus: (id: Id, status: TaskStatus, occurrenceKey?: string) => Promise<void>
+  skipOccurrence: (id: Id, key: string) => Promise<void>
   softDeleteTask: (id: Id) => Promise<void>
   restoreTask: (id: Id) => Promise<void>
   archiveTask: (id: Id) => Promise<void>
@@ -229,20 +232,22 @@ export const useAppStore = create<AppState>()((set, get) => ({
     const now = nowIso()
     if (!input.title.trim()) throw new Error('task.invalidTitle')
     validatePlan(input.startAt ?? null, input.endAt ?? null)
+    validateRecurrence(input.recurrence)
     const task: Task = {
       id: newId(),
       createdAt: now,
       updatedAt: now,
       deletedAt: null,
+      recurrence: input.recurrence ?? null,
       title: input.title.trim(),
       notes: input.notes ?? '',
-      status: input.status ?? 'todo',
+      status: input.recurrence ? 'todo' : (input.status ?? 'todo'),
       projectId: input.projectId ?? null,
       dueAt: input.dueAt ?? null,
       startAt: input.startAt ?? null,
       endAt: input.endAt ?? null,
       estimateMinutes: input.estimateMinutes ?? null,
-      completedAt: input.status === 'done' ? now : null,
+      completedAt: !input.recurrence && input.status === 'done' ? now : null,
       archivedAt: null,
       sortOrder: state.tasks.length,
     }
@@ -263,7 +268,13 @@ export const useAppStore = create<AppState>()((set, get) => ({
     const current = get().tasks.find((task) => task.id === id)
     if (current === undefined) return
     const next = withUpdated(current, patch)
+    if (patch.recurrence && !current.recurrence) {
+      next.status = 'todo'
+      next.completedAt = null
+    }
+    delete next.occurrenceKey
     validatePlan(next.startAt, next.endAt)
+    validateRecurrence(next.recurrence)
     if (!next.title.trim()) throw new Error('task.invalidTitle')
     if ((next.status === 'done' || next.status === 'cancelled') && get().timer?.taskId === id)
       get().timeCommand({ kind: 'stop' })
@@ -274,8 +285,31 @@ export const useAppStore = create<AppState>()((set, get) => ({
     get().notify('toast.taskUpdated')
   },
 
-  async setTaskStatus(id, status) {
-    await get().updateTask(id, { status })
+  async setTaskStatus(id, status, key) {
+    const task = get().tasks.find((t) => t.id === id)
+    if (task?.recurrence && key) {
+      if (
+        get().timer?.taskId === id &&
+        get().timer?.occurrenceKey === key &&
+        (status === 'done' || status === 'cancelled')
+      )
+        get().timeCommand({ kind: 'stop' })
+      await get().updateTask(id, {
+        occurrenceStates: {
+          ...task.occurrenceStates,
+          [key]: { status, completedAt: status === 'done' ? nowIso() : null },
+        },
+      })
+    } else await get().updateTask(id, { status })
+  },
+  async skipOccurrence(id, key) {
+    const task = get().tasks.find((t) => t.id === id)
+    if (!task?.recurrence) return
+    if (get().timer?.taskId === id && get().timer?.occurrenceKey === key)
+      get().timeCommand({ kind: 'stop' })
+    await get().updateTask(id, {
+      skippedOccurrences: [...new Set([...(task.skippedOccurrences ?? []), key])],
+    })
   },
 
   async softDeleteTask(id) {

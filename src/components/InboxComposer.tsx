@@ -1,3 +1,5 @@
+import { RecurrenceFields } from './RecurrenceFields'
+import type { RecurrenceRule } from '@/domain/types'
 import { Input } from './ui/input'
 import { Textarea } from './ui/textarea'
 import { CaptureEntityPicker } from './CaptureEntityPicker'
@@ -42,6 +44,7 @@ export function InboxComposer() {
     observer.observe(element)
     return () => observer.disconnect()
   }, [notes])
+  const [recurrence, setRecurrence] = useState<RecurrenceRule | null>(null)
   const [projectId, setProjectId] = useState('')
   const [tagIds, setTagIds] = useState<string[]>([])
   const [time, setTime] = useState<ScheduleValues>({ start: '', end: '', due: '', estimate: '' })
@@ -60,6 +63,7 @@ export function InboxComposer() {
       const endAt = time.end ? fromLocalInputValue(time.end) : null
       validatePlan(startAt, endAt)
       await createTask({
+        recurrence,
         startAt,
         endAt,
         dueAt: time.due ? fromLocalInputValue(time.due) : null,
@@ -69,6 +73,7 @@ export function InboxComposer() {
         projectId: projectId || null,
         tagIds,
       })
+      setRecurrence(null)
       setTitle('')
       setNotes('')
       setTime({ start: '', end: '', due: '', estimate: '' })
@@ -118,6 +123,11 @@ export function InboxComposer() {
             <div className="capture-options">
               <CaptureSchedulePicker value={time} onChange={setTime} />
               <CaptureSchedulePicker value={time} onChange={setTime} dueOnly />
+              <RecurrenceFields
+                value={recurrence}
+                onChange={setRecurrence}
+                start={time.start || time.due}
+              />
               {(['project', 'tags'] as const).map((kind) => (
                 <CaptureEntityPicker
                   key={kind}

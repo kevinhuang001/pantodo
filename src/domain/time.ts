@@ -3,7 +3,7 @@ import type { Task, TimeEntry, TimerSession, Workspace } from './types'
 
 export const HEARTBEAT_GAP_MS = 30_000
 export type TimeCommand =
-  | { kind: 'start'; taskId: string }
+  | { kind: 'start'; taskId: string; occurrenceKey?: string }
   | { kind: 'pause' | 'resume' | 'stop' | 'heartbeat' }
   | { kind: 'save'; entry: TimeEntry }
   | { kind: 'delete'; id: string }
@@ -117,13 +117,19 @@ export function applyTimeCommand(
         item.status !== 'cancelled',
     )
     if (!task) throw new Error('time.unavailableTask')
-    if (timer?.taskId === task.id && timer.startedAt) return { timeEntries: entries, timer, tasks }
-    if (timer?.taskId === task.id)
+    if (
+      timer?.taskId === task.id &&
+      timer.occurrenceKey === command.occurrenceKey &&
+      timer.startedAt
+    )
+      return { timeEntries: entries, timer, tasks }
+    if (timer?.taskId === task.id && timer.occurrenceKey === command.occurrenceKey)
       timer = { ...timer, startedAt: stamp, lastHeartbeatAt: stamp, ownerId }
     else {
       flush()
       timer = {
         taskId: task.id,
+        occurrenceKey: command.occurrenceKey,
         startedAt: stamp,
         elapsedSeconds: 0,
         entryIds: [],
@@ -133,7 +139,16 @@ export function applyTimeCommand(
     }
     tasks = tasks.map((item) =>
       item.id === task.id
-        ? { ...item, status: 'doing', completedAt: null, updatedAt: stamp }
+        ? task.recurrence && command.occurrenceKey
+          ? {
+              ...item,
+              occurrenceStates: {
+                ...item.occurrenceStates,
+                [command.occurrenceKey]: { status: 'doing', completedAt: null },
+              },
+              updatedAt: stamp,
+            }
+          : { ...item, status: 'doing', completedAt: null, updatedAt: stamp }
         : item,
     )
   } else if (command.kind === 'pause') flush()

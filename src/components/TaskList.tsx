@@ -1,7 +1,7 @@
 import type { MessageKey } from '@/i18n'
 import { getLocale, t } from '@/i18n'
 import { formatDateTime, formatMinutes } from '@/domain/date'
-import { Flag } from 'lucide-react'
+import { Flag, Repeat2 } from 'lucide-react'
 import { STATUS_LABEL_KEYS } from '@/domain/display'
 import { colorFor, dueState } from '@/domain/filters'
 import type { Id, Project, Tag, Task } from '@/domain/types'
@@ -64,7 +64,12 @@ export function TaskRow({
             }
           }}
         >
-          <span className="task-title">{task.title}</span>
+          <span className="task-title">
+            {task.title}
+            {task.recurrence ? (
+              <Repeat2 className="repeat-mark" size={12} aria-label={t('repeat.title')} />
+            ) : null}
+          </span>
           {task.notes ? <span className="task-description">{task.notes}</span> : null}
         </div>
       </div>
@@ -104,7 +109,12 @@ export function TaskRow({
           }
         }}
       >
-        <span className="task-title">{task.title}</span>
+        <span className="task-title">
+          {task.title}
+          {task.recurrence ? (
+            <Repeat2 className="repeat-mark" size={12} aria-label={t('repeat.title')} />
+          ) : null}
+        </span>
         {task.notes ? <span className="task-description">{task.notes}</span> : null}
         <span className="task-meta">
           <span className="chip task-status">{t(STATUS_LABEL_KEYS[task.status])}</span>
@@ -206,7 +216,7 @@ export function TaskRow({
 function TaskTimerButton({ task }: { task: Task }) {
   const timer = useAppStore((state) => state.timer)
   const command = useAppStore((state) => state.timeCommand)
-  const active = timer?.taskId === task.id
+  const active = timer?.taskId === task.id && timer.occurrenceKey === task.occurrenceKey
   const running = active && !!timer?.startedAt
   return (
     <button
@@ -220,7 +230,7 @@ function TaskTimerButton({ task }: { task: Task }) {
             ? { kind: 'pause' }
             : active
               ? { kind: 'resume' }
-              : { kind: 'start', taskId: task.id },
+              : { kind: 'start', taskId: task.id, occurrenceKey: task.occurrenceKey },
         )
       }
     >
