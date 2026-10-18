@@ -1,6 +1,6 @@
 [package]
 name = "pantodo"
-version = "0.6.11"
+version = "0.6.12"
 description = "A little room for your Todos and your time"
 authors = ["Kevin Huang"]
 edition = "2021"

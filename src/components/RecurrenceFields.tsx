@@ -1,3 +1,4 @@
+import { Button } from './ui/button'
 import { useNow } from '@/hooks'
 import { addYears, startOfDay } from 'date-fns'
 import { STATUS_LABEL_KEYS } from '@/domain/display'
@@ -66,16 +67,18 @@ export function RecurrenceFields({
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <button
+        <Button
+          variant="ghost"
           type="button"
-          className={'repeat-trigger capture-option' + (value ? ' active' : '')}
+          className="capture-property repeat-trigger"
+          data-filled={!!value}
           aria-label={t('repeat.title')}
         >
           <Repeat2 size={15} />
           <span>
             {value ? t(('repeat.' + value.frequency) as 'repeat.daily') : t('repeat.none')}
           </span>
-        </button>
+        </Button>
       </PopoverTrigger>
       <PopoverContent
         className="repeat-popover"

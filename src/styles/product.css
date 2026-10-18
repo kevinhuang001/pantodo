@@ -873,22 +873,6 @@ body,
   }
 }
 
-.repeat-trigger {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  min-height: 34px;
-  padding: 7px 10px;
-  border: 1px solid var(--border);
-  border-radius: 9px;
-  font-size: 12px;
-  color: var(--text-muted);
-  background: var(--surface-strong);
-}
-.repeat-trigger.active {
-  color: var(--accent);
-  background: var(--accent-soft);
-}
 .repeat-popover {
   width: 320px;
   max-width: calc(100vw - 24px);

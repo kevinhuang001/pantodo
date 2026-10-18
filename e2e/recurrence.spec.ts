@@ -103,3 +103,16 @@ test('Repeat opens without selecting a field while keyboard navigation remains a
   await page.keyboard.press('Tab')
   await expect(page.getByRole('combobox', { name: '重复频率', exact: true })).toBeFocused()
 })
+
+test('an unconfigured Repeat uses the same borderless appearance as other capture properties', async ({
+  page,
+}) => {
+  const repeat = page.locator('.capture-options .repeat-trigger')
+  await expect(repeat).toHaveAttribute('data-filled', 'false')
+  await expect(repeat).toHaveCSS('border-top-color', 'rgba(0, 0, 0, 0)')
+  await expect(repeat).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)')
+  await repeat.click()
+  await choose(page, page.getByRole('combobox', { name: '重复频率', exact: true }), 'weekly')
+  await page.locator('.repeat-popover').getByRole('button', { name: '完成', exact: true }).click()
+  await expect(repeat).toHaveAttribute('data-filled', 'true')
+})

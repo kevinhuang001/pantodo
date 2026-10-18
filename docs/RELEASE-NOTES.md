@@ -1,7 +1,6 @@
-# Pantodo 0.6.11
+# Pantodo 0.6.12
 
-- Repeat 打开时不再默认聚焦第一个选择框；保留键盘 Tab 导航与焦点返回。
-- 任务编辑器中的 Status 改为只读，保存内容、计划和规则时不会改写任务或 occurrence 的状态。
-- Repeat 新增按日期排列的各次重复记录，独立展示待办、进行中、已完成和已跳过状态；仍只保存一条任务及其按日期记录的周期状态。
+- 删除 Repeat 按钮的默认常驻边框与底色，改用和 Time、Due、Project、Tags 相同的属性按钮。仅在实际配置重复规则后显示已配置状态。
+- 增加创建页默认边框与底色的浏览器回归检查。
 
 Installers are published only after checks, browser workflows and all desktop builds pass.
