@@ -12,8 +12,7 @@ import { fromLocalInputValue, toLocalInputValue } from '@/domain/date'
 import { validatePlan } from '@/domain/calendar'
 import { useAppStore } from '@/domain/store'
 import { STATUS_LABEL_KEYS } from '@/domain/display'
-import { TASK_STATUSES } from '@/domain/types'
-import type { Task, TaskStatus } from '@/domain/types'
+import type { Task } from '@/domain/types'
 import { t } from '@/i18n'
 import type { MessageKey } from '@/i18n'
 import { Modal } from './Modal'
@@ -27,9 +26,8 @@ export function TaskDialog({
   task: Task | null
   onClose: () => void
 }) {
-  const task = selectedTask?.occurrenceKey
-    ? (useAppStore.getState().tasks.find((t) => t.id === selectedTask.id) ?? selectedTask)
-    : selectedTask
+  const persistedTask = useAppStore((state) => state.tasks.find((t) => t.id === selectedTask?.id))
+  const task = persistedTask ?? selectedTask
   const [recurrence, setRecurrence] = useState(task?.recurrence ?? null)
   const occurrenceKey = selectedTask?.occurrenceKey
   const [deleting, setDeleting] = useState(false)
@@ -38,7 +36,10 @@ export function TaskDialog({
   const taskTags = useAppStore((state) => state.taskTags)
   const [title, setTitle] = useState(task?.title ?? '')
   const [notes, setNotes] = useState(task?.notes ?? '')
-  const [status, setStatus] = useState<TaskStatus>(selectedTask?.status ?? 'todo')
+  const status =
+    occurrenceKey && task?.recurrence
+      ? (task.occurrenceStates?.[occurrenceKey]?.status ?? 'todo')
+      : (task?.status ?? 'todo')
   const [projectId, setProjectId] = useState(task?.projectId ?? '')
   const [tagIds, setTagIds] = useState(task ? (taskTags[task.id] ?? []) : [])
   const local = (value: string | null | undefined) => (value ? toLocalInputValue(value) : '')
@@ -65,7 +66,6 @@ export function TaskDialog({
       const patch = {
         title: title.trim(),
         notes,
-        status: recurrence && occurrenceKey ? task!.status : status,
         recurrence,
         projectId: projectId || null,
         startAt,
@@ -77,7 +77,6 @@ export function TaskDialog({
       if (task) {
         await store.updateTask(task.id, patch)
         await store.setTaskTags(task.id, tagIds)
-        if (recurrence && occurrenceKey) await store.setTaskStatus(task.id, status, occurrenceKey)
       } else await store.createTask({ ...patch, tagIds })
       onClose()
     } catch (error) {
@@ -185,18 +184,10 @@ export function TaskDialog({
             </div>
             <div className="field">
               <label htmlFor="task-status">{t('task.field.status')}</label>
-              <SelectField
-                id="task-status"
-                className="select"
-                value={status}
-                onValueChange={(e) => setStatus(e as TaskStatus)}
-              >
-                {TASK_STATUSES.map((s) => (
-                  <option value={s} key={s}>
-                    {t(STATUS_LABEL_KEYS[s])}
-                  </option>
-                ))}
-              </SelectField>
+              <output id="task-status" className="editor-status" data-status={status}>
+                <span className="dot" />
+                {t(STATUS_LABEL_KEYS[status])}
+              </output>
             </div>
           </div>
           <div className="field">
@@ -229,6 +220,8 @@ export function TaskDialog({
           <ScheduleFields value={time} onChange={setTime} />
           <div className="editor-repeat">
             <RecurrenceFields
+              source={task ?? undefined}
+              selectedDate={occurrenceKey}
               value={recurrence}
               onChange={setRecurrence}
               start={time.start || time.due}

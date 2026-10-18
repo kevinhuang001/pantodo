@@ -1,4 +1,6 @@
 export const featureEn = {
+  'repeat.records': 'Occurrences',
+  'repeat.skipped': 'Skipped',
   'repeat.occurrence': 'This occurrence · {date}',
   'repeat.allDay': 'All day',
   'repeat.title': 'Repeat',
@@ -22,7 +24,7 @@ export const featureEn = {
   'repeat.invalid': 'Choose a valid repeat interval, start and end.',
   'repeat.monthHint': 'Repeats on day {day}. Months without this date are skipped.',
   'repeat.seriesHint':
-    'Changes to the title, schedule and rule apply to the entire series. Status applies to this occurrence.',
+    'Content and schedule changes apply to the series. Each occurrence’s status is recorded by date and shown under Repeat.',
   'repeat.deleteHint': 'Delete only this occurrence, or move the entire series to Trash?',
   'repeat.deleteOne': 'Delete this occurrence',
   'repeat.deleteAll': 'Delete entire series',

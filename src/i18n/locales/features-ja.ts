@@ -1,4 +1,6 @@
 export const featureJa = {
+  'repeat.records': '繰り返しの履歴',
+  'repeat.skipped': 'スキップ済み',
   'repeat.occurrence': '今回のタスク · {date}',
   'repeat.allDay': '終日',
   'repeat.title': '繰り返し',
@@ -21,7 +23,8 @@ export const featureJa = {
   'repeat.count': '回数を指定',
   'repeat.invalid': '間隔・開始日・終了条件を確認してください。',
   'repeat.monthHint': '毎月 {day} 日に繰り返します。該当日がない月はスキップします。',
-  'repeat.seriesHint': '名前・予定・ルールは全体に適用されます。状態はこの回だけに適用されます。',
+  'repeat.seriesHint':
+    '内容と予定は全体に適用されます。各回の状態は日付ごとに記録され、繰り返しで確認できます。',
   'repeat.deleteHint': 'この回だけ削除しますか？シリーズ全体をごみ箱に移動しますか？',
   'repeat.deleteOne': 'この回だけ削除',
   'repeat.deleteAll': 'シリーズを削除',

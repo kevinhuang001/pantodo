@@ -1,4 +1,6 @@
 export const featureZh = {
+  'repeat.records': '各次重复记录',
+  'repeat.skipped': '已跳过',
   'repeat.occurrence': '本次任务 · {date}',
   'repeat.allDay': '全天',
   'repeat.title': '重复',
@@ -21,7 +23,7 @@ export const featureZh = {
   'repeat.count': '指定重复次数',
   'repeat.invalid': '请检查重复间隔、首次日期和结束条件。',
   'repeat.monthHint': '按每月 {day} 日重复；没有该日期的月份会跳过。',
-  'repeat.seriesHint': '名称、时间和规则的修改应用于整个系列；状态只修改本次任务。',
+  'repeat.seriesHint': '内容与时间修改应用于整个系列；各次状态按日期独立记录，在“重复”中查看。',
   'repeat.deleteHint': '只删除本次，还是将整个重复系列移入回收站？',
   'repeat.deleteOne': '仅删除本次',
   'repeat.deleteAll': '删除整个系列',

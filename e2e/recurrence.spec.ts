@@ -52,6 +52,30 @@ test('stores one custom repeating task and computes calendar cycles, single dele
   expect(w.tasks.find((t) => t.id === source.id)!.occurrenceStates!['2026-10-21']!.status).toBe(
     'done',
   )
+  await row.locator('.task-body').click()
+  const editor = page.locator('.task-editor')
+  await expect(editor.locator('#task-status')).toHaveAttribute('data-status', 'done')
+  await expect(editor.locator('button#task-status, select#task-status')).toHaveCount(0)
+  await editor.getByRole('button', { name: '重复', exact: true }).click()
+  await expect(page.locator('.repeat-heading')).toBeFocused()
+  await expect(page.getByRole('combobox', { name: '重复频率', exact: true })).not.toBeFocused()
+  const records = page.locator('.repeat-records')
+  await expect(
+    records.locator('[data-occurrence="2026-10-19"] .occurrence-status'),
+  ).toHaveAttribute('data-status', 'skipped')
+  await expect(
+    records.locator('[data-occurrence="2026-10-21"] .occurrence-status'),
+  ).toHaveAttribute('data-status', 'done')
+  await expect(
+    records.locator('[data-occurrence="2026-10-26"] .occurrence-status'),
+  ).toHaveAttribute('data-status', 'todo')
+  await page.keyboard.press('Escape')
+  await editor.locator('#task-title').fill('每周实验记录更新')
+  await page.locator('button[form="pantodo-task-form"]').click()
+  expect(
+    (await read(page)).tasks.find((t) => t.id === source.id)!.occurrenceStates!['2026-10-21']!
+      .status,
+  ).toBe('done')
   await row.getByRole('button', { name: '删除', exact: true }).click()
   await page.getByRole('button', { name: '删除整个系列', exact: true }).click()
   await expect(row).toHaveCount(0)
@@ -68,4 +92,14 @@ test('an untimed repeating task appears in the all-day area without making persi
   await page.locator('.nav-row', { hasText: '时间表' }).click()
   await expect(page.locator('.tt-allday-days button', { hasText: '每日阅读' })).toHaveCount(7)
   expect((await read(page)).tasks.filter((t) => t.title === '每日阅读')).toHaveLength(1)
+})
+
+test('Repeat opens without selecting a field while keyboard navigation remains available', async ({
+  page,
+}) => {
+  await page.locator('.capture-options').getByRole('button', { name: '重复', exact: true }).click()
+  await expect(page.locator('.repeat-heading')).toBeFocused()
+  await expect(page.getByRole('combobox', { name: '重复频率', exact: true })).not.toBeFocused()
+  await page.keyboard.press('Tab')
+  await expect(page.getByRole('combobox', { name: '重复频率', exact: true })).toBeFocused()
 })
