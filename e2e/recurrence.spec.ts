@@ -162,3 +162,42 @@ test('shows all saved cycles, catches up after restart and midnight, and isolate
   await expect(rows).toHaveCount(1)
   await expect(rows).toHaveAttribute('data-occurrence', '2026-10-23')
 })
+
+test('completion immediately saves and displays the next future cycle, with catch-up after reopen', async ({
+  page,
+}) => {
+  await page.locator('#pantodo-inbox-input').fill('完成后接着生成')
+  await page.locator('.capture-options').getByRole('button', { name: '重复', exact: true }).click()
+  await choose(page, page.getByRole('combobox', { name: '重复频率', exact: true }), 'daily')
+  await page.locator('.repeat-popover').getByRole('button', { name: '完成', exact: true }).click()
+  await page.getByRole('button', { name: '记下来', exact: true }).click()
+  const source = (await read(page)).tasks.find((t) => t.title === '完成后接着生成')!
+  await page.locator('.nav-row', { hasText: '全部任务' }).click()
+  const rows = page.locator(`[data-series-id="${source.id}"]`)
+  const complete = async (key: string) => {
+    await page
+      .locator(`[data-series-id="${source.id}"][data-occurrence="${key}"]`)
+      .getByRole('checkbox')
+      .click()
+    await page.getByRole('button', { name: '完成', exact: true }).click()
+  }
+  await complete('2026-10-19')
+  await expect(rows).toHaveCount(2)
+  await expect(
+    page.locator(`[data-series-id="${source.id}"][data-occurrence="2026-10-20"]`),
+  ).toBeVisible()
+  await complete('2026-10-20')
+  await expect(rows).toHaveCount(3)
+  await page.goto('/')
+  await page.locator('.nav-row', { hasText: '全部任务' }).click()
+  await expect(rows).toHaveCount(3)
+  await page.clock.setSystemTime(new Date('2026-10-25T09:00:00+08:00'))
+  await page.goto('/')
+  await page.locator('.nav-row', { hasText: '全部任务' }).click()
+  await expect(rows).toHaveCount(7)
+  const saved = (await read(page)).tasks.filter((t) => t.id === source.id)
+  expect(saved).toHaveLength(1)
+  expect(Object.keys(saved[0].occurrences!)).toHaveLength(7)
+  expect(saved[0].occurrences!['2026-10-20'].status).toBe('done')
+  expect(saved[0].occurrences!['2026-10-21'].status).toBe('todo')
+})

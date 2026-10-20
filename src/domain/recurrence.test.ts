@@ -207,6 +207,116 @@ describe('durable dated cycles in one Todo', () => {
     expect(new Set(rows.map(taskInstanceId)).size).toBe(5)
     expect(new Set(rows.map((row) => row.id)).size).toBe(1)
   })
+  it('unlocks tomorrow on completion today, advances repeatedly and never duplicates after reopen', () => {
+    const now = localDate('2026-10-19')
+    let saved = materializeTask(task(), now)
+    expect(Object.keys(saved.occurrences!)).toEqual(['2026-10-19'])
+    const complete = (key: string) => {
+      saved = materializeTask(
+        {
+          ...saved,
+          occurrences: {
+            ...saved.occurrences,
+            [key]: { ...saved.occurrences![key]!, status: 'done', completedAt: now.toISOString() },
+          },
+        },
+        now,
+      )
+    }
+    complete('2026-10-19')
+    expect(saved.occurrences!['2026-10-20']!.status).toBe('todo')
+    expect(listTasks([saved], now).map((t) => t.occurrenceKey)).toEqual([
+      '2026-10-20',
+      '2026-10-19',
+    ])
+    complete('2026-10-20')
+    expect(saved.occurrences!['2026-10-21']!.status).toBe('todo')
+    expect(new Date(saved.occurrences!['2026-10-21']!.startAt!).getDate()).toBe(21)
+    const reopened = JSON.parse(JSON.stringify(saved)) as Task
+    expect(materializeTask(reopened, now)).toBe(reopened)
+    const caughtUp = materializeTask(reopened, localDate('2026-10-23'))
+    expect(Object.keys(caughtUp.occurrences!).sort()).toEqual([
+      '2026-10-19',
+      '2026-10-20',
+      '2026-10-21',
+      '2026-10-22',
+      '2026-10-23',
+    ])
+    expect(caughtUp.occurrences!['2026-10-20']!.status).toBe('done')
+    expect(caughtUp.occurrences!['2026-10-21']!.status).toBe('todo')
+  })
+  it('does not advance beyond an existing successor when completing an overdue cycle', () => {
+    const now = localDate('2026-10-22')
+    const saved = materializeTask(task(), now)
+    const next = materializeTask(
+      {
+        ...saved,
+        occurrences: {
+          ...saved.occurrences,
+          '2026-10-19': {
+            ...saved.occurrences!['2026-10-19']!,
+            status: 'done',
+            completedAt: now.toISOString(),
+          },
+        },
+      },
+      now,
+    )
+    expect(Object.keys(next.occurrences!)).toHaveLength(4)
+    expect(next.occurrences!['2026-10-23']).toBeUndefined()
+  })
+  it.each([
+    [rule({ frequency: 'weekly', interval: 2, weekdays: [1, 3] }), '2026-10-19', '2026-10-21'],
+    [rule({ frequency: 'monthly', startDate: '2026-01-31' }), '2026-01-31', '2026-03-31'],
+    [rule({ frequency: 'yearly', startDate: '2024-02-29' }), '2024-02-29', '2028-02-29'],
+  ])(
+    'uses the schedule for early successors including month-end and leap-year gaps',
+    (recurrence, first, second) => {
+      const now = localDate(first)
+      const source = task({ recurrence, startAt: null, endAt: null })
+      const saved = materializeTask(source, now)
+      const next = materializeTask(
+        {
+          ...saved,
+          occurrences: {
+            ...saved.occurrences,
+            [first]: {
+              ...saved.occurrences![first]!,
+              status: 'done',
+              completedAt: now.toISOString(),
+            },
+          },
+        },
+        now,
+      )
+      expect(Object.keys(next.occurrences!)).toEqual([first, second])
+    },
+  )
+  it.each([rule({ count: 1 }), rule({ until: '2026-10-19' })])(
+    'stops at count and date limits after completion',
+    (recurrence) => {
+      const now = localDate('2026-10-19')
+      const saved = materializeTask(task({ recurrence }), now)
+      const next = materializeTask(
+        {
+          ...saved,
+          occurrences: {
+            '2026-10-19': {
+              ...saved.occurrences!['2026-10-19']!,
+              status: 'done',
+              completedAt: now.toISOString(),
+            },
+          },
+        },
+        now,
+      )
+      expect(Object.keys(next.occurrences!)).toEqual(['2026-10-19'])
+    },
+  )
+  it('shows the first scheduled cycle immediately even when the series starts later', () => {
+    const saved = materializeTask(task(), localDate('2026-10-17'))
+    expect(listTasks([saved], localDate('2026-10-17'))[0]!.occurrenceKey).toBe('2026-10-19')
+  })
   it('upgrades sparse legacy exceptions without losing completion or deletion', () => {
     const old = {
       ...task(),

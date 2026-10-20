@@ -582,3 +582,21 @@
 .sidebar-sync-now {
   flex-shrink: 0;
 }
+
+.sidebar-footer {
+  height: auto;
+  min-height: 52px;
+  flex-shrink: 0;
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
+.about-settings {
+  display: grid;
+  gap: 14px;
+}
+.about-settings .sync-feedback:empty {
+  display: none;
+}
+.about-settings button {
+  gap: 7px;
+}

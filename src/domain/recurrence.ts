@@ -132,7 +132,7 @@ export function occurrenceRecord(task: Task, key: string): TaskOccurrence {
   }
 }
 
-/** Catch up through today once per local day; existing snapshots are never overwritten. */
+/** Catch up missed cycles and unlock the next cycle after completion, keeping dated snapshots. */
 export function materializeTask(task: Task, now: Date): Task {
   if (!task.recurrence || task.deletedAt || task.archivedAt) return task
   const old = task as Task & {
@@ -141,7 +141,6 @@ export function materializeTask(task: Task, now: Date): Task {
   }
   const upgrading = old.occurrenceStates !== undefined || old.skippedOccurrences !== undefined
   const today = dateKey(now)
-  if (!upgrading && task.occurrencesThrough === today) return task
   const records = { ...task.occurrences }
   for (const [key, state] of Object.entries(old.occurrenceStates ?? {})) {
     if (
@@ -171,10 +170,39 @@ export function materializeTask(task: Task, now: Date): Task {
     const key = row.occurrenceKey!
     if (!records[key]) records[key] = occurrenceRecord(task, key)
   }
+  // A completed cycle unlocks its scheduled successor immediately, without moving its date.
+  // Use the same rule evaluator for intervals, selected weekdays, count/until and skipped dates.
+  const unlock = (from: Date) => {
+    const row = computedOccurrences(
+      { ...task, occurrences: records },
+      from,
+      new Date(9999, 11, 31),
+      1,
+    )[0]
+    if (row?.occurrenceKey && !records[row.occurrenceKey])
+      records[row.occurrenceKey] = occurrenceRecord(task, row.occurrenceKey)
+  }
+  if (Object.keys(records).length === 0)
+    unlock(localDate(task.recurrence.effectiveFrom ?? task.recurrence.startDate))
+  const completed = Object.entries(records)
+    .filter(([, state]) => state.status === 'done' && !state.deletedAt)
+    .map(([key]) => key)
+    .sort()
+    .at(-1)
+  if (completed) unlock(addDays(localDate(completed), 1))
+  const through =
+    task.occurrencesThrough && task.occurrencesThrough > today ? task.occurrencesThrough : today
+  if (
+    !upgrading &&
+    task.occurrencesThrough === through &&
+    Object.keys(records).length === Object.keys(task.occurrences ?? {}).length &&
+    Object.entries(records).every(([key, state]) => task.occurrences?.[key] === state)
+  )
+    return task
   const next: typeof old = {
     ...task,
     occurrences: records,
-    occurrencesThrough: today,
+    occurrencesThrough: through,
     updatedAt: now.toISOString(),
   }
   delete next.occurrenceStates
@@ -235,14 +263,13 @@ export function expandTasks(tasks: Task[], from: Date, to: Date): Task[] {
     return rows
   })
 }
-/** Lists include every saved historical and current cycle, never future previews. */
+/** Lists include saved history and unlocked future cycles, never unrecorded calendar previews. */
 export function listTasks(tasks: Task[], now: Date): Task[] {
-  const today = dateKey(now)
   return tasks.flatMap((task) => {
     if ((!task.recurrence && !task.occurrences) || task.deletedAt || task.archivedAt) return [task]
     const source = materializeTask(task, now)
     return Object.entries(source.occurrences ?? {})
-      .filter(([key, state]) => key <= today && !state.deletedAt)
+      .filter(([, state]) => !state.deletedAt)
       .sort(([a], [b]) => b.localeCompare(a))
       .map(([key, state]) => ({
         ...source,

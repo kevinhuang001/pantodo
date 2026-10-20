@@ -52,7 +52,7 @@ ECharts reports include daily minutes and cumulative time, project/tag shares, w
 
 Use Repeat in Create or the task editor. Configure daily/weekly/monthly/yearly frequency, a positive interval, first date and selected weekdays for weekly rules. End never, on an inclusive date, or after a number of occurrences (including skipped occurrences). Monthly/yearly rules keep their original date and skip months without that date; leap-day yearly tasks skip non-leap years. Rules follow the device's local calendar and preserve wall-clock times through daylight-saving changes.
 
-There is only one stored Todo per series. Its `occurrences` collection contains a dated snapshot of each cycle, with its own planned start/end, deadline, status, completion and deletion timestamp. Lists and panels show every non-deleted historical cycle and today's cycle. New cycles are recorded on their local day; if the app was closed, the next launch catches up every missing day. Future calendar cycles remain computed previews. Untimed repeats appear in the all-day area.
+There is only one stored Todo per series. Its `occurrences` collection contains a dated snapshot of each cycle, with its own planned start/end, deadline, status, completion and deletion timestamp. Lists and panels show every non-deleted recorded cycle, including the next cycle unlocked early by completion. Reopening the app catches up all missed scheduled cycles through today, even if earlier cycles are unfinished. Completing a cycle immediately records its next scheduled cycle, even before its date; completing an older cycle whose successor already exists does not create duplicates. A series starting in the future shows its first cycle immediately. Count/date limits still stop generation. Other future calendar cycles remain computed previews. Untimed repeats appear in the all-day area.
 
 Title, description, project and tags are shared by the series. Schedule and rule changes apply to unrecorded cycles; existing cycles keep their saved times and status, even when Repeat is disabled. Status is read-only in the editor and changes through completion/reopen and work controls. Open Repeat to review historical dates, times and statuses alongside upcoming previews. Delete offers this occurrence (a dated tombstone inside the source Todo) or the whole series (Trash). Restoring the series keeps its history. Earlier completion and skipped-date data is upgraded automatically.
 
@@ -66,3 +66,9 @@ The sidebar footer shows the last successful sync time and any failure reason. U
 refresh button to sync manually; it rotates during requests. Conflicts open Sync settings
 for review. UTF-8 BOM JSON and Pantodo workspace exports are accepted and validated before
 local data changes; credentials, settings and running timers remain local.
+
+### Check for updates
+
+Open Settings → About to check the latest published stable GitHub release. The page shows
+whether you are up to date, a new version is available, or the check failed (including
+rate limits and no published release). View downloads opens the release page in your browser.

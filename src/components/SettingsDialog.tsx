@@ -13,8 +13,7 @@ import type { Locale, LocalePreference, MessageKey } from '@/i18n'
 
 import { Dialog, DialogContent, DialogTitle } from './ui/dialog'
 import { Icon } from './Icon'
-import { version } from '../../package.json'
-import { desktop } from '@/platform'
+import { AboutSettings } from './AboutSettings'
 
 interface SettingsDialogProps {
   initialPane?: 'sync'
@@ -323,24 +322,7 @@ export function SettingsDialog({ onClose, initialPane }: SettingsDialogProps) {
               </div>
             ) : null}
 
-            {pane === 'about' ? (
-              <div className="settings-card">
-                <div className="settings-row">
-                  <span className="settings-label">{t('app.name')}</span>
-                  <span className="count">v{version}</span>
-                </div>
-                <div className="settings-row">
-                  <span className="settings-label">{t('about.stack')}</span>
-                  <span className="count">
-                    {desktop ? 'Tauri 2 · Rust · React 19' : 'React 19 · TypeScript'}
-                  </span>
-                </div>
-                <div className="settings-row">
-                  <span className="settings-label">{t('about.milestone')}</span>
-                  <span className="count">{desktop ? 'Desktop beta' : 'Web preview'}</span>
-                </div>
-              </div>
-            ) : null}
+            {pane === 'about' ? <AboutSettings /> : null}
           </div>
         </div>
 
