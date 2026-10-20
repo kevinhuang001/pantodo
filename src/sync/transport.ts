@@ -6,6 +6,13 @@ export interface WebDavConfig {
   username: string
   password: string
   autoSync: boolean
+  intervalSeconds?: number
+}
+export function syncInterval(config: WebDavConfig): number {
+  const seconds = config.intervalSeconds
+  return typeof seconds === 'number' && Number.isFinite(seconds)
+    ? Math.max(30, Math.min(86400, Math.round(seconds)))
+    : 60
 }
 export interface DavResponse {
   status: number

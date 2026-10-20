@@ -54,9 +54,11 @@ export const featureEn = {
   'sync.username': 'Username',
   'sync.password': 'Password / app password',
   'sync.credentialsHint': 'Credentials stay on this device and never enter the sync file.',
+  'sync.interval': 'Sync interval (seconds)',
+  'sync.intervalHint': '30–86400 seconds. Changes also sync automatically after editing.',
   'sync.auto': 'Automatic sync',
   'sync.autoHint':
-    'Sync after edits and check the server every minute. Keep saving locally offline.',
+    'Sync after edits and check the server at your chosen interval. Keep saving locally offline.',
   'sync.save': 'Save configuration',
   'sync.test': 'Test connection',
   'sync.now': 'Sync now',

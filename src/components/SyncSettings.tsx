@@ -172,6 +172,20 @@ export function SyncSettings({ onExport }: { onExport: () => void }) {
                   <small>{t('sync.autoHint')}</small>
                 </span>
               </label>
+              <div className="field">
+                <label htmlFor="dav-interval">{t('sync.interval')}</label>
+                <Input
+                  id="dav-interval"
+                  type="number"
+                  min={30}
+                  max={86400}
+                  step={1}
+                  required
+                  value={draft.intervalSeconds ?? 60}
+                  onChange={(event) => change({ intervalSeconds: Number(event.target.value) })}
+                />
+                <small className="settings-note">{t('sync.intervalHint')}</small>
+              </div>
               <div className="sync-form-actions">
                 <Button
                   variant="outline"
@@ -206,6 +220,7 @@ export function SyncSettings({ onExport }: { onExport: () => void }) {
                         ? t('sync.conflict', { count: state.conflicts.length })
                         : t(statusKey)}
                   </strong>
+                  {state.errorDetail ? <small>{state.errorDetail}</small> : null}
                   {state.lastSyncAt ? (
                     <small>
                       {t('sync.lastSync', {

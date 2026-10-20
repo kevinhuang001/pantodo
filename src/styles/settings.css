@@ -558,3 +558,27 @@
     grid-template-columns: 1fr;
   }
 }
+
+.sidebar-sync {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  gap: 8px;
+}
+.sidebar-sync-status {
+  flex: 1;
+  overflow: hidden;
+}
+.sidebar-sync-status > span:last-child {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.sidebar-sync-status small {
+  display: block;
+  font-size: 9px;
+  margin-top: 4px;
+  color: var(--text-muted);
+}
+.sidebar-sync-now {
+  flex-shrink: 0;
+}

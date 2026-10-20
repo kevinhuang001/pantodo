@@ -57,3 +57,12 @@ There is only one stored Todo per series. Its `occurrences` collection contains 
 Title, description, project and tags are shared by the series. Schedule and rule changes apply to unrecorded cycles; existing cycles keep their saved times and status, even when Repeat is disabled. Status is read-only in the editor and changes through completion/reopen and work controls. Open Repeat to review historical dates, times and statuses alongside upcoming previews. Delete offers this occurrence (a dated tombstone inside the source Todo) or the whole series (Trash). Restoring the series keeps its history. Earlier completion and skipped-date data is upgraded automatically.
 
 Each work timer and time entry retains the source ID and occurrence date. Completing an older cycle does not stop another cycle's timer or complete today's cycle. Statistics count individual completed cycles. WebDAV carries the nested records and automatically merges changes to different dates; conflicting edits to the same date are shown for review.
+
+### WebDAV sync status
+
+Set automatic polling to 30–86400 seconds in Sync settings (default: 60 seconds).
+Edits still trigger automatic sync after a short delay when automatic sync is enabled.
+The sidebar footer shows the last successful sync time and any failure reason. Use its
+refresh button to sync manually; it rotates during requests. Conflicts open Sync settings
+for review. UTF-8 BOM JSON and Pantodo workspace exports are accepted and validated before
+local data changes; credentials, settings and running timers remain local.

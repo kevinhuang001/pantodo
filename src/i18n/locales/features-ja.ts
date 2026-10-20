@@ -53,9 +53,11 @@ export const featureJa = {
   'sync.username': 'ユーザー名',
   'sync.password': 'パスワード / アプリパスワード',
   'sync.credentialsHint': '認証情報はこの端末にのみ保存され、同期ファイルには含まれません。',
+  'sync.interval': '同期間隔（秒）',
+  'sync.intervalHint': '30〜86400 秒。編集後も自動で同期します。',
   'sync.auto': '自動同期',
   'sync.autoHint':
-    '変更後に同期し、1 分ごとにサーバーを確認します。オフラインではローカルに保存します。',
+    '編集後に同期し、設定した間隔でサーバーを確認します。オフラインでもローカルに保存します。',
   'sync.save': '設定を保存',
   'sync.test': '接続をテスト',
   'sync.now': '今すぐ同期',

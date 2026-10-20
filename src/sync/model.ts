@@ -374,12 +374,36 @@ function valid(collection: (typeof COLLECTIONS)[number], value: unknown, id: str
     )
   )
 }
+export class InvalidSyncData extends Error {
+  constructor(public readonly location: string) {
+    super('sync.invalidData')
+  }
+}
 export function parseDocument(raw: string): SyncDocument {
   let value: unknown
   try {
-    value = JSON.parse(raw)
+    value = JSON.parse(raw.replace(/^\uFEFF/, ''))
   } catch {
     throw new Error('sync.invalidData')
+  }
+  if (
+    record(value) &&
+    value.format === undefined &&
+    record(value.taskTags) &&
+    COLLECTIONS.every((key) => Array.isArray((value as Record<string, unknown>)[key]))
+  ) {
+    const workspace = value as unknown as Workspace
+    // Validate identities before extractData can collapse duplicate records.
+    for (const collection of COLLECTIONS) {
+      const ids = workspace[collection].map((entry) => (record(entry) ? entry.id : undefined))
+      if (
+        ids.some((id) => !string(id) || ['__proto__', 'constructor', 'prototype'].includes(id)) ||
+        new Set(ids).size !== ids.length
+      )
+        throw new Error('sync.invalidData')
+    }
+    if (!Object.values(value.taskTags).every(strings)) throw new Error('sync.invalidData')
+    value = { format: 'pantodo-webdav', version: 1, data: extractData(workspace) }
   }
   if (
     !record(value) ||
@@ -391,12 +415,29 @@ export function parseDocument(raw: string): SyncDocument {
   const data = emptyData()
   for (const collection of COLLECTIONS) {
     const entries = value.data[collection]
+    // Version 1 documents can omit presentation defaults; never replace explicit invalid values.
+    if (collection === 'views' && record(entries)) {
+      for (const view of Object.values(entries)) {
+        if (!record(view)) continue
+        if (view.columnCount === undefined) view.columnCount = 2
+        if (Array.isArray(view.panels))
+          for (const panel of view.panels) {
+            if (!record(panel)) continue
+            if (panel.emoji === undefined) panel.emoji = '📌'
+            if (panel.span === undefined) panel.span = 1
+          }
+      }
+    }
     if (
       !record(entries) ||
-      Object.keys(entries).some((id) => ['__proto__', 'constructor', 'prototype'].includes(id)) ||
-      !Object.entries(entries).every(([id, v]) => valid(collection, v, id))
+      Object.keys(entries).some((id) => ['__proto__', 'constructor', 'prototype'].includes(id))
     )
-      throw new Error('sync.invalidData')
+      throw new InvalidSyncData(collection)
+    const records = Object.entries(entries)
+    for (let index = 0; index < records.length; index++) {
+      const [id, entry] = records[index]
+      if (!valid(collection, entry, id)) throw new InvalidSyncData(`${collection}[${index + 1}]`)
+    }
     // Copy only protocol collections; credentials, local settings and live timers never enter the document.
     Object.assign(data[collection], entries)
   }
