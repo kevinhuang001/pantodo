@@ -9,7 +9,8 @@ import { colorFor, selectTasks } from '@/domain/filters'
 import { paletteFor } from '@/domain/palette'
 import { useAppStore } from '@/domain/store'
 import type { Project, Tag, Task, View } from '@/domain/types'
-import { t } from '@/i18n'
+import { getLocale, t } from '@/i18n'
+import { RefreshCw } from 'lucide-react'
 
 import { Icon } from './Icon'
 import type { IconName } from './Icon'
@@ -356,21 +357,54 @@ export function Sidebar({
 
       <div className="sidebar-footer">
         {sync.provider === 'webdav' && sync.config.url ? (
-          <button
-            type="button"
-            className="sidebar-sync-status"
-            onClick={() => onOpenSettings('sync')}
-          >
-            <span className={'status-dot ' + sync.status} />
-            <span>
-              WebDAV ·{' '}
-              {sync.status === 'error'
-                ? t('sync.attention')
-                : sync.status === 'conflict'
-                  ? t('sync.needsReview')
-                  : t(('sync.' + sync.status) as 'sync.idle')}
-            </span>
-          </button>
+          <div className="sidebar-sync">
+            <button
+              type="button"
+              className="sidebar-sync-status"
+              onClick={() => onOpenSettings('sync')}
+            >
+              <span className={'status-dot ' + sync.status} />
+              <span role="status" aria-live="polite">
+                {sync.status === 'error'
+                  ? t(sync.error ?? 'sync.network')
+                  : sync.status === 'conflict'
+                    ? t('sync.needsReview')
+                    : sync.busy
+                      ? t(('sync.' + sync.status) as 'sync.syncing')
+                      : sync.lastSyncAt
+                        ? t('sync.success')
+                        : t('sync.idle')}
+                {sync.errorDetail ? <small>{sync.errorDetail}</small> : null}
+                <small>
+                  {sync.lastSyncAt
+                    ? t('sync.lastSync', {
+                        time: new Date(sync.lastSyncAt).toLocaleString(getLocale(), {
+                          year: 'numeric',
+                          month: '2-digit',
+                          day: '2-digit',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                          second: '2-digit',
+                        }),
+                      })
+                    : t('sync.idle')}
+                </small>
+              </span>
+            </button>
+            <button
+              type="button"
+              className="icon-button sidebar-sync-now"
+              aria-label={t('sync.now')}
+              title={t('sync.now')}
+              disabled={sync.busy}
+              aria-busy={sync.busy}
+              onClick={() =>
+                sync.status === 'conflict' ? onOpenSettings('sync') : void sync.sync()
+              }
+            >
+              <RefreshCw size={16} className={sync.busy ? 'spin' : ''} />
+            </button>
+          </div>
         ) : (
           <>
             <span className="status-dot" />

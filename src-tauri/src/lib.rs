@@ -1,6 +1,8 @@
 #[cfg(all(feature = "desktop", target_os = "macos"))]
 mod macos_material;
 #[cfg(feature = "webdav")]
+pub mod updates;
+#[cfg(feature = "webdav")]
 pub mod webdav;
 pub mod workspace;
 
@@ -49,6 +51,20 @@ mod desktop {
         })
         .await
         .map_err(|_| "sync.network".to_string())?
+    }
+
+    #[tauri::command]
+    async fn check_for_updates() -> Result<String, String> {
+        tauri::async_runtime::spawn_blocking(super::updates::check)
+            .await
+            .map_err(|_| "about.updateFailed".to_string())?
+    }
+
+    #[tauri::command]
+    async fn open_release(version: String) -> Result<(), String> {
+        tauri::async_runtime::spawn_blocking(move || super::updates::open(&version))
+            .await
+            .map_err(|_| "about.openFailed".to_string())?
     }
 
     fn cutoff(app: &tauri::AppHandle, last_heartbeat: bool) {
@@ -115,7 +131,9 @@ mod desktop {
                 load_workspace,
                 save_workspace,
                 desktop_platform,
-                webdav_request
+                webdav_request,
+                check_for_updates,
+                open_release
             ])
             .setup(|app| {
                 #[cfg(target_os = "macos")]

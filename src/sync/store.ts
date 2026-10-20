@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { createSeedWorkspace } from '@/domain/presets'
 import { useAppStore, workspaceBridge } from '@/domain/store'
 import {
+  InvalidSyncData,
   emptyData,
   extractData,
   fingerprint,
@@ -10,13 +11,26 @@ import {
   type SyncConflict,
   type SyncData,
 } from './model'
-import { checkStatus, davRequest, strongEtag, syncFileUrl, type WebDavConfig } from './transport'
+import {
+  checkStatus,
+  davRequest,
+  strongEtag,
+  syncFileUrl,
+  syncInterval,
+  type WebDavConfig,
+} from './transport'
 import type { MessageKey } from '@/i18n'
 
 export const SYNC_CONFIG_KEY = 'pantodo.webdav.config'
 export const SYNC_PROVIDER_KEY = 'pantodo.sync.provider'
 export const SYNC_BASE_KEY = 'pantodo.webdav.base'
-export const DEFAULT_CONFIG: WebDavConfig = { url: '', username: '', password: '', autoSync: false }
+export const DEFAULT_CONFIG: WebDavConfig = {
+  url: '',
+  username: '',
+  password: '',
+  autoSync: false,
+  intervalSeconds: 60,
+}
 interface SavedBase {
   endpoint: string
   data: SyncData
@@ -32,7 +46,7 @@ function readConfig(): WebDavConfig {
       typeof config.username === 'string' &&
       typeof config.password === 'string' &&
       typeof config.autoSync === 'boolean'
-      ? config
+      ? { ...config, intervalSeconds: syncInterval(config) }
       : DEFAULT_CONFIG
   } catch {
     return DEFAULT_CONFIG
@@ -57,6 +71,7 @@ interface SyncState {
   selectProvider: (provider: 'local' | 'webdav') => void
   busy: boolean
   status: 'idle' | 'testing' | 'connected' | 'syncing' | 'success' | 'conflict' | 'error'
+  errorDetail: string | null
   error: MessageKey | null
   lastSyncAt: string | null
   conflicts: SyncConflict[]
@@ -83,16 +98,18 @@ export const useSyncStore = create<SyncState>()((set, get) => ({
   selectProvider(provider) {
     if (get().busy) return
     localStorage.setItem(SYNC_PROVIDER_KEY, provider)
-    set({ provider, status: 'idle', error: null })
+    set({ provider, status: 'idle', error: null, errorDetail: null })
   },
   busy: false,
   status: 'idle',
   error: null,
+  errorDetail: null,
   lastSyncAt: readBase(initialConfig)?.lastSyncAt ?? null,
   conflicts: [],
   save(config) {
     if (get().busy) return
     syncFileUrl(config.url)
+    config = { ...config, intervalSeconds: syncInterval(config) }
     localStorage.setItem(SYNC_PROVIDER_KEY, 'webdav')
     localStorage.setItem(SYNC_CONFIG_KEY, JSON.stringify(config))
     set({
@@ -100,6 +117,7 @@ export const useSyncStore = create<SyncState>()((set, get) => ({
       provider: 'webdav',
       status: 'idle',
       error: null,
+      errorDetail: null,
       conflicts: [],
       lastSyncAt: readBase(config)?.lastSyncAt ?? null,
     })
@@ -114,13 +132,14 @@ export const useSyncStore = create<SyncState>()((set, get) => ({
       provider: 'local',
       status: 'idle',
       error: null,
+      errorDetail: null,
       conflicts: [],
       lastSyncAt: null,
     })
   },
   async test(config) {
     if (get().busy) return
-    set({ busy: true, status: 'testing', error: null })
+    set({ busy: true, status: 'testing', error: null, errorDetail: null })
     try {
       const response = await davRequest(config, 'GET')
       if (response.status !== 404) {
@@ -130,7 +149,11 @@ export const useSyncStore = create<SyncState>()((set, get) => ({
       }
       set({ status: 'connected' })
     } catch (error) {
-      set({ status: 'error', error: syncError(error) })
+      set({
+        status: 'error',
+        error: syncError(error),
+        errorDetail: error instanceof InvalidSyncData ? error.location : null,
+      })
     } finally {
       set({ busy: false })
     }
@@ -145,7 +168,7 @@ export const useSyncStore = create<SyncState>()((set, get) => ({
       return
     const config = get().config
     const reviewed = get().conflicts
-    set({ busy: true, status: 'syncing', error: null })
+    set({ busy: true, status: 'syncing', error: null, errorDetail: null })
     try {
       const savedBase = readBase(config)
       const base = savedBase?.data ?? emptyData()
@@ -201,7 +224,11 @@ export const useSyncStore = create<SyncState>()((set, get) => ({
       }
       throw new Error('sync.concurrent')
     } catch (error) {
-      set({ status: 'error', error: syncError(error) })
+      set({
+        status: 'error',
+        error: syncError(error),
+        errorDetail: error instanceof InvalidSyncData ? error.location : null,
+      })
     } finally {
       set({ busy: false })
     }
@@ -268,13 +295,22 @@ export function startAutoSync(): () => void {
         schedule()
     }
   })
-  const interval = setInterval(run, 60_000)
+  let interval: ReturnType<typeof setInterval>
+  const resetInterval = () => {
+    clearInterval(interval)
+    interval = setInterval(run, syncInterval(useSyncStore.getState().config) * 1000)
+  }
+  const unsubscribeInterval = useSyncStore.subscribe((state, previous) => {
+    if (state.config !== previous.config) resetInterval()
+  })
+  resetInterval()
   window.addEventListener('online', run)
   window.addEventListener('focus', run)
   schedule()
   return () => {
     clearTimeout(debounce)
     clearInterval(interval)
+    unsubscribeInterval()
     unsubscribeApp()
     unsubscribeSync()
     window.removeEventListener('online', run)

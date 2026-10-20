@@ -173,7 +173,7 @@ test('opens the settings window and moves between panes', async ({ page }) => {
   await expect(settings.locator('.settings-timer-note')).toContainText('退出时停止')
 
   await settings.locator('.settings-nav button', { hasText: '关于' }).click()
-  await expect(settings.locator('.settings-card')).toContainText('React 19')
+  await expect(settings.getByRole('button', { name: '检查更新', exact: true })).toBeVisible()
 
   await settings.locator('.settings-footer .primary').click()
   await expect(settings).toHaveCount(0)

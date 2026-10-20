@@ -152,8 +152,6 @@ const en: Record<keyof typeof zhCN, string> = {
   'settings.exported': 'JSON exported',
   'settings.reset': 'Reset to sample data',
   'about.version': 'Version',
-  'about.stack': 'Stack',
-  'about.milestone': 'Milestone',
   'nav.tab.views': 'Views',
   'nav.tab.timetable': 'Timetable',
   'nav.newView': 'New view',

@@ -21,6 +21,24 @@ describe('WebDAV data protocol', () => {
       w.views.filter((view) => view.builtin),
     )
   })
+  it('accepts UTF-8 BOM and the app’s own workspace export without syncing local settings', () => {
+    const w = workspace()
+    const parsed = parseDocument('\uFEFF' + JSON.stringify(w))
+    expect(parsed.data).toEqual(extractData(w))
+    expect(parsed.data).not.toHaveProperty('settings')
+    expect(() => parseDocument(JSON.stringify({ ...w, tasks: [...w.tasks, w.tasks[0]] }))).toThrow(
+      'sync.invalidData',
+    )
+  })
+  it('fills omitted presentation defaults but rejects explicit invalid view settings', () => {
+    const data = extractData(workspace())
+    const view = Object.values(data.views)[0]!
+    delete (view as Partial<typeof view>).columnCount
+    const raw = () => JSON.stringify({ format: 'pantodo-webdav', version: 1, data })
+    expect(Object.values(parseDocument(raw()).data.views)[0]!.columnCount).toBe(2)
+    view.columnCount = 0
+    expect(() => parseDocument(raw())).toThrow('sync.invalidData')
+  })
   it('merges separate-device edits and task tag assignments', () => {
     const b = extractData(workspace()),
       l = structuredClone(b),

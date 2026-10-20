@@ -152,8 +152,6 @@ const ja: Record<keyof typeof zhCN, string> = {
   'settings.exported': 'JSON を書き出しました',
   'settings.reset': 'サンプルデータに戻す',
   'about.version': 'バージョン',
-  'about.stack': 'スタック',
-  'about.milestone': '現在のマイルストーン',
   'nav.tab.views': 'ビュー',
   'nav.tab.timetable': 'タイムテーブル',
   'nav.newView': '新しいビュー',

@@ -152,8 +152,6 @@ const zhCN = {
   'settings.exported': '已导出 JSON',
   'settings.reset': '重置为示例数据',
   'about.version': '版本',
-  'about.stack': '技术栈',
-  'about.milestone': '当前里程碑',
   'nav.tab.views': '视图',
   'nav.tab.timetable': '时间表',
   'nav.newView': '新建视图',

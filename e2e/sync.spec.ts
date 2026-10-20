@@ -334,3 +334,44 @@ test('local mode hides configuration, exports data and pauses saved WebDAV auto 
   await page.getByRole('radio', { name: /WebDAV/ }).click()
   await expect(page.locator('#dav-url')).toHaveValue(url)
 })
+
+test('footer sync shows progress, last successful time, errors and persists the polling interval', async ({
+  page,
+}) => {
+  await page.goto('/')
+  await configure(page)
+  await page.locator('#dav-interval').fill('120')
+  await page.getByRole('button', { name: '保存配置', exact: true }).click()
+  await closeSettings(page)
+  // Hold the request so the in-flight state can be inspected deterministically.
+  let release!: () => void
+  const pending = new Promise<void>((resolve) => {
+    release = resolve
+  })
+  await page.route('**/pantodo-workspace.json', async (route) => {
+    await pending
+    await route.continue()
+  })
+  await page.locator('.sidebar-sync-now').click()
+  await expect(page.locator('.sidebar-sync-now')).toBeDisabled()
+  await expect(page.locator('.sidebar-sync-now .spin')).toBeVisible()
+  await expect(page.locator('.sidebar-sync-status')).toContainText('正在同步')
+  release()
+  await expect(page.locator('.sidebar-sync-status')).toContainText('上次同步')
+  await page.unroute('**/pantodo-workspace.json')
+  // The app's own JSON export and BOM are valid input, not an unsupported remote file.
+  const workspace = await page.evaluate(() => localStorage.getItem('pantodo.workspace.v2'))
+  remote = '\uFEFF' + workspace!
+  revision++
+  await page.locator('.sidebar-sync-now').click()
+  await expect(page.locator('.sidebar-sync-status')).toContainText('同步完成')
+  await expect(page.locator('.sidebar-sync-now')).toBeEnabled()
+  remote = '<html>Sign in</html>'
+  revision++
+  await page.locator('.sidebar-sync-now').click()
+  await expect(page.locator('.sidebar-sync-status')).toContainText('远端文件格式不正确')
+  await expect(page.locator('.sidebar-sync-status')).toContainText('上次同步')
+  await page.reload()
+  await openSync(page)
+  await expect(page.locator('#dav-interval')).toHaveValue('120')
+})
