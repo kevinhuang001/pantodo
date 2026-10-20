@@ -2,7 +2,7 @@ import { invoke } from '@tauri-apps/api/core'
 import { desktop } from '@/platform'
 
 export const RELEASES_URL = 'https://github.com/kevinhuang001/pantodo/releases'
-const LATEST_URL = 'https://api.github.com/repos/kevinhuang001/pantodo/releases/latest'
+const LATEST_URL = 'https://api.github.com/repos/kevinhuang001/pantodo/releases?per_page=20'
 export interface Release {
   version: string
   url: string
@@ -28,13 +28,26 @@ export function parseRelease(raw: string): Release {
   } catch {
     throw new Error('about.updateInvalid')
   }
+  if (Array.isArray(release)) {
+    const published = release.filter(
+      (item) =>
+        item &&
+        typeof item === 'object' &&
+        !item.draft &&
+        typeof item.tag_name === 'string' &&
+        /^v?\d+\.\d+\.\d+$/.test(item.tag_name),
+    )
+    if (!published.length) throw new Error('about.updateUnavailable')
+    release = published.reduce((latest, candidate) =>
+      newerVersion(candidate.tag_name, latest.tag_name) ? candidate : latest,
+    )
+  }
   if (
     !release ||
     typeof release !== 'object' ||
     !('tag_name' in release) ||
     typeof release.tag_name !== 'string' ||
-    ('draft' in release && release.draft) ||
-    ('prerelease' in release && release.prerelease)
+    ('draft' in release && release.draft)
   )
     throw new Error('about.updateInvalid')
   versionParts(release.tag_name)

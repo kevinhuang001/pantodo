@@ -69,6 +69,6 @@ local data changes; credentials, settings and running timers remain local.
 
 ### Check for updates
 
-Open Settings → About to check the latest published stable GitHub release. The page shows
+Open Settings → About to check the latest published GitHub release, including Pantodo preview releases. The page shows
 whether you are up to date, a new version is available, or the check failed (including
 rate limits and no published release). View downloads opens the release page in your browser.

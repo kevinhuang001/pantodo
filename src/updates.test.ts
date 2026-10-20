@@ -31,3 +31,16 @@ it.each([
   vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('', { status })))
   await expect(checkForUpdates()).rejects.toThrow(message)
 })
+
+it('finds the newest published version including Pantodo preview releases and skips drafts', () => {
+  expect(
+    parseRelease(
+      JSON.stringify([
+        { tag_name: 'v0.6.13', prerelease: true },
+        { tag_name: 'v0.6.14', prerelease: true },
+        { tag_name: 'v0.6.15', draft: true },
+      ]),
+    ).version,
+  ).toBe('0.6.14')
+  expect(() => parseRelease('[]')).toThrow('about.updateUnavailable')
+})

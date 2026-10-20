@@ -8,7 +8,7 @@ pub fn check() -> Result<String, String> {
         .build()
         .map_err(|_| "about.updateFailed")?;
     let response = client
-        .get("https://api.github.com/repos/kevinhuang001/pantodo/releases/latest")
+        .get("https://api.github.com/repos/kevinhuang001/pantodo/releases?per_page=20")
         .header("User-Agent", "Pantodo")
         .header("Accept", "application/vnd.github+json")
         .send()

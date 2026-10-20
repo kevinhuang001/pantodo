@@ -9,13 +9,15 @@ test('About checks versions, exposes downloads and reports failures without tech
   const about = page.locator('.about-settings')
   await expect(about).not.toContainText('技术栈')
   await expect(about).not.toContainText('里程碑')
-  const api = 'https://api.github.com/repos/kevinhuang001/pantodo/releases/latest'
-  await page.route(api, (route) => route.fulfill({ json: { tag_name: 'v999.0.0' } }))
+  const api = 'https://api.github.com/repos/kevinhuang001/pantodo/releases?per_page=20'
+  await page.route(api, (route) =>
+    route.fulfill({ json: [{ tag_name: 'v999.0.0', prerelease: true }] }),
+  )
   await about.getByRole('button', { name: '检查更新', exact: true }).click()
   await expect(about).toContainText('发现新版本 999.0.0')
   await expect(about.getByRole('button', { name: '查看下载', exact: true })).toBeVisible()
   await page.unroute(api)
-  await page.route(api, (route) => route.fulfill({ json: { tag_name: 'v0.0.1' } }))
+  await page.route(api, (route) => route.fulfill({ json: [{ tag_name: 'v0.0.1' }] }))
   await about.getByRole('button', { name: '检查更新', exact: true }).click()
   await expect(about).toContainText('当前已是最新版本')
   await expect(about.getByRole('button', { name: '查看下载', exact: true })).toHaveCount(0)
